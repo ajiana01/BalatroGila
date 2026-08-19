@@ -6,14 +6,10 @@ import './PlayingCard.css';
 function PlayingCard({
                          rank,
                          suit,
-
-                         // Card back
                          backType = 'Normal',
-
                          width = 100,
                          height = 140,
-
-                         animated = false
+                         effect = ''
                      }) {
     const card = playingCardSprite[suit]?.[rank];
 
@@ -24,13 +20,12 @@ function PlayingCard({
 
     return (
         <div
-            className="playing-card"
+            className={`playing-card ${effect}`}
             style={{
                 width: `${width}px`,
                 height: `${height}px`
             }}
         >
-            {/* BACKGROUND */}
             <div className="playing-card-back">
                 <CardBack
                     type={backType}
@@ -39,7 +34,6 @@ function PlayingCard({
                 />
             </div>
 
-            {/* CARD FACE */}
             <div className="playing-card-face">
                 <Sprite
                     sprite={playingCardSprite}
@@ -47,7 +41,6 @@ function PlayingCard({
                     row={card.row}
                     width={width}
                     height={height}
-                    animated={animated}
                 />
             </div>
         </div>

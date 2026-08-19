@@ -3,6 +3,44 @@
     display: block;
 }
 
+/* Effect 3D */
+.playing-card.effect-3d {
+    animation: card-float 3s ease-in-out infinite;
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.playing-card.effect-3d:hover {
+    transform:
+            perspective(600px)
+            translateZ(80px)
+            rotateX(15deg)
+            rotateY(-15deg)
+            translateY(-15px)
+            scale(1.08);
+
+    filter: brightness(1.15);
+    z-index: 10;
+}
+
+@keyframes card-float {
+    0%, 100% {
+        transform:
+                perspective(600px)
+                rotateX(0deg)
+                rotateY(0deg)
+                translateY(0);
+    }
+
+    50% {
+        transform:
+                perspective(600px)
+                rotateX(3deg)
+                rotateY(-3deg)
+                translateY(-6px);
+    }
+}
+
 .playing-card-back,
 .playing-card-face {
     position: absolute;

@@ -145,6 +145,7 @@ function App() {
                             suit="Spades"
                             width={110}
                             height={150}
+                            effect="effect-3d"
                         />
                     </div>
                 </div>
