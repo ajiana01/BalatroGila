@@ -1,0 +1,21 @@
+﻿.playing-card {
+    position: relative;
+    display: block;
+}
+
+.playing-card-back,
+.playing-card-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.playing-card-back {
+    z-index: 1;
+}
+
+.playing-card-face {
+    z-index: 2;
+}

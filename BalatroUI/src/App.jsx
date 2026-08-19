@@ -132,7 +132,7 @@ function App() {
                 />
 
                 <PlayingCard
-                    rank="K"
+                    rank="Q"
                     suit="Diamonds"
                 />
                 
@@ -145,7 +145,7 @@ function App() {
                     number="2"
                     />
                 
-                <CardBack/>
+                <CardBack type="Chip"/>
                 
                 <PlanetCard
                     planet="Pluto"
@@ -156,6 +156,12 @@ function App() {
                 <TarotCard tarot="TheMagician" />
 
                 <Voucher voucher="Overstock" />
+
+                <PlayingCard
+                    rank="K"
+                    suit="Hearts"
+                    backType="Chip"
+                />
                 
                 <button
                     onClick={toggleMusic}
