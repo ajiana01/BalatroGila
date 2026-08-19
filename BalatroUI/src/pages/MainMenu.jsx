@@ -1,6 +1,8 @@
 ﻿import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import GameTransition from '../components/transition/GameTransition.jsx';
+
 import Balatro from '../components/BalatroBackground/BalatroBackground.jsx';
 import logo from '../assets/Balatro-Logo.png';
 import bgm from '../assets/music/1-main-theme.mp3';
@@ -11,6 +13,12 @@ const useMock = true;
 const apiUrl = import.meta.env.VITE_API_URL;
 
 function MainMenu() {
+
+    const [transitioning, setTransitioning] = useState(false);
+
+    const playGame = () => {
+        setTransitioning(true);
+    };
 
     const navigate = useNavigate();
 
@@ -190,7 +198,7 @@ function MainMenu() {
                     ) : data ? (
 
                         <button
-                            onClick={() => navigate('/game')}
+                            onClick={playGame}
                             style={{
                                 padding: '12px 40px',
                                 fontSize: '20px',
@@ -225,6 +233,12 @@ function MainMenu() {
 
             </div>
 
+
+            {transitioning && (
+                <GameTransition
+                    onComplete={() => navigate('/game')}
+                />
+            )}
         </div>
     );
 }

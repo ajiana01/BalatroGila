@@ -9,11 +9,12 @@ function PlayingCard({
                          backType = 'Normal',
                          width = 100,
                          height = 140,
-                         effect = ''
+                         effect = '',
+                         showBack = false
                      }) {
     const card = playingCardSprite[suit]?.[rank];
 
-    if (!card) {
+    if (!showBack && !card) {
         console.error(`Playing Card tidak ditemukan: ${rank} of ${suit}`);
         return null;
     }
@@ -25,7 +26,7 @@ function PlayingCard({
                 width: `${width}px`,
                 height: `${height}px`
             }}
-        >
+        > {showBack ? (
             <div className="playing-card-back">
                 <CardBack
                     type={backType}
@@ -33,16 +34,27 @@ function PlayingCard({
                     height={height}
                 />
             </div>
+        ) : (
+            <>
+                <div className="playing-card-back">
+                    <CardBack
+                        type={backType}
+                        width={width}
+                        height={height}
+                    />
+                </div>
 
-            <div className="playing-card-face">
-                <Sprite
-                    sprite={playingCardSprite}
-                    column={card.column}
-                    row={card.row}
-                    width={width}
-                    height={height}
-                />
-            </div>
+                <div className="playing-card-face">
+                    <Sprite
+                        sprite={playingCardSprite}
+                        column={card.column}
+                        row={card.row}
+                        width={width}
+                        height={height}
+                    />
+                </div>
+            </>
+        )}
         </div>
     );
 }
