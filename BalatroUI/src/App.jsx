@@ -7,6 +7,10 @@ import PlayingCard from './components/PlayingCard/PlayingCard';
 import JokerCard from './components/JokerCard/JokerCard.jsx';
 import BoosterPacks from './components/BoosterPacks/BoosterPacks.jsx';
 import CardBack from './components/CardBack/CardBack.jsx';
+import PlanetCard from './components/PlanetCard/PlanetCard.jsx';
+import SpectralCard from './components/SpectralCard/SpectralCard.jsx';
+import TarotCard from './components/TarotCard/TarotCard';
+import Voucher from './components/Voucher/Voucher';
 
 const useMock = true ; //for debug
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -142,6 +146,16 @@ function App() {
                     />
                 
                 <CardBack/>
+                
+                <PlanetCard
+                    planet="Pluto"
+                />
+
+                <SpectralCard spectral="Familiar" />
+
+                <TarotCard tarot="TheMagician" />
+
+                <Voucher voucher="Overstock" />
                 
                 <button
                     onClick={toggleMusic}

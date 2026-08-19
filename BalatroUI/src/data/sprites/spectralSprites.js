@@ -10,5 +10,24 @@ export const spectralSprite = {
     rows: 6,
 
     cellWidth: 710 / 10,
-    cellHeight: 570 / 6
+    cellHeight: 570 / 6,
+
+    spectrals: {
+        Familiar: {
+            column: 0,
+            row: 4
+        },
+        Grim: {
+            column: 1,
+            row: 4
+        },
+        Incantantion: {
+            column: 2,
+            row: 4
+        },
+        Talisman: {
+            column: 3,
+            row: 4
+        },
+    }
 };
