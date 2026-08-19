@@ -105,12 +105,13 @@ void main() {
 `;
 
 export default function Balatro({
+                                    theme = 'default',
                                     spinRotation = -2.0,
                                     spinSpeed = 7.0,
                                     offset = [0.0, 0.0],
-                                    color1 = '#DE443B',
-                                    color2 = '#006BB4',
-                                    color3 = '#162325',
+                                    color1,
+                                    color2,
+                                    color3,
                                     contrast = 3.5,
                                     lighting = 0.4,
                                     spinAmount = 0.25,
@@ -120,6 +121,21 @@ export default function Balatro({
                                     mouseInteraction = true
                                 }) {
     const containerRef = useRef(null);
+
+    const themes = {
+        default: {
+            color1: '#DE443B',
+            color2: '#006BB4',
+            color3: '#162325'
+        },
+        green: {
+            color1: '#4A8F6A',
+            color2: '#26704A',
+            color3: '#16452F'
+        }
+    };
+
+    const selectedTheme = themes[theme] ?? themes.default;
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -152,9 +168,15 @@ export default function Balatro({
                 uSpinRotation: {value: spinRotation},
                 uSpinSpeed: {value: spinSpeed},
                 uOffset: {value: offset},
-                uColor1: {value: hexToVec4(color1)},
-                uColor2: {value: hexToVec4(color2)},
-                uColor3: {value: hexToVec4(color3)},
+                uColor1: {
+                    value: hexToVec4(color1 ?? selectedTheme.color1)
+                },
+                uColor2: {
+                    value: hexToVec4(color2 ?? selectedTheme.color2)
+                },
+                uColor3: {
+                    value: hexToVec4(color3 ?? selectedTheme.color3)
+                },
                 uContrast: {value: contrast},
                 uLighting: {value: lighting},
                 uSpinAmount: {value: spinAmount},
@@ -195,6 +217,7 @@ export default function Balatro({
             gl.getExtension('WEBGL_lose_context')?.loseContext();
         };
     }, [
+        theme,
         spinRotation,
         spinSpeed,
         offset,

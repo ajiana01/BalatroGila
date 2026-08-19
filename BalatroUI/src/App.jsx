@@ -24,52 +24,67 @@ function App() {
   return (
       <div style={{position: 'relative', minHeight: '100vh', fontFamily: 'sans-serif'}}>
 
-        {/* 2. LAYER BACKGROUND: Fixed di belakang layar (zIndex: -1) */}
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: -1
-        }}>
-          <Balatro
-              isRotate={false}
-              mouseInteraction
-              pixelFilter={745}
-              color1="#DE443B"
-              color2="#006BB4"
-              color3="#162325"
-          />
-        </div>
+          {/* 2. LAYER BACKGROUND: Fixed di belakang layar (zIndex: -1) */}
+          <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: -1
+          }}>
+              <Balatro
+                  // theme="green"
+                  // spinRotation={-0.5}
+                  // spinSpeed={1.5}
+                  // spinAmount={0.08}
+                  // spinEase={0.5}
+                  // contrast={2.5}
+                  // lighting={0.25}
+                  // pixelFilter={1000}
+                  // isRotate={false}
+                  // mouseInteraction={false}
 
-        {/* 3. LAYER UI KONTEN: Diberi zIndex positif agar melayang di atas background */}
-        <div style={{position: 'relative', zIndex: 1, padding: '20px', color: 'white'}}>
-          <h1>BALATROO GILAAAA</h1>
+              />
+          </div>
 
           <div style={{
-            padding: '20px',
-            border: '1px solid gray',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Memberi latar belakang semi-transparan agar teks mudah dibaca
-            maxWidth: '400px',
-            margin: '0 auto'
+              position: 'relative',
+              zIndex: 1,
+              minHeight: '100vh',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexDirection: 'column',
+              color: 'white'
           }}>
-            <h2>Status Server:</h2>
+              <h1>BALATROO GILAAAA</h1>
 
-            {loading ? (
-                <p>Mencari koneksi ke .NET...</p>
-            ) : data ? (
-                <div>
-                  <p><strong>Pesan:</strong> {data.message}</p>
-                  <p><strong>Waktu:</strong> {new Date(data.timestamp).toLocaleString()}</p>
-                  <p><strong>OS:</strong> {data.server}</p>
-                </div>
-            ) : (
-                <p style={{color: '#ff6b6b'}}>Koneksi terputus. Pastikan dotnet run sedang aktif.</p>
-            )}
+              <div style={{
+                  padding: '20px',
+                  border: '1px solid gray',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  width: '400px',
+                  maxWidth: 'calc(100% - 40px)'
+              }}>
+                  <h2>Status Server:</h2>
+
+                  {loading ? (
+                      <p>Mencari koneksi ke .NET...</p>
+                  ) : data ? (
+                      <div>
+                          <p><strong>Pesan:</strong> {data.message}</p>
+                          <p><strong>Waktu:</strong> {new Date(data.timestamp).toLocaleString()}</p>
+                          <p><strong>OS:</strong> {data.server}</p>
+                      </div>
+                  ) : (
+                      <p style={{color: '#ff6b6b'}}>
+                          Koneksi terputus. Pastikan dotnet run sedang aktif.
+                      </p>
+                  )}
+              </div>
           </div>
-        </div>
 
       </div>
   )
