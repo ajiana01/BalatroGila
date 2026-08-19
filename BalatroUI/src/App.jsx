@@ -2,7 +2,11 @@ import {useEffect, useState, useRef} from 'react'
 import Balatro from './components/BalatroBackground/BalatroBackground.jsx';
 import logo from './assets/Balatro-Logo.png';
 import bgm from './assets/music/1-main-theme.mp3';
-import SpritePlayingCard from './components/SpritePlayingCard/SpritePlayingCard.jsx';
+
+import PlayingCard from './components/PlayingCard/PlayingCard';
+import JokerCard from './components/JokerCard/JokerCard.jsx';
+import BoosterPacks from './components/BoosterPacks/BoosterPacks.jsx';
+import CardBack from './components/CardBack/CardBack.jsx';
 
 const useMock = true ; //for debug
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -123,8 +127,22 @@ function App() {
                     }}
                 />
 
-                <SpritePlayingCard rank="A" suit="Spades" animated />
-
+                <PlayingCard
+                    rank="K"
+                    suit="Diamonds"
+                />
+                
+                <JokerCard
+                    id="Joker"
+                />
+                
+                <BoosterPacks
+                    type="Arcana_Jumbo"
+                    number="2"
+                    />
+                
+                <CardBack/>
+                
                 <button
                     onClick={toggleMusic}
                     style={{

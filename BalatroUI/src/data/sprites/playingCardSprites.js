@@ -1,4 +1,17 @@
-﻿export const playingCardSprites = {
+﻿import image from '../../assets/Balatro-Playing Cards.png';
+
+export const playingCardSprite = {
+    image,
+    
+    sheetWidth: 923,
+    sheetHeight: 380,
+
+    columns: 13,
+    rows: 4,
+
+    cellWidth: 923 / 13,
+    cellHeight: 380 / 4,
+
     Hearts: {
         2: { column: 0, row: 0 },
         3: { column: 1, row: 0 },
