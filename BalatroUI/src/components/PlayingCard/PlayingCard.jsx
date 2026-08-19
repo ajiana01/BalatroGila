@@ -55,3 +55,10 @@ function PlayingCard({
 }
 
 export default PlayingCard;
+
+//using
+// <PlayingCard
+//     rank="K"
+//     suit="Hearts"
+//     backType="Chip"
+// />

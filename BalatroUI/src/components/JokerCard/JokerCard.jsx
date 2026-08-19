@@ -28,3 +28,8 @@ function JokerCard({
 }
 
 export default JokerCard;
+
+// using example
+// <JokerCard
+// id="Joker"
+//     />

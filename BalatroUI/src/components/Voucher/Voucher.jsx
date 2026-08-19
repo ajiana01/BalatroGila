@@ -27,3 +27,6 @@ function Voucher({
 }
 
 export default Voucher;
+
+// using
+// <Voucher voucher="Overstock" />

@@ -4,13 +4,6 @@ import logo from './assets/Balatro-Logo.png';
 import bgm from './assets/music/1-main-theme.mp3';
 
 import PlayingCard from './components/PlayingCard/PlayingCard';
-import JokerCard from './components/JokerCard/JokerCard.jsx';
-import BoosterPacks from './components/BoosterPacks/BoosterPacks.jsx';
-import CardBack from './components/CardBack/CardBack.jsx';
-import PlanetCard from './components/PlanetCard/PlanetCard.jsx';
-import SpectralCard from './components/SpectralCard/SpectralCard.jsx';
-import TarotCard from './components/TarotCard/TarotCard';
-import Voucher from './components/Voucher/Voucher';
 
 const useMock = true ; //for debug
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -120,49 +113,42 @@ function App() {
                 color: 'white'
             }}>
 
-                <img
-                    src={logo}
-                    alt="Balatro Gila"
+                <div
                     style={{
+                        position: 'relative',
                         width: '600px',
                         maxWidth: '80%',
-                        height: 'auto',
                         marginBottom: '30px'
-                    }}
-                />
-
-                <PlayingCard
-                    rank="Q"
-                    suit="Diamonds"
-                />
-                
-                <JokerCard
-                    id="Joker"
-                />
-                
-                <BoosterPacks
-                    type="Arcana_Jumbo"
-                    number="2"
+                    }}>
+                    
+                    <img
+                        src={logo}
+                        alt="Balatro Gila"
+                        style={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block'
+                        }}
                     />
-                
-                <CardBack type="Chip"/>
-                
-                <PlanetCard
-                    planet="Pluto"
-                />
 
-                <SpectralCard spectral="Familiar" />
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 2
+                        }}
+                    >
+                        <PlayingCard
+                            rank="A"
+                            suit="Spades"
+                            width={110}
+                            height={150}
+                        />
+                    </div>
+                </div>
 
-                <TarotCard tarot="TheMagician" />
-
-                <Voucher voucher="Overstock" />
-
-                <PlayingCard
-                    rank="K"
-                    suit="Hearts"
-                    backType="Chip"
-                />
-                
                 <button
                     onClick={toggleMusic}
                     style={{

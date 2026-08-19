@@ -27,3 +27,6 @@ function TarotCard({
 }
 
 export default TarotCard;
+
+// using
+// <TarotCard tarot="TheMagician" />

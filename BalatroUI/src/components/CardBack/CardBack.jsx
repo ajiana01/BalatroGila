@@ -27,3 +27,6 @@ function CardBack({
 }
 
 export default CardBack;
+
+// using example
+// <CardBack type="Chip"/>

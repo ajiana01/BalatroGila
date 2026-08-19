@@ -27,3 +27,8 @@ function PlanetCard({
 }
 
 export default PlanetCard;
+
+// using example
+// <PlanetCard
+// planet="Pluto"
+//     />

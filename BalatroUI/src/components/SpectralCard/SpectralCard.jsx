@@ -27,3 +27,6 @@ function SpectralCard({
 }
 
 export default SpectralCard;
+
+// using
+// <SpectralCard spectral="Familiar" />

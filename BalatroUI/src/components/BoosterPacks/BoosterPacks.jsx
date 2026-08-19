@@ -37,3 +37,9 @@ function BoosterPack({
 }
 
 export default BoosterPack;
+
+// using example
+// <BoosterPacks
+// type="Arcana_Jumbo"
+// number="2"
+//     />
