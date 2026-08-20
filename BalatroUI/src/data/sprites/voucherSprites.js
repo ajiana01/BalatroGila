@@ -25,21 +25,57 @@ export const voucherSprite = {
             column: 2,
             row: 0
         },
-        Hone: {
+        ClearanceSale: {
             column: 3,
             row: 0
         },
-        Grabber: {
+        Hone: {
             column: 4,
             row: 0
         },
-        Wasteful: {
+        Grabber: {
             column: 5,
             row: 0
         },
-        Blank: {
+        Wasteful: {
             column: 6,
             row: 0
+        },
+        Blank: {
+            column: 7,
+            row: 0
+        },
+        RerollSurplus: {
+            column: 0,
+            row: 2
+        },
+        SeedMoney: {
+            column: 1,
+            row: 2
+        },
+        CrystalBall: {
+            column: 2,
+            row: 2
+        },
+        Telescope: {
+            column: 3,
+            row: 2
+        },
+        MagicTrick: {
+            column: 4,
+            row: 2
+        },
+        Hieroglyph: {
+            column: 5,
+            row: 2
+        },
+        DirectorsCut: {
+            column: 6,
+            row: 2
+        },
+        PaintBrush: {
+            column: 7,
+            row: 2
         },
     }
 };
