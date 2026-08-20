@@ -29,5 +29,53 @@ export const spectralSprite = {
             column: 3,
             row: 4
         },
+        Aura: {
+            column: 4,
+            row: 4
+        },
+        Wraith: {
+            column: 5,
+            row: 4
+        },
+        Sigil: {
+            column: 6,
+            row: 4
+        },
+        Ouija: {
+            column: 7,
+            row: 4
+        },
+        Ectoplasm: {
+            column: 8,
+            row: 4
+        },
+        Immobile: {
+            column: 9,
+            row: 4
+        },
+        Ankh: {
+            column: 0,
+            row: 5
+        },
+        Dejavu: {
+            column: 1,
+            row: 5
+        },
+        Hex: {
+            column: 2,
+            row: 5
+        },
+        Trance: {
+            column: 3,
+            row: 5
+        },
+        Medium: {
+            column: 4,
+            row: 5
+        },
+        Cryptid: {
+            column: 5,
+            row: 5
+        },
     }
 };
