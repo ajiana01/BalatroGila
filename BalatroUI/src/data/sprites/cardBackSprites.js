@@ -23,14 +23,65 @@ export const cardBackSprite= {
             row: 0
         },
         
-        Chip: {
+        BonusCards: {
             column: 1,
             row: 1
         },
 
-        Mult: {
+        MultCards: {
             column: 2,
             row: 1
+        },
+
+        WildCards: {
+            column: 3,
+            row: 1
+        },
+
+        GlassCards: {
+            column: 5,
+            row: 1
+        },
+
+        SteelCards: {
+            column: 6,
+            row: 1
+        },
+
+        StoneCards: {
+            column: 5,
+            row: 0
+        },
+
+        GoldCards: {
+            column: 6,
+            row: 0
+        },
+
+        LuckyCards: {
+            column: 4,
+            row: 1
+        },
+        
+        // SEAL
+        GoldSeal: {
+            column: 2,
+            row: 0
+        },
+
+        RedSeal: {
+            column: 5,
+            row: 4
+        },
+
+        BlueSeal: {
+            column: 6,
+            row: 4
+        },
+
+        PurpleSeal: {
+            column: 4,
+            row: 4
         },
     }
 };
