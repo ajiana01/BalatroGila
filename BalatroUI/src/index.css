@@ -109,3 +109,16 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+@font-face {
+  font-family: 'Balatro';
+  src: url('./fonts/balatro.otf') format('opentype');
+  font-weight: normal;
+  font-display: swap;
+}
+
+body {
+  margin: 0;
+  font-family: 'Balatro', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
