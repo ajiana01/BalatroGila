@@ -1,4 +1,4 @@
-﻿import Sprite from '../Sprite/Sprite';
+import Sprite from '../Sprite/Sprite';
 import CardBack from '../CardBack/CardBack';
 import { playingCardSprite } from '../../data/sprites/playingCardSprites';
 import './PlayingCard.css';
@@ -10,7 +10,9 @@ function PlayingCard({
                          width = 100,
                          height = 140,
                          effect = '',
-                         showBack = false
+                         showBack = false,
+                         className = '',
+                         style = {}
                      }) {
     const card = playingCardSprite[suit]?.[rank];
 
@@ -21,10 +23,11 @@ function PlayingCard({
 
     return (
         <div
-            className={`playing-card ${effect}`}
+            className={`playing-card ${effect} ${className}`}
             style={{
                 width: `${width}px`,
-                height: `${height}px`
+                height: `${height}px`,
+                ...style
             }}
         > {showBack ? (
             <div className="playing-card-back">

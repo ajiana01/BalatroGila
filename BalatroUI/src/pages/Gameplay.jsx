@@ -58,6 +58,19 @@ function Gameplay() {
 
         deckRemaining: 52,
 
+        maxJokers: 5,
+        jokers: [
+            { id: 'ScaryFace', title: 'Scary Face' },
+            { id: 'Joker', title: 'Joker' },
+            { id: 'RaisedFist', title: 'Raised Fist' },
+            { id: 'AbstractJoker', title: 'Abstract Joker' }
+        ],
+
+        maxConsumables: 2,
+        consumables: [
+            { type: 'tarot', id: 'TheTower', title: 'The Tower' }
+        ],
+
         currentBlind: {
             type: 'small',
             blind: 'SmallBlind',
@@ -186,6 +199,19 @@ function Gameplay() {
             discards: 4,
 
             deckRemaining: 52,
+
+            maxJokers: 5,
+            jokers: [
+                { id: 'ScaryFace', title: 'Scary Face' },
+                { id: 'Joker', title: 'Joker' },
+                { id: 'RaisedFist', title: 'Raised Fist' },
+                { id: 'AbstractJoker', title: 'Abstract Joker' }
+            ],
+
+            maxConsumables: 2,
+            consumables: [
+                { type: 'tarot', id: 'TheTower', title: 'The Tower' }
+            ],
 
             currentBlind: {
                 type: 'small',

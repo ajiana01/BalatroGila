@@ -1,4 +1,4 @@
-.joker-card-container {
+.tarot-card-container {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -7,7 +7,7 @@
     transition: transform 0.15s ease, filter 0.15s ease;
 }
 
-.joker-card-container.selected {
+.tarot-card-container.selected {
     transform: translateY(-8px) scale(1.06);
     filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.45));
     z-index: 40;

@@ -3,20 +3,38 @@ import { Reorder } from 'framer-motion';
 import PlayingCard from '../../PlayingCard/PlayingCard';
 import './PlayerHand.css';
 
-const initialCards = [
-    { id: 'card-1', suit: 'Spades', rank: 'A' },
-    { id: 'card-2', suit: 'Hearts', rank: 'K' },
-    { id: 'card-3', suit: 'Diamonds', rank: '7' },
-    { id: 'card-4', suit: 'Clubs', rank: 'Q' },
-    { id: 'card-5', suit: 'Hearts', rank: '3' }
+const defaultHandCards = [
+    { id: 'card-1', suit: 'Hearts', rank: 'A' },
+    { id: 'card-2', suit: 'Hearts', rank: 'Q' },
+    { id: 'card-3', suit: 'Diamonds', rank: '10' },
+    { id: 'card-4', suit: 'Clubs', rank: '9' },
+    { id: 'card-5', suit: 'Spades', rank: '7' },
+    { id: 'card-6', suit: 'Spades', rank: '3' },
+    { id: 'card-7', suit: 'Hearts', rank: '3' },
+    { id: 'card-8', suit: 'Spades', rank: '2' }
 ];
 
-function PlayerHand({ maxSelected = 5 }) {
-    const [cards, setCards] = useState(initialCards);
-    const [selectedIds, setSelectedIds] = useState([]);
+function PlayerHand({
+    cards: propCards,
+    setCards: propSetCards,
+    selectedIds: propSelectedIds,
+    onToggleSelect: propOnToggleSelect,
+    maxSelected = 5
+}) {
+    const [internalCards, setInternalCards] = useState(defaultHandCards);
+    const [internalSelected, setInternalSelected] = useState([]);
+
+    const cards = propCards || internalCards;
+    const setCards = propSetCards || setInternalCards;
+    const selectedIds = propSelectedIds || internalSelected;
 
     const toggleSelectCard = (id) => {
-        setSelectedIds((prev) => {
+        if (propOnToggleSelect) {
+            propOnToggleSelect(id);
+            return;
+        }
+
+        setInternalSelected((prev) => {
             if (prev.includes(id)) {
                 return prev.filter((cardId) => cardId !== id);
             }
@@ -58,8 +76,8 @@ function PlayerHand({ maxSelected = 5 }) {
                             <PlayingCard
                                 suit={card.suit}
                                 rank={card.rank}
-                                width={100}
-                                height={140}
+                                width={92}
+                                height={130}
                             />
                         </Reorder.Item>
                     );

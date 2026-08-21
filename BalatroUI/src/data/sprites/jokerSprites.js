@@ -1,4 +1,4 @@
-﻿import image from '../../assets/Balatro-Jokers.png';
+import image from '../../assets/Balatro-Jokers.png';
 
 export const jokerSprite = {
     image,
@@ -18,7 +18,7 @@ export const jokerSprite = {
     // Polychrome (X1.5 Mult)
     // Negative (+1 Joker slot)
 
-    cards = {
+    cards: {
         Joker: {
             column: 0,
             row: 0

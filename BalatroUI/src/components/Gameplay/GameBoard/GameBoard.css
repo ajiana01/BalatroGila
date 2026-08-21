@@ -9,152 +9,227 @@
 .game-main {
     flex: 1;
     position: relative;
-    padding: 24px 30px;
+    padding: 20px 30px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     height: 100%;
     box-sizing: border-box;
     overflow: hidden;
+    user-select: none;
+    font-family: 'Balatro', sans-serif;
 }
 
-.score-panel {
+/* =========================================
+   1. TOP AREA (JOKERS + CONSUMABLES)
+========================================= */
+.game-top-area {
     display: flex;
-
-    justify-content: center;
-    align-items: center;
-
-    gap: 20px;
-
-    font-size: 18px;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding-top: 4px;
 }
 
-.score-panel div {
-    display: flex;
-    flex-direction: column;
-
-    align-items: center;
-
-    background: rgba(0, 0, 0, 0.35);
-
-    padding: 10px 30px;
-
-    border-radius: 10px;
-}
-
-.score-panel strong {
-    font-size: 30px;
-
-    color: #ffd43b;
-}
-
-.score-panel > span {
-    font-size: 30px;
-}
-
-.playing-area {
-    flex: 1;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-}
-
-.playing-message {
-    opacity: 0.5;
-
-    font-size: 20px;
-}
-
-.player-hand {
-    display: flex;
-
-    justify-content: center;
-
-    gap: 8px;
-
-    min-height: 160px;
-}
-
-.playing-card {
-    width: 100px;
-    height: 140px;
-
-    background: #f5f5f5;
-
-    border-radius: 10px;
-
-    border: 3px solid white;
-
-    color: black;
-
+.jokers-container-wrapper,
+.consumables-container-wrapper {
     display: flex;
     flex-direction: column;
+    gap: 4px;
+}
 
+.jokers-slots-box,
+.consumables-slots-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.joker-slot,
+.consumable-slot {
+    width: 80px;
+    height: 110px;
+    border-radius: 8px;
+    position: relative;
+    display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
+}
 
-    font-size: 40px;
-    font-weight: bold;
+.joker-slot.empty,
+.consumable-slot.empty {
+    background: rgba(0, 0, 0, 0.24);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
 
-    box-shadow:
-            0 10px 20px rgba(0, 0, 0, 0.4);
-
+.card-item-hover {
     cursor: pointer;
-
-    transition: transform 0.15s;
+    transition: transform 0.15s ease, filter 0.15s ease;
+    border-radius: 6px;
+    overflow: hidden;
 }
 
-.playing-card.red {
-    color: #e63232;
+.card-item-hover:hover {
+    transform: translateY(-8px) scale(1.05);
+    filter: brightness(1.1);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
 }
 
-.playing-card:hover {
-    transform: translateY(-25px) rotate(-2deg);
+.slot-counter-text {
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.5px;
+    padding-left: 2px;
+}
+
+.slot-counter-text.align-right {
+    text-align: right;
+    padding-right: 2px;
+}
+
+/* =========================================
+   2. MIDDLE AREA (PLAYER HAND)
+========================================= */
+.game-hand-area {
+    margin: auto 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+/* =========================================
+   3. BOTTOM ACTIONS (PLAY / SORT / DISCARD)
+========================================= */
+.game-actions-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.hand-cards-counter {
+    font-size: 14px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.5px;
 }
 
 .game-actions {
     display: flex;
-
+    align-items: center;
     justify-content: center;
-
-    gap: 15px;
-
-    margin-top: 15px;
+    gap: 12px;
 }
 
-.game-actions button {
+.action-btn {
     border: none;
-
-    padding: 15px 30px;
-
-    border-radius: 10px;
-
-    font-weight: bold;
-
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-size: 18px;
+    font-weight: 900;
     cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.1s ease, filter 0.15s ease;
 }
 
-.play-button {
+.action-btn.play-button.active {
     background: #23a8ff;
-
     color: white;
+    box-shadow: 0 4px 0 #0072bc, 0 6px 12px rgba(0, 0, 0, 0.35);
 }
 
-.discard-button {
-    background: #ff4747;
-
-    color: white;
+.action-btn.play-button.disabled {
+    background: #253336;
+    color: #586c70;
+    cursor: not-allowed;
+    box-shadow: 0 3px 0 #182224;
 }
 
-.debug-lose {
-    background: #222;
-
+.action-btn.discard-button.active {
+    background: #fe4747;
     color: white;
+    box-shadow: 0 4px 0 #b32a2a, 0 6px 12px rgba(0, 0, 0, 0.35);
+}
+
+.action-btn.discard-button.disabled {
+    background: #253336;
+    color: #586c70;
+    cursor: not-allowed;
+    box-shadow: 0 3px 0 #182224;
+}
+
+.action-btn:active:not(.disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Sort Hand Box */
+.sort-hand-container {
+    background: #182326;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    padding: 4px 8px 6px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 4px 0 #101819;
+}
+
+.sort-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.sort-buttons-row {
+    display: flex;
+    gap: 6px;
+}
+
+.sort-btn {
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    color: white;
+    font-family: inherit;
+    transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.sort-btn:hover {
+    filter: brightness(1.1);
+}
+
+.sort-btn:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+.rank-btn {
+    background: #ff9d00;
+    box-shadow: 0 2px 0 #b86e00;
+}
+
+.suit-btn {
+    background: #e5a400;
+    box-shadow: 0 2px 0 #a37500;
 }
 
 /* =========================================
-   DECK COUNTER & CARD STACK (BOTTOM RIGHT)
+   4. DECK COUNTER (BOTTOM RIGHT)
 ========================================= */
 .game-deck-area {
     position: absolute;
@@ -166,6 +241,7 @@
     gap: 6px;
     user-select: none;
     z-index: 10;
+    cursor: pointer;
 }
 
 .peek-deck-label {
@@ -225,4 +301,5 @@
     letter-spacing: 0.5px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     margin-top: 2px;
-}
+}
+
