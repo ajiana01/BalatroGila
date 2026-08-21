@@ -1,10 +1,38 @@
-﻿.player-hand {
+.player-hand-container {
     display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    overflow: visible;
+}
 
+.player-hand {
+    display: flex;
     justify-content: center;
     align-items: flex-end;
-
-    gap: 8px;
-
-    min-height: 160px;
+    gap: 12px;
+    min-height: 180px;
+    padding: 20px 10px 10px 10px;
+    list-style: none;
+    margin: 0;
+    user-select: none;
+    touch-action: none;
 }
+
+.player-card-item {
+    cursor: grab;
+    list-style: none;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    transition: filter 0.2s ease;
+}
+
+.player-card-item:active {
+    cursor: grabbing;
+}
+
+.player-card-item.selected {
+    filter: drop-shadow(0 0 12px rgba(255, 204, 0, 0.75)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+}
