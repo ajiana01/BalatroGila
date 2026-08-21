@@ -1,0 +1,191 @@
+﻿.game-sidebar {
+    width: 280px;
+    min-width: 280px;
+
+    height: 100%;
+
+    padding: 24px;
+
+    box-sizing: border-box;
+
+    background: rgba(20, 30, 32, 0.85);
+
+    border-right: 4px solid rgba(0, 0, 0, 0.3);
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 14px;
+}
+
+.sidebar-title {
+    font-size: 27px;
+    font-weight: 800;
+
+    text-align: center;
+
+    margin-bottom: 20px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.round-score {
+    background: #20292b;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 18px;
+}
+
+.round-score strong {
+    margin-left: auto;
+    font-size: 25px;
+}
+
+.score-multiplier {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+.score-number {
+    background: #0099ff;
+
+    padding: 15px 30px;
+
+    border-radius: 10px;
+
+    font-size: 34px;
+    font-weight: bold;
+}
+
+.score-number.red {
+    background: #ff4141;
+}
+
+.score-multiplier > span {
+    font-size: 35px;
+    font-weight: bold;
+}
+
+.sidebar-stats {
+    display: flex;
+    gap: 10px;
+}
+
+.stat {
+    flex: 1;
+
+    background: #20292b;
+
+    padding: 12px;
+
+    border-radius: 10px;
+
+    text-align: center;
+}
+
+.stat span {
+    display: block;
+
+    font-size: 14px;
+}
+
+.stat strong {
+    display: block;
+
+    margin-top: 4px;
+
+    font-size: 28px;
+}
+
+.money {
+    background: #20292b;
+
+    border-radius: 10px;
+
+    padding: 12px;
+
+    text-align: center;
+
+    font-size: 32px;
+    font-weight: bold;
+
+    color: #ffd43b;
+}
+
+.sidebar-buttons {
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.sidebar-button {
+    border: none;
+
+    padding: 18px;
+
+    border-radius: 10px;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    color: white;
+}
+
+.sidebar-button.red {
+    background: #ff4848;
+}
+
+.sidebar-button.orange {
+    background: #ff9d00;
+}
+
+.ante-info {
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: auto;
+}
+
+.ante-info > div {
+    flex: 1;
+
+    background: #20292b;
+
+    padding: 10px;
+
+    border-radius: 10px;
+
+    text-align: center;
+}
+
+.ante-info span {
+    display: block;
+
+    font-size: 13px;
+}
+
+.ante-info strong {
+    display: block;
+
+    font-size: 24px;
+
+    color: #ffad00;
+}

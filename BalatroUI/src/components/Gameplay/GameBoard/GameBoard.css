@@ -1,0 +1,153 @@
+﻿.game-board {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+}
+
+.game-main {
+    flex: 1;
+
+    position: relative;
+
+    padding: 30px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.score-panel {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 20px;
+
+    font-size: 18px;
+}
+
+.score-panel div {
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    background: rgba(0, 0, 0, 0.35);
+
+    padding: 10px 30px;
+
+    border-radius: 10px;
+}
+
+.score-panel strong {
+    font-size: 30px;
+
+    color: #ffd43b;
+}
+
+.score-panel > span {
+    font-size: 30px;
+}
+
+.playing-area {
+    flex: 1;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+.playing-message {
+    opacity: 0.5;
+
+    font-size: 20px;
+}
+
+.player-hand {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 160px;
+}
+
+.playing-card {
+    width: 100px;
+    height: 140px;
+
+    background: #f5f5f5;
+
+    border-radius: 10px;
+
+    border: 3px solid white;
+
+    color: black;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 40px;
+    font-weight: bold;
+
+    box-shadow:
+            0 10px 20px rgba(0, 0, 0, 0.4);
+
+    cursor: pointer;
+
+    transition: transform 0.15s;
+}
+
+.playing-card.red {
+    color: #e63232;
+}
+
+.playing-card:hover {
+    transform: translateY(-25px) rotate(-2deg);
+}
+
+.game-actions {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 15px;
+
+    margin-top: 15px;
+}
+
+.game-actions button {
+    border: none;
+
+    padding: 15px 30px;
+
+    border-radius: 10px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.play-button {
+    background: #23a8ff;
+
+    color: white;
+}
+
+.discard-button {
+    background: #ff4747;
+
+    color: white;
+}
+
+.debug-lose {
+    background: #222;
+
+    color: white;
+}

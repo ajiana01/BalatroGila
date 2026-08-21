@@ -1,0 +1,255 @@
+﻿.blind-selection {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+}
+
+.blind-content {
+    position: relative;
+
+    flex: 1;
+
+    padding: 40px;
+
+    overflow: hidden;
+}
+
+.blind-counter {
+    position: absolute;
+
+    top: 30px;
+    left: 30px;
+
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.blind-cards {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 35px;
+}
+
+.blind-card {
+    width: 250px;
+    min-height: 510px;
+
+    padding: 14px;
+
+    box-sizing: border-box;
+
+    border-radius: 18px;
+
+    background:
+            linear-gradient(
+                    180deg,
+                    #28363a,
+                    #172326
+            );
+
+    border: 4px solid #4b575a;
+
+    box-shadow:
+            0 15px 30px rgba(0, 0, 0, 0.35);
+
+    text-align: center;
+
+    transition:
+            transform 0.2s,
+            filter 0.2s;
+}
+
+.blind-card.active:hover {
+    transform: translateY(-12px);
+}
+
+.blind-card.disabled {
+    filter: brightness(0.55);
+}
+
+.blind-card.small {
+    border-color: #008cff;
+}
+
+.blind-card.big {
+    border-color: #e5a400;
+}
+
+.blind-card.boss {
+    border-color: #d94e9d;
+}
+
+.blind-card-header {
+    padding: 10px;
+
+    border-radius: 10px;
+
+    background: #222c2f;
+
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.small .blind-card-header {
+    background: #008cff;
+}
+
+.big .blind-card-title {
+    color: #e5a400;
+}
+
+.boss .blind-card-title {
+    color: #d94e9d;
+}
+
+.blind-card-title {
+    margin-top: 15px;
+
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.blind-icon {
+    width: 90px;
+    height: 90px;
+
+    margin: 25px auto;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 40px;
+
+    background: #526166;
+}
+
+.small .blind-icon {
+    background: #4a69c7;
+}
+
+.big .blind-icon {
+    background: #c69227;
+}
+
+.boss .blind-icon {
+    background: #9a4c84;
+}
+
+.blind-description {
+    min-height: 50px;
+
+    font-size: 15px;
+}
+
+.blind-score {
+    margin-top: 25px;
+
+    font-size: 16px;
+}
+
+.blind-score strong {
+    display: block;
+
+    margin-top: 5px;
+
+    font-size: 35px;
+
+    color: #ff4a4a;
+}
+
+.blind-reward {
+    margin-top: 10px;
+
+    font-size: 16px;
+
+    color: #ffd43b;
+}
+
+.blind-actions {
+    margin-top: 35px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.blind-actions button {
+    border: none;
+
+    padding: 14px;
+
+    border-radius: 10px;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.select-button {
+    background: #ff4a4a;
+
+    color: white;
+}
+
+.skip-button {
+    background: #ff4949;
+
+    color: white;
+}
+
+.deck-counter {
+    position: absolute;
+
+    right: 40px;
+    bottom: 35px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 5px;
+}
+
+.deck-card {
+    width: 100px;
+    height: 140px;
+
+    border-radius: 10px;
+
+    border: 6px solid white;
+
+    background:
+            repeating-linear-gradient(
+                    45deg,
+                    #e42e2e,
+                    #e42e2e 6px,
+                    white 6px,
+                    white 10px
+            );
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 60px;
+
+    color: white;
+}
+
+.deck-counter strong {
+    font-size: 16px;
+}
