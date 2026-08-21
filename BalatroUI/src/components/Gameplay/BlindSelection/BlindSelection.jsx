@@ -6,13 +6,16 @@ import './BlindSelection.css';
 function BlindSelection({
                             gameData,
                             onSelectBlind,
-                            onSkipBlind
+                            onSkipBlind,
+                            onOpenSettings
                         }) {
 
     return (
         <div className="blind-selection">
 
-            <GameSidebar gameData={gameData} />
+            <GameSidebar gameData={gameData}
+                         onOpenSettings={onOpenSettings}
+            />
 
             <section className="blind-content">
 

@@ -8,13 +8,15 @@ import './GameBoard.css';
 function GameBoard({
                        gameData,
                        onWin,
-                       onLose
+                       onLose,
+                       onOpenSettings
                    }) {
 
     return (
         <div className="game-board">
 
-            <GameSidebar gameData={gameData} />
+            <GameSidebar gameData={gameData}
+                         onOpenSettings={onOpenSettings} />
 
             <section className="game-main">
 

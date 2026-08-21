@@ -10,7 +10,6 @@ import Shop from '../components/Gameplay/Shop/Shop.jsx';
 import GameOver from '../components/Gameplay/GameOver/GameOver.jsx';
 import WinOver from '../components/Gameplay/WinOver/WinOver.jsx';
 
-
 function Gameplay() {
 
     const navigate = useNavigate();
@@ -111,14 +110,12 @@ function Gameplay() {
 
     function handleLeaveShop() {
 
-        // Jika sudah menyelesaikan Ante terakhir
         if (gameData.ante >= 8) {
 
             setGameState(GAME_STATE.WIN_OVER);
 
             return;
         }
-
 
         setGameData(prev => ({
             ...prev,
@@ -209,38 +206,7 @@ function Gameplay() {
             >
 
                 {/* =================================
-                    SETTINGS BUTTON
-                ================================== */}
-
-                <button
-                    onClick={() => setShowSettings(true)}
-                    style={{
-                        position: 'fixed',
-                        top: '20px',
-                        right: '20px',
-
-                        zIndex: 100,
-
-                        fontSize: '24px',
-                        padding: '10px 15px',
-
-                        cursor: 'pointer',
-
-                        borderRadius: '8px',
-                        border: '1px solid white',
-
-                        color: 'white',
-
-                        backgroundColor:
-                            'rgba(0, 0, 0, 0.6)'
-                    }}
-                >
-                    ⚙️
-                </button>
-
-
-                {/* =================================
-                    GAME STATE
+                    CURRENT GAME STATE
                 ================================== */}
 
                 {gameState === GAME_STATE.BLIND_SELECTION && (
@@ -249,6 +215,7 @@ function Gameplay() {
                         gameData={gameData}
                         onSelectBlind={handleSelectBlind}
                         onSkipBlind={handleSkipBlind}
+                        onOpenSettings={() => setShowSettings(true)}
                     />
 
                 )}
@@ -260,6 +227,7 @@ function Gameplay() {
                         gameData={gameData}
                         onWin={handleRoundWin}
                         onLose={handleRoundLose}
+                        onOpenSettings={() => setShowSettings(true)}
                     />
 
                 )}
@@ -349,8 +317,6 @@ function Gameplay() {
                         </h2>
 
 
-                        {/* MAIN MENU */}
-
                         <button
                             onClick={() => navigate('/')}
                             style={{
@@ -369,8 +335,6 @@ function Gameplay() {
                             MAIN MENU
                         </button>
 
-
-                        {/* BACK TO GAME */}
 
                         <button
                             onClick={() => setShowSettings(false)}

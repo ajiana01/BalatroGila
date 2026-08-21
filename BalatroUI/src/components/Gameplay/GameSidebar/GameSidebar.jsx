@@ -1,6 +1,6 @@
 ﻿import './GameSidebar.css';
 
-function GameSidebar({ gameData }) {
+function GameSidebar({ gameData, onOpenSettings }) {
 
     return (
         <aside className="game-sidebar">
@@ -57,7 +57,9 @@ function GameSidebar({ gameData }) {
                     Run Info
                 </button>
 
-                <button className="sidebar-button orange">
+                <button className="sidebar-button orange"
+                        onClick={onOpenSettings}
+                >
                     Options
                 </button>
 
