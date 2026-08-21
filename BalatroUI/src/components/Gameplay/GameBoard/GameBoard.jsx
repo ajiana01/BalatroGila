@@ -1,8 +1,8 @@
-﻿import GameSidebar from '../GameSidebar/GameSidebar';
+import GameSidebar from '../GameSidebar/GameSidebar';
 import ScorePanel from './ScorePanel';
 import PlayingArea from './PlayingArea';
 import PlayerHand from './PlayerHand';
-
+import CardBack from '../../CardBack/CardBack';
 import './GameBoard.css';
 
 function GameBoard({
@@ -15,8 +15,11 @@ function GameBoard({
     return (
         <div className="game-board">
 
-            <GameSidebar gameData={gameData}
-                         onOpenSettings={onOpenSettings} />
+            <GameSidebar
+                gameData={gameData}
+                onOpenSettings={onOpenSettings}
+                isBlindSelection={false}
+            />
 
             <section className="game-main">
 
@@ -49,6 +52,29 @@ function GameBoard({
                         Debug Lose
                     </button>
 
+                </div>
+
+                {/* Deck Counter Area on bottom right */}
+                <div className="game-deck-area">
+                    <div className="peek-deck-label">
+                        <span>PEEK</span>
+                        <span>DECK</span>
+                        <div className="deck-key-hint">LT</div>
+                    </div>
+
+                    <div className="deck-card-stack">
+                        <div className="deck-card-visual">
+                            <CardBack
+                                type="BackNormal"
+                                width={84}
+                                height={118}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="deck-count-text">
+                        {gameData.deckRemaining || 52}/52
+                    </div>
                 </div>
 
             </section>

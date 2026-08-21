@@ -1,4 +1,4 @@
-﻿import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 import Balatro from '../components/BalatroBackground/BalatroBackground.jsx';
@@ -47,7 +47,8 @@ function Gameplay() {
         money: 4,
 
         ante: 1,
-        round: 0,
+        round: 1,
+        blindIndex: 0, // 0: Small Blind, 1: Big Blind, 2: Boss Blind
 
         score: 0,
         targetScore: 300,
@@ -55,7 +56,20 @@ function Gameplay() {
         hands: 4,
         discards: 4,
 
-        deckRemaining: 52
+        deckRemaining: 52,
+
+        currentBlind: {
+            type: 'small',
+            blind: 'SmallBlind',
+            title: 'Small Blind',
+            score: 300,
+            reward: '$$$+'
+        },
+
+        currentHandName: 'Flush',
+        currentHandLevel: 1,
+        currentHandChips: 73,
+        currentHandMult: 4
     });
 
 
@@ -63,11 +77,24 @@ function Gameplay() {
     // GAME FLOW
     // =========================
 
-    function handleSelectBlind() {
+    function handleSelectBlind(selectedBlind) {
+        const blind = selectedBlind || {
+            type: 'small',
+            blind: 'SmallBlind',
+            title: 'Small Blind',
+            score: 300,
+            reward: '$$$+'
+        };
+
+        const target = typeof blind.score === 'number' ? blind.score : parseInt(blind.score, 10) || 300;
 
         setGameData(prev => ({
             ...prev,
-            round: prev.round + 1
+            score: 0,
+            hands: 4,
+            discards: 4,
+            targetScore: target,
+            currentBlind: blind
         }));
 
         setGameState(GAME_STATE.GAMEPLAY);
@@ -110,25 +137,34 @@ function Gameplay() {
 
     function handleLeaveShop() {
 
-        if (gameData.ante >= 8) {
+        if (gameData.blindIndex >= 2) {
+            // Completed the Boss Blind of current Ante
+            if (gameData.ante >= 8) {
+                setGameState(GAME_STATE.WIN_OVER);
+                return;
+            }
 
-            setGameState(GAME_STATE.WIN_OVER);
-
-            return;
+            // Move to next Ante
+            setGameData(prev => ({
+                ...prev,
+                ante: prev.ante + 1,
+                round: prev.round + 1,
+                blindIndex: 0,
+                score: 0,
+                hands: 4,
+                discards: 4
+            }));
+        } else {
+            // Move to next Blind in current Ante
+            setGameData(prev => ({
+                ...prev,
+                round: prev.round + 1,
+                blindIndex: prev.blindIndex + 1,
+                score: 0,
+                hands: 4,
+                discards: 4
+            }));
         }
-
-        setGameData(prev => ({
-            ...prev,
-
-            ante: prev.ante + 1,
-            round: 0,
-
-            score: 0,
-            targetScore: 300,
-
-            hands: 4,
-            discards: 4
-        }));
 
         setGameState(GAME_STATE.BLIND_SELECTION);
     }
@@ -140,7 +176,8 @@ function Gameplay() {
             money: 4,
 
             ante: 1,
-            round: 0,
+            round: 1,
+            blindIndex: 0,
 
             score: 0,
             targetScore: 300,
@@ -148,7 +185,20 @@ function Gameplay() {
             hands: 4,
             discards: 4,
 
-            deckRemaining: 52
+            deckRemaining: 52,
+
+            currentBlind: {
+                type: 'small',
+                blind: 'SmallBlind',
+                title: 'Small Blind',
+                score: 300,
+                reward: '$$$+'
+            },
+
+            currentHandName: 'Flush',
+            currentHandLevel: 1,
+            currentHandChips: 73,
+            currentHandMult: 4
         });
 
         setGameState(GAME_STATE.BLIND_SELECTION);
@@ -160,6 +210,8 @@ function Gameplay() {
         <div
             style={{
                 position: 'relative',
+                width: '100vw',
+                height: '100vh',
                 minHeight: '100vh',
                 overflow: 'hidden',
                 color: 'white'
@@ -201,7 +253,9 @@ function Gameplay() {
             <div
                 style={{
                     position: 'relative',
-                    minHeight: '100vh'
+                    width: '100%',
+                    height: '100%',
+                    overflow: 'hidden'
                 }}
             >
 

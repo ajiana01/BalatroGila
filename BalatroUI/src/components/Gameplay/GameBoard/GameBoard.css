@@ -1,19 +1,20 @@
-﻿.game-board {
+.game-board {
     width: 100%;
-    height: 100%;
-
+    height: 100vh;
+    min-height: 100vh;
     display: flex;
+    overflow: hidden;
 }
 
 .game-main {
     flex: 1;
-
     position: relative;
-
-    padding: 30px;
-
+    padding: 24px 30px;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .score-panel {
@@ -151,3 +152,77 @@
 
     color: white;
 }
+
+/* =========================================
+   DECK COUNTER & CARD STACK (BOTTOM RIGHT)
+========================================= */
+.game-deck-area {
+    position: absolute;
+    right: 36px;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    z-index: 10;
+}
+
+.peek-deck-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.1;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.deck-key-hint {
+    margin-top: 3px;
+    background: #162022;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 900;
+    color: #d1dbe0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.deck-card-stack {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.deck-card-stack:hover {
+    transform: translateY(-4px) scale(1.03);
+    filter: brightness(1.08);
+}
+
+.deck-card-visual {
+    border-radius: 8px;
+    border: 3px solid #ffffff;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow:
+        -2px 2px 0 #cccccc,
+        -4px 4px 0 #aaaaaa,
+        -6px 6px 0 #777777,
+        -8px 8px 16px rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.deck-count-text {
+    font-size: 16px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    margin-top: 2px;
+}
