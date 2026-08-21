@@ -1,0 +1,10 @@
+﻿.player-hand {
+    display: flex;
+
+    justify-content: center;
+    align-items: flex-end;
+
+    gap: 8px;
+
+    min-height: 160px;
+}

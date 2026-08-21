@@ -1,9 +1,12 @@
-﻿const cards = [
-    { suit: '♠', rank: 'A', red: false },
-    { suit: '♥', rank: 'K', red: true },
-    { suit: '♦', rank: '7', red: true },
-    { suit: '♣', rank: 'Q', red: false },
-    { suit: '♥', rank: '3', red: true },
+﻿import PlayingCard from '../../PlayingCard/PlayingCard';
+import './PlayerHand.css';
+
+const cards = [
+    { suit: 'Spades', rank: 'A' },
+    { suit: 'Hearts', rank: 'K' },
+    { suit: 'Diamonds', rank: '7' },
+    { suit: 'Clubs', rank: 'Q' },
+    { suit: 'Hearts', rank: '3' }
 ];
 
 function PlayerHand() {
@@ -13,22 +16,13 @@ function PlayerHand() {
 
             {cards.map((card, index) => (
 
-                <div
+                <PlayingCard
                     key={index}
-                    className={`playing-card ${
-                        card.red ? 'red' : ''
-                    }`}
-                >
-
-                    <span>
-                        {card.rank}
-                    </span>
-
-                    <span>
-                        {card.suit}
-                    </span>
-
-                </div>
+                    suit={card.suit}
+                    rank={card.rank}
+                    width={100}
+                    height={140}
+                />
 
             ))}
 
