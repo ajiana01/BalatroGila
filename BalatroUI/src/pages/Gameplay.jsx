@@ -137,11 +137,12 @@ function Gameplay() {
     }
 
 
-    function handleCashout() {
+    function handleCashout(earnedAmount) {
+        const amount = typeof earnedAmount === 'number' ? earnedAmount : 4;
 
         setGameData(prev => ({
             ...prev,
-            money: prev.money + 4
+            money: prev.money + amount
         }));
 
         setGameState(GAME_STATE.SHOP);
@@ -318,6 +319,7 @@ function Gameplay() {
                     <Cashout
                         gameData={gameData}
                         onContinue={handleCashout}
+                        onOpenSettings={() => setShowSettings(true)}
                     />
 
                 )}

@@ -1,68 +1,172 @@
-﻿.cashout {
+.cashout-screen {
     width: 100%;
-    height: 100%;
-
+    height: 100vh;
+    min-height: 100vh;
     display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    background: rgba(0, 0, 0, 0.4);
+    overflow: hidden;
 }
 
-.cashout-panel {
-    width: 450px;
-
-    padding: 50px;
-
-    border-radius: 20px;
-
-    background: #202a2d;
-
-    text-align: center;
-
-    box-shadow:
-            0 20px 50px rgba(0, 0, 0, 0.5);
-}
-
-.cashout-panel h1 {
-    margin-bottom: 30px;
-}
-
-.cashout-score {
+.cashout-main {
+    flex: 1;
+    position: relative;
+    padding: 20px 30px;
     display: flex;
     flex-direction: column;
-
-    gap: 5px;
+    justify-content: space-between;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    user-select: none;
+    font-family: 'Balatro', sans-serif;
 }
 
-.cashout-score strong {
-    font-size: 55px;
-
-    color: #ffd43b;
+/* =========================================
+   1. TOP AREA (JOKERS + CONSUMABLES)
+========================================= */
+.cashout-top-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding-top: 4px;
 }
 
-.cashout-reward {
-    margin: 30px;
-
-    font-size: 35px;
-
-    color: #4cff83;
+/* =========================================
+   2. CENTER: CASHOUT DIALOGUE BOX
+========================================= */
+.cashout-center-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: auto 0;
 }
 
-.cashout-panel button {
-    border: none;
+.cashout-box {
+    background: #1d272a;
+    border: 3px solid #334448;
+    border-radius: 16px;
+    width: 530px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.75),
+        inset 0 2px 4px rgba(255, 255, 255, 0.06);
+    position: relative;
+}
 
-    padding: 15px 50px;
-
-    border-radius: 10px;
-
-    background: #ff9d00;
-
-    color: white;
-
-    font-size: 20px;
-    font-weight: bold;
-
+.cashout-btn-header {
+    background: #ff9800;
+    border: 3px solid #ffa726;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 28px;
+    font-weight: 900;
+    color: #ffffff;
     cursor: pointer;
+    font-family: inherit;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 5px 0 #b36b00, 0 8px 16px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s ease, filter 0.15s ease;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.cashout-btn-header:hover {
+    filter: brightness(1.12);
+    transform: translateY(-2px);
+}
+
+.cashout-btn-header:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #b36b00;
+}
+
+.cashout-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 2px 4px;
+}
+
+/* Blind Row */
+.cashout-blind-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cashout-row-center {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.row-sub-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+}
+
+.row-target-score {
+    font-size: 24px;
+    font-weight: 900;
+    color: #fe4747;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chip-token {
+    font-size: 22px;
+    color: #ffffff;
+}
+
+.cashout-row-reward {
+    font-size: 22px;
+    font-weight: 900;
+    color: #ffd43b;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    min-width: 48px;
+    text-align: right;
+}
+
+.cashout-divider {
+    border-bottom: 2px dotted rgba(255, 255, 255, 0.25);
+    margin: 2px 0;
+}
+
+/* Item Rows */
+.row-stat-num {
+    font-size: 22px;
+    font-weight: 900;
+    min-width: 28px;
+    text-align: center;
+}
+
+.row-stat-num.hands-num {
+    color: #23a8ff;
+}
+
+.row-stat-num.interest-num {
+    color: #ff9800;
+}
+
+.cashout-row-text {
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
+    flex: 1;
+    letter-spacing: 0.3px;
 }
