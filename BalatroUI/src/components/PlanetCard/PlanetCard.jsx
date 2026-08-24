@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import Sprite from '../Sprite/Sprite';
 import CardActionTabs from '../CardActionTabs/CardActionTabs';
 import { planetSprite } from '../../data/sprites/planetSprites';
+import { getCardInfo } from '../../data/shopData';
 import './PlanetCard.css';
 
 function PlanetCard({
@@ -12,9 +14,12 @@ function PlanetCard({
     onSelect,
     onSell,
     onUse,
-    sellPrice = 1
+    sellPrice = 1,
+    showHoverTooltip = true
 }) {
+    const [isHovered, setIsHovered] = useState(false);
     const planetData = planetSprite.planets[planet];
+    const info = getCardInfo(planet, 'planet');
 
     if (!planetData) {
         console.error(`Planet Card tidak ditemukan: ${planet}`);
@@ -25,6 +30,8 @@ function PlanetCard({
         <div
             className={`planet-card-container ${isSelected ? 'selected' : ''}`}
             onClick={onSelect}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             style={{ width: `${width}px`, height: `${height}px` }}
         >
             <Sprite
@@ -35,6 +42,17 @@ function PlanetCard({
                 height={height}
                 animated={animated}
             />
+
+            {/* Hover Floating Tooltip */}
+            {showHoverTooltip && isHovered && !isSelected && (
+                <div className="card-floating-tooltip">
+                    <div className="card-floating-title">{info.title}</div>
+                    <div className="card-floating-description">{info.description}</div>
+                    <div className="card-floating-rarity rarity-planet">
+                        Planet
+                    </div>
+                </div>
+            )}
 
             {isSelected && (
                 <CardActionTabs
@@ -48,4 +66,4 @@ function PlanetCard({
     );
 }
 
-export default PlanetCard;
+export default PlanetCard;

@@ -1,4 +1,4 @@
-﻿import image from '../../assets/Balatro-BoosterPacks.png';
+import image from '../../assets/Balatro-BoosterPacks.png';
 
 export const boosterPackSprite = {
     image,
@@ -87,7 +87,7 @@ export const boosterPackSprite = {
 
     Spectral_Mega: {
         1: { column: 3, row: 4 },
-    }
+    },
 
     Blank: {
         1: { column: 0, row: 5 },

@@ -330,6 +330,7 @@ function Gameplay() {
                     <Shop
                         gameData={gameData}
                         onContinue={handleLeaveShop}
+                        onOpenSettings={() => setShowSettings(true)}
                     />
 
                 )}

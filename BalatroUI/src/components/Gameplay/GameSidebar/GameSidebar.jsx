@@ -32,7 +32,7 @@ function RunInfoIcon() {
     );
 }
 
-function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false }) {
+function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isShop = false }) {
     const blind = gameData?.currentBlind || {
         type: 'big',
         title: 'Big Blind',
@@ -48,8 +48,29 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false }) {
 
     return (
         <aside className="game-sidebar">
-            {/* TOP SECTION: Choose Blind OR Active Blind */}
-            {isBlindSelection ? (
+            {/* TOP SECTION: Shop Marquee OR Choose Blind OR Active Blind */}
+            {isShop ? (
+                <div className="sidebar-shop-marquee-box">
+                    <div className="shop-marquee-frame">
+                        <div className="shop-marquee-border-lights">
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                            <span className="light-dot"></span>
+                        </div>
+                        <div className="shop-marquee-title">SHOP</div>
+                    </div>
+                    <div className="shop-marquee-subtitle">Improve your run!</div>
+                </div>
+            ) : isBlindSelection ? (
                 <div className="sidebar-blind-section selection-mode">
                     <div className="sidebar-selection-title">
                         <span>Choose your</span>
@@ -88,25 +109,27 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false }) {
 
                 <div className="round-score-value">
                     <PokerChipIcon />
-                    <strong>{gameData.score}</strong>
+                    <strong>{isShop ? 0 : (gameData.score || 0)}</strong>
                 </div>
             </div>
 
             {/* POKER HAND & MULTIPLIER */}
-            <div className="sidebar-box hand-eval-box">
-                <div className="hand-name-lvl">
-                    {gameData.currentHandName || 'Flush'} <span className="hand-lvl">lvl.{gameData.currentHandLevel || 1}</span>
-                </div>
+            <div className={`sidebar-box hand-eval-box ${isShop ? 'shop-eval-box' : ''}`}>
+                {!isShop && (
+                    <div className="hand-name-lvl">
+                        {gameData.currentHandName || 'Flush'} <span className="hand-lvl">lvl.{gameData.currentHandLevel || 1}</span>
+                    </div>
+                )}
 
                 <div className="chips-mult-row">
                     <div className="chips-box">
-                        {gameData.currentHandChips || 73}
+                        {isShop ? 0 : (gameData.currentHandChips || 73)}
                     </div>
 
                     <span className="mult-sign">X</span>
 
                     <div className="mult-box">
-                        {gameData.currentHandMult || 4}
+                        {isShop ? 0 : (gameData.currentHandMult || 4)}
                     </div>
                 </div>
             </div>

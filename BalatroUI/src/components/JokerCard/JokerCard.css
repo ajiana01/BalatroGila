@@ -12,3 +12,92 @@
     filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.45));
     z-index: 40;
 }
+
+/* Card Floating Hover Tooltip */
+.card-floating-tooltip {
+    position: absolute;
+    top: 100%;
+    margin-top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 170px;
+    background: #2b383b;
+    border: 2px solid #8e9a9d;
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    animation: tooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+    from { opacity: 0; transform: translate(-50%, -4px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.card-floating-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1.2;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.card-floating-description {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #cfd8dc;
+    line-height: 1.3;
+}
+
+.card-floating-rarity {
+    padding: 2px 10px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: white;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+.rarity-rare {
+    background: #fe4747;
+    border: 1px solid #ff7b7b;
+}
+
+.rarity-uncommon {
+    background: #3ec476;
+    border: 1px solid #6ee39b;
+}
+
+.rarity-common {
+    background: #0094ff;
+    border: 1px solid #54b8ff;
+}
+
+.rarity-tarot {
+    background: #9c2168;
+    border: 1px solid #d8398b;
+}
+
+.rarity-planet {
+    background: #00b4d8;
+    border: 1px solid #72ddf7;
+}
+
+.rarity-voucher {
+    background: #df9725;
+    border: 1px solid #ffc266;
+}
+
+.rarity-booster {
+    background: #b545d6;
+    border: 1px solid #d47af0;
+}

@@ -1,54 +1,618 @@
-﻿import ShopItem from './ShopItem';
-
+import { useState } from 'react';
+import GameSidebar from '../GameSidebar/GameSidebar';
+import JokerCard from '../../JokerCard/JokerCard';
+import TarotCard from '../../TarotCard/TarotCard';
+import PlanetCard from '../../PlanetCard/PlanetCard';
+import PlayingCard from '../../PlayingCard/PlayingCard';
+import Voucher from '../../Voucher/Voucher';
+import BoosterPack from '../../BoosterPacks/BoosterPacks';
+import CardBack from '../../CardBack/CardBack';
+import DeckViewModal from '../GameBoard/DeckViewModal';
+import { generateShopCards, getAnteVoucher, generateBoosterPacks, SHOP_JOKERS } from '../../../data/shopData';
 import './Shop.css';
 
+const defaultJokers = [
+    { id: 'ScaryFace', title: 'Scary Face', sellPrice: 2 }
+];
+
+const defaultConsumables = [
+    { type: 'tarot', id: 'TheSun', title: 'The Sun', sellPrice: 1 }
+];
+
 function Shop({
-                  gameData,
-                  onContinue
-              }) {
+    gameData,
+    onContinue,
+    onOpenSettings
+}) {
+    // Money state synchronized with gameData
+    const [money, setMoney] = useState(gameData?.money ?? 10);
+
+    // Deck peek modal state
+    const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
+
+    // Jokers & Consumables inventory
+    const maxJokers = gameData?.maxJokers || 5;
+    const [jokers, setJokers] = useState(gameData?.jokers || defaultJokers);
+
+    const maxConsumables = gameData?.maxConsumables || 2;
+    const [consumables, setConsumables] = useState(gameData?.consumables || defaultConsumables);
+
+    // Active selected slot in top container (for selling/using)
+    const [activeSlot, setActiveSlot] = useState(null);
+
+    // Reroll cost state (starts at $5)
+    const [rerollCost, setRerollCost] = useState(5);
+
+    // Shop Cards (default 2 cards, starting with Ancient Joker and another item)
+    const [shopCards, setShopCards] = useState(() => {
+        const initial = generateShopCards(2);
+        // Ensure first card is Ancient Joker like screenshot if available
+        const ancientJoker = SHOP_JOKERS.find(j => j.id === 'AncientJoker') || SHOP_JOKERS[0];
+        initial[0] = {
+            slotId: `shop-joker-init-0`,
+            type: 'joker',
+            id: ancientJoker.id,
+            title: ancientJoker.title,
+            rarity: ancientJoker.rarity,
+            price: ancientJoker.price,
+            description: ancientJoker.description
+        };
+        return initial;
+    });
+
+    // Active tooltip item shown in the description box (null when not hovering)
+    const [activeTooltipItem, setActiveTooltipItem] = useState(null);
+
+    // Ante Voucher
+    const currentAnte = gameData?.ante || 2;
+    const [voucher] = useState(() => getAnteVoucher(currentAnte));
+    const [isVoucherPurchased, setIsVoucherPurchased] = useState(false);
+
+    // Booster packs
+    const [boosterPacks] = useState(() => generateBoosterPacks());
+    const [purchasedBoosters, setPurchasedBoosters] = useState([]);
+
+    // Toast message for feedback
+    const [toastMessage, setToastMessage] = useState('');
+
+    const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => {
+            setToastMessage('');
+        }, 2000);
+    };
+
+    // Update player money
+    const updateMoney = (newAmount) => {
+        setMoney(newAmount);
+        if (gameData) {
+            gameData.money = newAmount;
+        }
+    };
+
+    // =========================================
+    // TOP BAR INTERACTIONS (SELL / USE)
+    // =========================================
+    const handleToggleJoker = (index) => {
+        setActiveSlot(prev => {
+            if (prev?.type === 'joker' && prev.index === index) {
+                return null;
+            }
+            return { type: 'joker', index };
+        });
+    };
+
+    const handleToggleConsumable = (index) => {
+        setActiveSlot(prev => {
+            if (prev?.type === 'consumable' && prev.index === index) {
+                return null;
+            }
+            return { type: 'consumable', index };
+        });
+    };
+
+    const handleSellJoker = (index) => {
+        const joker = jokers[index];
+        const sellPrice = joker?.sellPrice || 2;
+        const newMoney = money + sellPrice;
+        updateMoney(newMoney);
+
+        const updated = jokers.filter((_, i) => i !== index);
+        setJokers(updated);
+        if (gameData) {
+            gameData.jokers = updated;
+        }
+        setActiveSlot(null);
+        showToast(`Sold ${joker.title || 'Joker'} for +$${sellPrice}`);
+    };
+
+    const handleSellConsumable = (index) => {
+        const consumable = consumables[index];
+        const sellPrice = consumable?.sellPrice || 1;
+        const newMoney = money + sellPrice;
+        updateMoney(newMoney);
+
+        const updated = consumables.filter((_, i) => i !== index);
+        setConsumables(updated);
+        if (gameData) {
+            gameData.consumables = updated;
+        }
+        setActiveSlot(null);
+        showToast(`Sold ${consumable.title || 'Consumable'} for +$${sellPrice}`);
+    };
+
+    const handleUseConsumable = (index) => {
+        const consumable = consumables[index];
+        const updated = consumables.filter((_, i) => i !== index);
+        setConsumables(updated);
+        if (gameData) {
+            gameData.consumables = updated;
+        }
+        setActiveSlot(null);
+        showToast(`Used ${consumable.title || 'Consumable'}`);
+    };
+
+    // =========================================
+    // SHOP ACTIONS (REROLL / BUY)
+    // =========================================
+    const handleReroll = () => {
+        if (money < rerollCost) {
+            showToast("Not enough money to reroll!");
+            return;
+        }
+
+        const newMoney = money - rerollCost;
+        updateMoney(newMoney);
+        setRerollCost(prev => prev + 1);
+
+        const newCards = generateShopCards(2);
+        setShopCards(newCards);
+        setActiveTooltipItem(null);
+        showToast(`Rerolled shop cards (-$${rerollCost})`);
+    };
+
+    const handleBuyCard = (item, index) => {
+        if (item.isSold) return;
+
+        if (money < item.price) {
+            showToast("Not enough money!");
+            return;
+        }
+
+        if (item.type === 'joker') {
+            if (jokers.length >= maxJokers) {
+                showToast("No space for Jokers (Max 5)!");
+                return;
+            }
+            const newJoker = {
+                id: item.id,
+                title: item.title,
+                sellPrice: Math.max(1, Math.floor(item.price / 2))
+            };
+            const updated = [...jokers, newJoker];
+            setJokers(updated);
+            if (gameData) {
+                gameData.jokers = updated;
+            }
+        } else if (item.type === 'tarot' || item.type === 'planet') {
+            if (consumables.length >= maxConsumables) {
+                showToast("No space for Consumables (Max 2)!");
+                return;
+            }
+            const newConsumable = {
+                type: item.type,
+                id: item.id,
+                title: item.title,
+                sellPrice: Math.max(1, Math.floor(item.price / 2))
+            };
+            const updated = [...consumables, newConsumable];
+            setConsumables(updated);
+            if (gameData) {
+                gameData.consumables = updated;
+            }
+        } else if (item.type === 'playingCard') {
+            if (gameData) {
+                gameData.deckRemaining = (gameData.deckRemaining || 52) + 1;
+            }
+        }
+
+        const newMoney = money - item.price;
+        updateMoney(newMoney);
+
+        // Mark item as sold and clear active tooltip
+        setShopCards(prev => prev.map((c, i) => i === index ? { ...c, isSold: true } : c));
+        setActiveTooltipItem(null);
+        showToast(`Bought ${item.title} for $${item.price}`);
+    };
+
+    const handleBuyVoucher = () => {
+        if (isVoucherPurchased) return;
+        if (money < voucher.price) {
+            showToast("Not enough money for Voucher!");
+            return;
+        }
+
+        const newMoney = money - voucher.price;
+        updateMoney(newMoney);
+        setIsVoucherPurchased(true);
+        setActiveTooltipItem(null);
+
+        // Apply voucher effects
+        if (voucher.id === 'Wasteful' && gameData) {
+            gameData.discards = (gameData.discards || 4) + 1;
+        } else if (voucher.id === 'Grabber' && gameData) {
+            gameData.hands = (gameData.hands || 4) + 1;
+        }
+
+        showToast(`Redeemed Voucher: ${voucher.title}!`);
+    };
+
+    const handleBuyBooster = (pack, index) => {
+        if (purchasedBoosters.includes(pack.slotId)) return;
+        if (money < pack.price) {
+            showToast("Not enough money for Booster Pack!");
+            return;
+        }
+
+        const newMoney = money - pack.price;
+        updateMoney(newMoney);
+        setPurchasedBoosters(prev => [...prev, pack.slotId]);
+        setActiveTooltipItem(null);
+        showToast(`Opened ${pack.title}!`);
+    };
 
     return (
-        <div className="shop">
+        <div className="shop-screen" onClick={() => setActiveSlot(null)}>
+            {/* 1. LEFT GAME SIDEBAR */}
+            <GameSidebar
+                gameData={{ ...gameData, money }}
+                onOpenSettings={onOpenSettings}
+                isShop={true}
+            />
 
-            <header className="shop-header">
+            {/* 2. MAIN SHOP CANVAS */}
+            <section className="shop-main-section">
+                {/* TOAST NOTIFICATION */}
+                {toastMessage && (
+                    <div className="shop-toast-notification">
+                        {toastMessage}
+                    </div>
+                )}
 
-                <h1>Shop</h1>
+                {/* TOP CONTAINERS: JOKERS & CONSUMABLES */}
+                <div className="shop-top-area" onClick={(e) => e.stopPropagation()}>
+                    {/* JOKERS CONTAINER */}
+                    <div className="jokers-container-wrapper">
+                        <div className="jokers-slots-box">
+                            {Array.from({ length: maxJokers }).map((_, index) => {
+                                const joker = jokers[index];
+                                const isSelected = activeSlot?.type === 'joker' && activeSlot.index === index;
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`joker-slot ${joker ? 'occupied' : 'empty'}`}
+                                    >
+                                        {joker ? (
+                                            <JokerCard
+                                                id={joker.id}
+                                                width={78}
+                                                height={108}
+                                                animated={true}
+                                                isSelected={isSelected}
+                                                onSelect={(e) => {
+                                                    e.stopPropagation();
+                                                    handleToggleJoker(index);
+                                                }}
+                                                onSell={() => handleSellJoker(index)}
+                                                sellPrice={joker.sellPrice || 2}
+                                            />
+                                        ) : null}
+                                    </div>
+                                );
+                            })}
+                        </div>
 
-                <div className="shop-money">
-                    ${gameData.money}
+                        <div className="slot-counter-text">
+                            {jokers.length}/{maxJokers}
+                        </div>
+                    </div>
+
+                    {/* CONSUMABLES CONTAINER */}
+                    <div className="consumables-container-wrapper">
+                        <div className="consumables-slots-box">
+                            {Array.from({ length: maxConsumables }).map((_, index) => {
+                                const consumable = consumables[index];
+                                const isSelected = activeSlot?.type === 'consumable' && activeSlot.index === index;
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`consumable-slot ${consumable ? 'occupied' : 'empty'}`}
+                                    >
+                                        {consumable ? (
+                                            consumable.type === 'planet' ? (
+                                                <PlanetCard
+                                                    planet={consumable.id}
+                                                    width={78}
+                                                    height={108}
+                                                    animated={true}
+                                                    isSelected={isSelected}
+                                                    onSelect={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleConsumable(index);
+                                                    }}
+                                                    onSell={() => handleSellConsumable(index)}
+                                                    onUse={() => handleUseConsumable(index)}
+                                                    sellPrice={consumable.sellPrice || 1}
+                                                />
+                                            ) : (
+                                                <TarotCard
+                                                    tarot={consumable.id}
+                                                    width={78}
+                                                    height={108}
+                                                    animated={true}
+                                                    isSelected={isSelected}
+                                                    onSelect={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleConsumable(index);
+                                                    }}
+                                                    onSell={() => handleSellConsumable(index)}
+                                                    onUse={() => handleUseConsumable(index)}
+                                                    sellPrice={consumable.sellPrice || 1}
+                                                />
+                                            )
+                                        ) : null}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="slot-counter-text align-right">
+                            {consumables.length}/{maxConsumables}
+                        </div>
+                    </div>
                 </div>
 
-            </header>
+                {/* CENTER AREA: THE AUTHENTIC BALATRO SHOP CONSOLE */}
+                <div className="shop-center-container" onClick={(e) => e.stopPropagation()}>
+                    <div className="shop-console-frame">
+                        {/* TOP ROW: ACTIONS & SHOP CARDS */}
+                        <div className="shop-console-top-row">
+                            {/* LEFT ACTIONS COLUMN */}
+                            <div className="shop-actions-column">
+                                <button
+                                    className="shop-action-btn next-round-btn"
+                                    onClick={onContinue}
+                                    title="Advance to Next Round"
+                                >
+                                    <span>Next</span>
+                                    <span>Round</span>
+                                </button>
 
-            <div className="shop-items">
+                                <button
+                                    className={`shop-action-btn reroll-btn ${money < rerollCost ? 'disabled' : ''}`}
+                                    onClick={handleReroll}
+                                    disabled={money < rerollCost}
+                                    title={`Reroll Shop Cards for $${rerollCost}`}
+                                >
+                                    <span>Reroll</span>
+                                    <span className="reroll-price-tag">${rerollCost}</span>
+                                </button>
+                            </div>
 
-                <ShopItem
-                    title="Joker"
-                    description="+4 Mult"
-                    price={4}
+                            {/* SHOP CARDS ROW & TOOLTIP */}
+                            <div className="shop-cards-area">
+                                {/* CARD INFO / TOOLTIP BOX (ONLY VISIBLE ON HOVER) */}
+                                {activeTooltipItem && (
+                                    <div className="shop-item-tooltip-box">
+                                        <div className="tooltip-title">
+                                            {activeTooltipItem.title || 'Card Info'}
+                                        </div>
+
+                                        <div className="tooltip-description">
+                                            {activeTooltipItem.description}
+                                        </div>
+
+                                        <div className={`tooltip-rarity-pill rarity-${(activeTooltipItem.rarity || 'common').toLowerCase().replace(' ', '-')}`}>
+                                            {activeTooltipItem.rarity || 'Common'}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* SHOP CARDS SLOTS */}
+                                <div className="shop-cards-slots">
+                                    {shopCards.map((item, idx) => {
+                                        if (item.isSold) {
+                                            return (
+                                                <div key={item.slotId || idx} className="shop-card-slot sold-out-slot">
+                                                    <div className="sold-out-stamp">SOLD OUT</div>
+                                                </div>
+                                            );
+                                        }
+
+                                        const canAfford = money >= item.price;
+                                        const isHovered = activeTooltipItem?.slotId === item.slotId;
+
+                                        return (
+                                            <div
+                                                key={item.slotId || idx}
+                                                className={`shop-card-slot ${isHovered ? 'active-hover' : ''} ${canAfford ? 'can-afford' : 'cant-afford'}`}
+                                                onMouseEnter={() => setActiveTooltipItem(item)}
+                                                onMouseLeave={() => setActiveTooltipItem(null)}
+                                                onClick={() => handleBuyCard(item, idx)}
+                                                title={`Click to Buy for $${item.price}`}
+                                            >
+                                                <div className="shop-price-badge">
+                                                    ${item.price}
+                                                </div>
+
+                                                <div className="shop-card-visual">
+                                                    {item.type === 'joker' && (
+                                                        <JokerCard
+                                                            id={item.id}
+                                                            width={82}
+                                                            height={114}
+                                                            animated={true}
+                                                            showHoverTooltip={false}
+                                                        />
+                                                    )}
+                                                    {item.type === 'tarot' && (
+                                                        <TarotCard
+                                                            tarot={item.id}
+                                                            width={82}
+                                                            height={114}
+                                                            animated={true}
+                                                            showHoverTooltip={false}
+                                                        />
+                                                    )}
+                                                    {item.type === 'planet' && (
+                                                        <PlanetCard
+                                                            planet={item.id}
+                                                            width={82}
+                                                            height={114}
+                                                            animated={true}
+                                                            showHoverTooltip={false}
+                                                        />
+                                                    )}
+                                                    {item.type === 'playingCard' && (
+                                                        <PlayingCard
+                                                            rank={item.rank}
+                                                            suit={item.suit}
+                                                            width={82}
+                                                            height={114}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* BOTTOM ROW: VOUCHER & BOOSTER PACKS */}
+                        <div className="shop-console-bottom-row">
+                            {/* VOUCHER CONTAINER */}
+                            <div className="shop-voucher-container">
+                                <div className="voucher-ante-label">
+                                    ANTE {currentAnte} VOUCHER
+                                </div>
+
+                                {isVoucherPurchased ? (
+                                    <div className="voucher-card-slot sold-out-slot">
+                                        <div className="sold-out-stamp">SOLD OUT</div>
+                                    </div>
+                                ) : (
+                                    <div
+                                        className={`voucher-card-slot ${money >= voucher.price ? 'can-afford' : 'cant-afford'}`}
+                                        onMouseEnter={() => setActiveTooltipItem({
+                                            slotId: 'voucher',
+                                            title: voucher.title,
+                                            description: voucher.description,
+                                            rarity: 'Voucher'
+                                        })}
+                                        onMouseLeave={() => setActiveTooltipItem(null)}
+                                        onClick={handleBuyVoucher}
+                                        title={`Buy Voucher for $${voucher.price} (Once per Ante)`}
+                                    >
+                                        <div className="shop-price-badge">
+                                            ${voucher.price}
+                                        </div>
+
+                                        <div className="voucher-visual">
+                                            <Voucher
+                                                voucher={voucher.id}
+                                                width={82}
+                                                height={114}
+                                                animated={true}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* BOOSTER PACKS CONTAINER */}
+                            <div className="shop-boosters-container">
+                                {boosterPacks.map((pack, idx) => {
+                                    const isPurchased = purchasedBoosters.includes(pack.slotId);
+                                    const canAfford = money >= pack.price;
+
+                                    if (isPurchased) {
+                                        return (
+                                            <div key={pack.slotId || idx} className="booster-card-slot sold-out-slot">
+                                                <div className="sold-out-stamp">OPENED</div>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div
+                                            key={pack.slotId || idx}
+                                            className={`booster-card-slot ${canAfford ? 'can-afford' : 'cant-afford'}`}
+                                            onMouseEnter={() => setActiveTooltipItem({
+                                                slotId: pack.slotId,
+                                                title: pack.title,
+                                                description: pack.description,
+                                                rarity: 'Booster'
+                                            })}
+                                            onMouseLeave={() => setActiveTooltipItem(null)}
+                                            onClick={() => handleBuyBooster(pack, idx)}
+                                            title={`Buy Booster Pack for $${pack.price}`}
+                                        >
+                                            <div className="shop-price-badge">
+                                                ${pack.price}
+                                            </div>
+
+                                            <div className="booster-visual">
+                                                <BoosterPack
+                                                    type={pack.type}
+                                                    number={pack.number}
+                                                    width={82}
+                                                    height={114}
+                                                    animated={true}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* BOTTOM RIGHT: DECK COUNTER AREA */}
+                <div
+                    className="game-deck-area"
+                    onClick={() => setIsDeckModalOpen(true)}
+                    title="Click to Peek Deck"
+                >
+                    <div className="peek-deck-label">
+                        <span>PEEK</span>
+                        <span>DECK</span>
+                        <div className="deck-key-hint">LT</div>
+                    </div>
+
+                    <div className="deck-card-stack">
+                        <div className="deck-card-visual">
+                            <CardBack
+                                type="BackNormal"
+                                width={80}
+                                height={112}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="deck-count-text">
+                        {gameData?.deckRemaining || 52}/52
+                    </div>
+                </div>
+
+                {/* PEEK DECK MODAL */}
+                <DeckViewModal
+                    isOpen={isDeckModalOpen}
+                    onClose={() => setIsDeckModalOpen(false)}
+                    gameData={{ ...gameData, money }}
                 />
-
-                <ShopItem
-                    title="Tarot"
-                    description="Enhance a card"
-                    price={3}
-                />
-
-                <ShopItem
-                    title="Planet"
-                    description="Upgrade Poker Hand"
-                    price={5}
-                />
-
-            </div>
-
-            <button
-                className="shop-continue"
-                onClick={onContinue}
-            >
-                Continue
-            </button>
-
+            </section>
         </div>
     );
 }

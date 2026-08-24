@@ -1,99 +1,523 @@
-﻿.shop {
-    width: 100%;
-    height: 100%;
+/* =========================================
+   BALATRO SHOP STYLES
+========================================= */
 
-    padding: 40px;
+.shop-screen {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    position: relative;
+    user-select: none;
+    font-family: 'Balatro', sans-serif;
+    color: white;
+}
 
-    box-sizing: border-box;
-
+.shop-main-section {
+    flex: 1;
+    height: 100vh;
+    position: relative;
     display: flex;
     flex-direction: column;
+    padding: 14px 28px;
+    box-sizing: border-box;
 }
 
-.shop-header {
-    display: flex;
-
-    justify-content: space-between;
-    align-items: center;
-}
-
-.shop-header h1 {
-    font-size: 40px;
-}
-
-.shop-money {
-    font-size: 32px;
-
+/* Toast Message */
+.shop-toast-notification {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20, 27, 29, 0.94);
+    border: 2px solid #fe4747;
+    border-radius: 8px;
+    padding: 6px 18px;
     color: #ffd43b;
+    font-size: 15px;
+    font-weight: 800;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    animation: fadeInDown 0.2s ease-out;
 }
 
-.shop-items {
-    flex: 1;
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
 
+/* =========================================
+   TOP AREA: JOKERS & CONSUMABLES
+========================================= */
+.shop-top-area {
     display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 8px;
+}
 
+.jokers-container-wrapper,
+.consumables-container-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.jokers-slots-box,
+.consumables-slots-box {
+    display: flex;
+    gap: 8px;
+}
+
+.joker-slot,
+.consumable-slot {
+    width: 78px;
+    height: 108px;
+    border-radius: 8px;
+    background: rgba(18, 27, 29, 0.85);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+    display: flex;
     align-items: center;
     justify-content: center;
-
-    gap: 30px;
+    position: relative;
+    transition: border-color 0.15s;
 }
 
-.shop-item {
-    width: 220px;
-
-    padding: 25px;
-
-    background: #202a2d;
-
-    border-radius: 15px;
-
-    text-align: center;
-
-    border: 3px solid #536166;
+.joker-slot.occupied,
+.consumable-slot.occupied {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
 }
 
-.shop-item-icon {
-    font-size: 60px;
+.slot-counter-text {
+    font-size: 14px;
+    font-weight: 800;
+    color: #cfd8dc;
+    padding-left: 2px;
 }
 
-.shop-item h2 {
-    margin: 10px 0;
+.slot-counter-text.align-right {
+    text-align: right;
+    padding-right: 2px;
 }
 
-.shop-item p {
-    opacity: 0.7;
+/* =========================================
+   CENTER AREA: SHOP CONSOLE
+========================================= */
+.shop-center-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 24px;
 }
 
-.shop-item button {
+.shop-console-frame {
+    background: #1c2628;
+    border: 4px solid #fe4747;
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow: 
+        0 14px 40px rgba(0, 0, 0, 0.65),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 630px;
+    max-width: 650px;
+}
+
+/* TOP ROW */
+.shop-console-top-row {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+}
+
+/* Left Actions Column */
+.shop-actions-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 125px;
+    min-width: 125px;
+}
+
+.shop-action-btn {
     border: none;
-
-    padding: 12px 30px;
-
-    border-radius: 8px;
-
-    background: #ffb000;
-
-    color: white;
-
-    font-weight: bold;
-
-    cursor: pointer;
-}
-
-.shop-continue {
-    align-self: center;
-
-    border: none;
-
-    padding: 15px 50px;
-
     border-radius: 10px;
-
-    background: #23a8ff;
-
-    color: white;
-
-    font-size: 20px;
-
     cursor: pointer;
+    font-family: inherit;
+    font-weight: 900;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 6px;
+    height: 72px;
+    transition: transform 0.1s, box-shadow 0.1s;
+    user-select: none;
+}
+
+.next-round-btn {
+    background: #fe4747;
+    box-shadow: 0 6px 0 #a82424, 0 8px 12px rgba(0, 0, 0, 0.35);
+    font-size: 18px;
+    line-height: 1.15;
+}
+
+.next-round-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 #a82424;
+}
+
+.reroll-btn {
+    background: #3ec476;
+    box-shadow: 0 6px 0 #217e47, 0 8px 12px rgba(0, 0, 0, 0.35);
+    font-size: 17px;
+    line-height: 1.15;
+}
+
+.reroll-btn .reroll-price-tag {
+    font-size: 20px;
+    font-weight: 900;
+    color: #ffffff;
+    margin-top: 1px;
+}
+
+.reroll-btn:active:not(.disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 #217e47;
+}
+
+.reroll-btn.disabled {
+    background: #3e4f48;
+    color: #8c9e97;
+    box-shadow: 0 4px 0 #283631;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+/* Shop Cards Area */
+.shop-cards-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+/* Tooltip Description Box */
+.shop-item-tooltip-box {
+    position: absolute;
+    right: calc(50% + 96px);
+    width: 155px;
+    background: #2b383b;
+    border: 2px solid #8e9a9d;
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-height: 125px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    z-index: 50;
+    animation: fadeIn 0.15s ease-out;
+    pointer-events: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.tooltip-title {
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 4px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.tooltip-description {
+    font-size: 11px;
+    font-weight: 600;
+    color: #cfd8dc;
+    line-height: 1.35;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.tooltip-rarity-pill {
+    align-self: center;
+    padding: 2px 14px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: white;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.rarity-rare {
+    background: #fe4747;
+    border: 1px solid #ff7b7b;
+}
+
+.rarity-uncommon {
+    background: #3ec476;
+    border: 1px solid #6ee39b;
+}
+
+.rarity-common {
+    background: #0094ff;
+    border: 1px solid #54b8ff;
+}
+
+.rarity-tarot {
+    background: #9c2168;
+    border: 1px solid #d8398b;
+}
+
+.rarity-planet {
+    background: #00b4d8;
+    border: 1px solid #72ddf7;
+}
+
+.rarity-voucher {
+    background: #df9725;
+    border: 1px solid #ffc266;
+}
+
+.rarity-booster {
+    background: #b545d6;
+    border: 1px solid #d47af0;
+}
+
+.rarity-playing-card {
+    background: #3a4b4e;
+    border: 1px solid #62797e;
+}
+
+/* Shop Card Slots */
+.shop-cards-slots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: 0 auto;
+}
+
+.shop-card-slot {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s, filter 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.shop-card-slot:hover {
+    transform: translateY(-4px);
+}
+
+.shop-card-slot.active-hover .shop-card-visual {
+    filter: drop-shadow(0 0 8px rgba(255, 212, 59, 0.6));
+}
+
+.shop-card-slot.cant-afford {
+    opacity: 0.85;
+}
+
+/* Price Badge */
+.shop-price-badge {
+    position: absolute;
+    top: -12px;
+    background: #141b1d;
+    border: 2px solid #ff9d00;
+    border-radius: 12px;
+    padding: 1px 9px;
+    color: #ffd43b;
+    font-size: 15px;
+    font-weight: 900;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Sold Out / Opened state */
+.sold-out-slot {
+    width: 82px;
+    height: 114px;
+    background: rgba(14, 21, 23, 0.7);
+    border: 2px dashed #3a4c52;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.sold-out-stamp {
+    font-size: 13px;
+    font-weight: 900;
+    color: #fe4747;
+    border: 2px solid #fe4747;
+    border-radius: 6px;
+    padding: 2px 6px;
+    transform: rotate(-12deg);
+    text-shadow: 0 0 6px rgba(254, 71, 71, 0.5);
+    letter-spacing: 0.5px;
+}
+
+/* BOTTOM ROW: VOUCHER + BOOSTER PACKS */
+.shop-console-bottom-row {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+}
+
+/* Voucher Sub-container */
+.shop-voucher-container {
+    flex: 1;
+    background: #141b1d;
+    border: 2px solid #2f3d42;
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 136px;
+    box-sizing: border-box;
+}
+
+.voucher-ante-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    color: #43555c;
+    text-transform: uppercase;
+    user-select: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.voucher-card-slot {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.voucher-card-slot:hover {
+    transform: translateY(-4px);
+}
+
+.voucher-card-slot:hover .voucher-visual {
+    filter: drop-shadow(0 0 8px rgba(255, 212, 59, 0.5));
+}
+
+/* Booster Packs Sub-container */
+.shop-boosters-container {
+    flex: 1.5;
+    background: #141b1d;
+    border: 2px solid #2f3d42;
+    border-radius: 14px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 14px;
+    min-height: 136px;
+    box-sizing: border-box;
+}
+
+.booster-card-slot {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.booster-card-slot:hover {
+    transform: translateY(-4px);
+}
+
+.booster-card-slot:hover .booster-visual {
+    filter: drop-shadow(0 0 8px rgba(255, 212, 59, 0.5));
+}
+
+/* =========================================
+   BOTTOM RIGHT: DECK COUNTER AREA
+========================================= */
+.game-deck-area {
+    position: absolute;
+    bottom: 18px;
+    right: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.15s ease-out;
+    z-index: 10;
+}
+
+.game-deck-area:hover {
+    transform: translateY(-3px);
+}
+
+.peek-deck-label {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #cfd8dc;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.deck-key-hint {
+    background: #2a373a;
+    border: 1px solid #455a64;
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: bold;
+    color: white;
+}
+
+.deck-card-stack {
+    position: relative;
+    width: 80px;
+    height: 112px;
+}
+
+.deck-card-visual {
+    position: absolute;
+    inset: 0;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+}
+
+.deck-count-text {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
