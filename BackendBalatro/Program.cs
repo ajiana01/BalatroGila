@@ -29,7 +29,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "BalatroGila Core Game Engine API",
         Version = "v1",
-        Description = "RESTful Web API untuk Core Game Engine Dopamine Rush (Balatro Roguelike Card Game)"
+        Description = "RESTful Web API untuk Core Game Engine Balatro Roguelike Card Game"
     });
 });
 
