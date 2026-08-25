@@ -1,6 +1,75 @@
 @BackendBalatro_HostAddress = http://localhost:5264
 
-GET {{BackendBalatro_HostAddress}}/weatherforecast/
+### 1. Check Server Status
+GET {{BackendBalatro_HostAddress}}/api/status
 Accept: application/json
 
-###
+### 2. Start Game
+POST {{BackendBalatro_HostAddress}}/api/game/start
+Content-Type: application/json
+
+{
+  "playerName": "Aji",
+  "sessionId": "demo-session"
+}
+
+### 3. Get Game State
+GET {{BackendBalatro_HostAddress}}/api/game/state
+X-Session-Id: demo-session
+Accept: application/json
+
+### 4. Get Available Blinds
+GET {{BackendBalatro_HostAddress}}/api/game/blinds
+X-Session-Id: demo-session
+Accept: application/json
+
+### 5. Select Small Blind (Id: 1)
+POST {{BackendBalatro_HostAddress}}/api/game/blinds/select
+X-Session-Id: demo-session
+Content-Type: application/json
+
+{
+  "blindId": 1
+}
+
+### 6. Score Preview
+POST {{BackendBalatro_HostAddress}}/api/action/score-preview
+X-Session-Id: demo-session
+Content-Type: application/json
+
+{
+  "cardIds": []
+}
+
+### 7. Play Hand
+POST {{BackendBalatro_HostAddress}}/api/action/play-hand
+X-Session-Id: demo-session
+Content-Type: application/json
+
+{
+  "cardIds": []
+}
+
+### 8. Discard Cards
+POST {{BackendBalatro_HostAddress}}/api/action/discard
+X-Session-Id: demo-session
+Content-Type: application/json
+
+{
+  "cardIds": []
+}
+
+### 9. View Shop (When in InShop Phase)
+GET {{BackendBalatro_HostAddress}}/api/shop
+X-Session-Id: demo-session
+Accept: application/json
+
+### 10. Reroll Shop
+POST {{BackendBalatro_HostAddress}}/api/shop/reroll
+X-Session-Id: demo-session
+Content-Type: application/json
+
+### 11. Leave Shop
+POST {{BackendBalatro_HostAddress}}/api/shop/leave
+X-Session-Id: demo-session
+Content-Type: application/json
