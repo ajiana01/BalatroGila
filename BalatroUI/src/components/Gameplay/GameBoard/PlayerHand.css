@@ -1,10 +1,17 @@
 .player-hand-container {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     width: 100%;
     max-width: 100%;
     overflow: visible;
+    transition: transform 0.3s ease;
+}
+
+.player-hand-container.scoring-mode {
+    padding-top: 0;
+    transform: translateY(12px);
 }
 
 .player-hand {
@@ -22,6 +29,27 @@
     overflow: visible;
 }
 
+.player-hand.lowered {
+    min-height: 140px;
+    padding: 10px 10px 4px 10px;
+}
+
+.player-hand-lowered-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.lowered-hand-count {
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
 .player-card-item {
     cursor: grab;
     list-style: none;
@@ -34,14 +62,19 @@
     transform-origin: center bottom;
 }
 
-.player-card-item:hover {
+.player-card-item.lowered {
+    cursor: default;
+    filter: drop-shadow(-2px 4px 5px rgba(0, 0, 0, 0.5));
+}
+
+.player-card-item:hover:not(.lowered) {
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6)) brightness(1.06);
 }
 
-.player-card-item:active {
+.player-card-item:active:not(.lowered) {
     cursor: grabbing;
 }
 
 .player-card-item.selected {
     filter: drop-shadow(0 0 14px rgba(255, 204, 0, 0.85)) drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
-}
+}

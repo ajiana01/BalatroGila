@@ -11,6 +11,8 @@ function JokerCard({
     height = 140,
     animated = false,
     isSelected = false,
+    isTriggered = false,
+    triggeredText = '',
     onSelect,
     onSell,
     sellPrice = 2,
@@ -27,7 +29,7 @@ function JokerCard({
 
     return (
         <div
-            className={`joker-card-container ${isSelected ? 'selected' : ''}`}
+            className={`joker-card-container ${isSelected ? 'selected' : ''} ${isTriggered ? 'triggered' : ''}`}
             onClick={onSelect}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -42,8 +44,15 @@ function JokerCard({
                 animated={animated}
             />
 
+            {/* Triggered floating score text */}
+            {isTriggered && triggeredText && (
+                <div className="joker-triggered-badge">
+                    {triggeredText}
+                </div>
+            )}
+
             {/* Hover Floating Tooltip */}
-            {showHoverTooltip && isHovered && !isSelected && (
+            {showHoverTooltip && isHovered && !isSelected && !isTriggered && (
                 <div className="card-floating-tooltip">
                     <div className="card-floating-title">{info.title}</div>
                     <div className="card-floating-description">{info.description}</div>

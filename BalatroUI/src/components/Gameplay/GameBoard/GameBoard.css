@@ -108,6 +108,10 @@
     padding-top: 6px;
 }
 
+.game-play-section.scoring-active {
+    padding-top: 0;
+}
+
 .game-play-center {
     flex: 1;
     min-width: 0;
@@ -116,16 +120,36 @@
     justify-content: space-between;
     align-items: center;
     height: 100%;
+    position: relative;
 }
 
+/* Upper Played Cards Area during Scoring */
+.game-played-cards-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: auto;
+    margin-bottom: auto;
+    z-index: 30;
+}
+
+/* Hand Area */
 .game-hand-area {
-    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     min-height: 0;
     overflow: visible;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.game-hand-area.lowered-area {
+    margin-top: auto;
+    margin-bottom: 4px;
+    z-index: 20;
 }
 
 /* =========================================
@@ -249,91 +273,67 @@
 }
 
 .suit-btn {
-    background: #e5a400;
-    box-shadow: 0 2px 0 #a37500;
+    background: #268bd2;
+    box-shadow: 0 2px 0 #1a6296;
 }
 
 /* =========================================
-   4. DECK COUNTER (FAR RIGHT COLUMN)
+   4. DECK COLUMN (FAR RIGHT)
 ========================================= */
 .game-deck-column {
-    width: 105px;
-    min-width: 105px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
-    padding-bottom: 6px;
-    box-sizing: border-box;
+    position: relative;
+    width: 90px;
+    margin-bottom: 8px;
 }
 
 .game-deck-area {
-    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    user-select: none;
     cursor: pointer;
-    transition: transform 0.15s ease-out;
+    transition: transform 0.15s ease;
+}
+
+.game-deck-area:hover {
+    transform: translateY(-4px) scale(1.03);
 }
 
 .peek-deck-label {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    font-size: 13px;
+    gap: 4px;
+    font-size: 12px;
     font-weight: 900;
-    line-height: 1.1;
     color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+    margin-bottom: 2px;
 }
 
 .deck-key-hint {
-    margin-top: 3px;
-    background: #162022;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 10px;
+    background: #475569;
+    border: 1px solid #94a3b8;
+    color: #ffffff;
+    font-size: 9px;
     font-weight: 900;
-    color: #d1dbe0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    padding: 1px 3px;
+    border-radius: 3px;
 }
 
 .deck-card-stack {
     position: relative;
-    cursor: pointer;
-    transition: transform 0.15s ease, filter 0.15s ease;
-}
-
-.deck-card-stack:hover {
-    transform: translateY(-4px) scale(1.03);
-    filter: brightness(1.08);
-}
-
-.deck-card-visual {
-    border-radius: 8px;
-    border: 3px solid #ffffff;
-    overflow: hidden;
-    background: #ffffff;
-    box-shadow:
-        -2px 2px 0 #cccccc,
-        -4px 4px 0 #aaaaaa,
-        -6px 6px 0 #777777,
-        -8px 8px 16px rgba(0, 0, 0, 0.65);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    filter: drop-shadow(-4px 6px 8px rgba(0, 0, 0, 0.5));
 }
 
 .deck-count-text {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 900;
     color: #ffffff;
-    letter-spacing: 0.5px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-    margin-top: 2px;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
 }
-

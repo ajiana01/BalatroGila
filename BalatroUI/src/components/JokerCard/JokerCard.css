@@ -13,6 +13,42 @@
     z-index: 40;
 }
 
+.joker-card-container.triggered {
+    transform: translateY(-10px) scale(1.15);
+    filter: drop-shadow(0 0 18px rgba(255, 100, 0, 0.95)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6));
+    z-index: 60;
+    animation: jokerShake 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes jokerShake {
+    0% { transform: translateY(-10px) scale(1.15) rotate(-3deg); }
+    100% { transform: translateY(-10px) scale(1.15) rotate(3deg); }
+}
+
+.joker-triggered-badge {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fe4747;
+    color: #ffffff;
+    font-family: 'Balatro', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), 0 0 12px rgba(254, 71, 71, 0.8);
+    white-space: nowrap;
+    z-index: 100;
+    animation: jokerBadgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes jokerBadgePop {
+    0% { opacity: 0; transform: translate(-50%, 8px) scale(0.6); }
+    100% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+}
+
 /* Card Floating Hover Tooltip */
 .card-floating-tooltip {
     position: absolute;
