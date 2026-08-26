@@ -1,0 +1,286 @@
+/* =========================================
+   OPTIONS / SETTINGS MODAL
+========================================= */
+.options-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: options-fade 0.15s ease-out;
+}
+
+@keyframes options-fade {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.options-modal-container {
+    width: 480px;
+    max-width: 95vw;
+    background: #314245;
+    border: 4px solid #758a90;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+    padding: 16px 20px 18px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-family: 'Balatro', sans-serif;
+    color: white;
+    user-select: none;
+    position: relative;
+}
+
+/* =========================================
+   HEADER
+========================================= */
+.options-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 4px;
+}
+
+.options-title-pill {
+    background: #ff9d00;
+    color: white;
+    border-radius: 8px;
+    padding: 6px 28px;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    box-shadow: 0 3px 0 #b86e00, 0 4px 10px rgba(0, 0, 0, 0.35);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================================
+   BODY / SETTINGS GROUPS
+========================================= */
+.options-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.options-group {
+    background: #233133;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.group-label {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffd43b;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 4px;
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+
+.option-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #e5ecee;
+}
+
+/* TOGGLE & CYCLE BUTTONS */
+.option-toggle-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.option-toggle-btn:active {
+    transform: translateY(2px);
+}
+
+.option-toggle-btn.active-green {
+    background: #10b981;
+    color: white;
+    box-shadow: 0 3px 0 #059669;
+}
+
+.option-toggle-btn.inactive-red {
+    background: #fe4747;
+    color: white;
+    box-shadow: 0 3px 0 #b32a2a;
+}
+
+.option-toggle-btn.inactive-gray {
+    background: #4b5563;
+    color: #d1d5db;
+    box-shadow: 0 3px 0 #374151;
+}
+
+.option-cycle-btn {
+    background: #0090ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 16px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #0066cc;
+    transition: transform 0.1s ease;
+}
+
+.option-cycle-btn:active {
+    transform: translateY(2px);
+}
+
+/* SLIDERS */
+.slider-control-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.slider-step-btn {
+    width: 26px;
+    height: 26px;
+    background: #172123;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: white;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.slider-step-btn:hover:not(:disabled) {
+    background: #2a3d40;
+}
+
+.slider-step-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.slider-track-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.options-range-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100px;
+    height: 8px;
+    border-radius: 4px;
+    background: #172123;
+    outline: none;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.options-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ff9d00;
+    border: 2px solid white;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.options-range-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ff9d00;
+    border: 2px solid white;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.slider-val-text {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffd43b;
+    min-width: 36px;
+    text-align: right;
+}
+
+/* =========================================
+   FOOTER (ACTION BUTTONS)
+========================================= */
+.options-modal-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.options-btn {
+    border: none;
+    border-radius: 8px;
+    height: 44px;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
+    color: white;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.options-btn:active {
+    transform: translateY(2px);
+}
+
+.btn-main-menu {
+    background: #fe4747;
+    box-shadow: 0 4px 0 #b32a2a, 0 6px 10px rgba(0, 0, 0, 0.35);
+}
+
+.btn-main-menu:active {
+    box-shadow: 0 2px 0 #b32a2a;
+}
+
+.btn-resume {
+    background: #ff9d00;
+    box-shadow: 0 4px 0 #b86e00, 0 6px 10px rgba(0, 0, 0, 0.35);
+}
+
+.btn-resume:active {
+    box-shadow: 0 2px 0 #b86e00;
+}

@@ -19,6 +19,27 @@ const defaultConsumables = [
     { type: 'tarot', id: 'TheSun', title: 'The Sun', sellPrice: 1 }
 ];
 
+function ShopItemTooltip({ item, side = 'left' }) {
+    if (!item) return null;
+    return (
+        <div className={`shop-item-tooltip-box pos-${side}`}>
+            <div className="tooltip-title">
+                {item.title || 'Card Info'}
+            </div>
+
+            <div className="tooltip-description">
+                {item.description}
+            </div>
+
+            {item.rarity && (
+                <div className={`tooltip-rarity-pill rarity-${(item.rarity || 'common').toLowerCase().replace(' ', '-')}`}>
+                    {item.rarity}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function Shop({
     gameData,
     onContinue,
@@ -63,6 +84,9 @@ function Shop({
     // Active tooltip item shown in the description box (null when not hovering)
     const [activeTooltipItem, setActiveTooltipItem] = useState(null);
 
+    // Selected item in shop (for BUY, REDEEM, OPEN action button toggle)
+    const [selectedShopItem, setSelectedShopItem] = useState(null);
+
     // Ante Voucher
     const currentAnte = gameData?.ante || 2;
     const [voucher] = useState(() => getAnteVoucher(currentAnte));
@@ -80,6 +104,46 @@ function Shop({
         setTimeout(() => {
             setToastMessage('');
         }, 2000);
+    };
+
+    // Toggle Selection Handlers
+    const handleCardClick = (item, idx) => {
+        if (selectedShopItem?.type === 'card' && selectedShopItem.index === idx) {
+            setSelectedShopItem(null);
+        } else {
+            setSelectedShopItem({ type: 'card', index: idx, slotId: item.slotId });
+            setActiveTooltipItem(item);
+        }
+    };
+
+    const handleVoucherClick = () => {
+        if (isVoucherPurchased) return;
+        if (selectedShopItem?.type === 'voucher') {
+            setSelectedShopItem(null);
+        } else {
+            setSelectedShopItem({ type: 'voucher', slotId: 'voucher' });
+            setActiveTooltipItem({
+                slotId: 'voucher',
+                title: voucher.title,
+                description: voucher.description,
+                rarity: 'Voucher'
+            });
+        }
+    };
+
+    const handleBoosterClick = (pack, idx) => {
+        if (purchasedBoosters.includes(pack.slotId)) return;
+        if (selectedShopItem?.type === 'booster' && selectedShopItem.index === idx) {
+            setSelectedShopItem(null);
+        } else {
+            setSelectedShopItem({ type: 'booster', index: idx, slotId: pack.slotId });
+            setActiveTooltipItem({
+                slotId: pack.slotId,
+                title: pack.title,
+                description: pack.description,
+                rarity: 'Booster'
+            });
+        }
     };
 
     // Update player money
@@ -238,6 +302,9 @@ function Shop({
         setActiveTooltipItem(null);
 
         // Apply voucher effects
+        if (gameData) {
+            gameData.redeemedVouchers = [...(gameData.redeemedVouchers || []), voucher.id];
+        }
         if (voucher.id === 'Wasteful' && gameData) {
             gameData.discards = (gameData.discards || 4) + 1;
         } else if (voucher.id === 'Grabber' && gameData) {
@@ -399,26 +466,8 @@ function Shop({
                                 </button>
                             </div>
 
-                            {/* SHOP CARDS ROW & TOOLTIP */}
+                            {/* SHOP CARDS ROW & SLOTS */}
                             <div className="shop-cards-area">
-                                {/* CARD INFO / TOOLTIP BOX (ONLY VISIBLE ON HOVER) */}
-                                {activeTooltipItem && (
-                                    <div className="shop-item-tooltip-box">
-                                        <div className="tooltip-title">
-                                            {activeTooltipItem.title || 'Card Info'}
-                                        </div>
-
-                                        <div className="tooltip-description">
-                                            {activeTooltipItem.description}
-                                        </div>
-
-                                        <div className={`tooltip-rarity-pill rarity-${(activeTooltipItem.rarity || 'common').toLowerCase().replace(' ', '-')}`}>
-                                            {activeTooltipItem.rarity || 'Common'}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* SHOP CARDS SLOTS */}
                                 <div className="shop-cards-slots">
                                     {shopCards.map((item, idx) => {
                                         if (item.isSold) {
@@ -431,16 +480,29 @@ function Shop({
 
                                         const canAfford = money >= item.price;
                                         const isHovered = activeTooltipItem?.slotId === item.slotId;
+                                        const isSelected = selectedShopItem?.type === 'card' && selectedShopItem.index === idx;
 
                                         return (
                                             <div
                                                 key={item.slotId || idx}
-                                                className={`shop-card-slot ${isHovered ? 'active-hover' : ''} ${canAfford ? 'can-afford' : 'cant-afford'}`}
+                                                className={`shop-card-slot ${isHovered ? 'active-hover' : ''} ${isSelected ? 'is-selected' : ''} ${canAfford ? 'can-afford' : 'cant-afford'}`}
                                                 onMouseEnter={() => setActiveTooltipItem(item)}
-                                                onMouseLeave={() => setActiveTooltipItem(null)}
-                                                onClick={() => handleBuyCard(item, idx)}
-                                                title={`Click to Buy for $${item.price}`}
+                                                onMouseLeave={() => {
+                                                    if (selectedShopItem?.slotId !== item.slotId) {
+                                                        if (!selectedShopItem) setActiveTooltipItem(null);
+                                                    }
+                                                }}
+                                                onClick={() => handleCardClick(item, idx)}
+                                                title={isSelected ? "Click to deselect" : `Click to select (Cost: $${item.price})`}
                                             >
+                                                {/* DYNAMIC SIDE TOOLTIP */}
+                                                {(isHovered || isSelected) && (
+                                                    <ShopItemTooltip
+                                                        item={item}
+                                                        side={idx === 0 ? 'left' : 'left'}
+                                                    />
+                                                )}
+
                                                 <div className="shop-price-badge">
                                                     ${item.price}
                                                 </div>
@@ -482,6 +544,23 @@ function Shop({
                                                         />
                                                     )}
                                                 </div>
+
+                                                {/* ACTION BUTTON (BUY) */}
+                                                {isSelected && (
+                                                    <button
+                                                        className={`shop-item-action-btn buy-btn ${canAfford ? 'can-buy' : 'cant-buy'}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (canAfford) {
+                                                                handleBuyCard(item, idx);
+                                                                setSelectedShopItem(null);
+                                                            }
+                                                        }}
+                                                        disabled={!canAfford}
+                                                    >
+                                                        BUY
+                                                    </button>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -501,33 +580,72 @@ function Shop({
                                     <div className="voucher-card-slot sold-out-slot">
                                         <div className="sold-out-stamp">SOLD OUT</div>
                                     </div>
-                                ) : (
-                                    <div
-                                        className={`voucher-card-slot ${money >= voucher.price ? 'can-afford' : 'cant-afford'}`}
-                                        onMouseEnter={() => setActiveTooltipItem({
-                                            slotId: 'voucher',
-                                            title: voucher.title,
-                                            description: voucher.description,
-                                            rarity: 'Voucher'
-                                        })}
-                                        onMouseLeave={() => setActiveTooltipItem(null)}
-                                        onClick={handleBuyVoucher}
-                                        title={`Buy Voucher for $${voucher.price} (Once per Ante)`}
-                                    >
-                                        <div className="shop-price-badge">
-                                            ${voucher.price}
-                                        </div>
+                                ) : (() => {
+                                    const isVoucherSelected = selectedShopItem?.type === 'voucher';
+                                    const isVoucherHovered = activeTooltipItem?.slotId === 'voucher';
+                                    const canAffordVoucher = money >= voucher.price;
 
-                                        <div className="voucher-visual">
-                                            <Voucher
-                                                voucher={voucher.id}
-                                                width={82}
-                                                height={114}
-                                                animated={true}
-                                            />
+                                    return (
+                                        <div
+                                            className={`voucher-card-slot ${isVoucherSelected ? 'is-selected' : ''} ${canAffordVoucher ? 'can-afford' : 'cant-afford'}`}
+                                            onMouseEnter={() => setActiveTooltipItem({
+                                                slotId: 'voucher',
+                                                title: voucher.title,
+                                                description: voucher.description,
+                                                rarity: 'Voucher'
+                                            })}
+                                            onMouseLeave={() => {
+                                                if (selectedShopItem?.slotId !== 'voucher') {
+                                                    if (!selectedShopItem) setActiveTooltipItem(null);
+                                                }
+                                            }}
+                                            onClick={handleVoucherClick}
+                                            title={isVoucherSelected ? "Click to deselect" : `Click to select (Cost: $${voucher.price})`}
+                                        >
+                                            {/* DYNAMIC SIDE TOOLTIP */}
+                                            {(isVoucherHovered || isVoucherSelected) && (
+                                                <ShopItemTooltip
+                                                    item={{
+                                                        title: voucher.title,
+                                                        description: voucher.description,
+                                                        rarity: 'Voucher'
+                                                    }}
+                                                    side="right"
+                                                />
+                                            )}
+
+                                            <div className="shop-price-badge">
+                                                ${voucher.price}
+                                            </div>
+
+                                            <div className="voucher-visual">
+                                                <Voucher
+                                                    voucher={voucher.id}
+                                                    width={82}
+                                                    height={114}
+                                                    animated={true}
+                                                />
+                                            </div>
+
+                                            {/* ACTION BUTTON (REDEEM) */}
+                                            {isVoucherSelected && (
+                                                <button
+                                                    className={`shop-item-action-btn redeem-btn ${canAffordVoucher ? 'can-buy' : 'cant-buy'}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (canAffordVoucher) {
+                                                            handleBuyVoucher();
+                                                            setSelectedShopItem(null);
+                                                        }
+                                                    }}
+                                                    disabled={!canAffordVoucher}
+                                                >
+                                                    REDEEM
+                                                </button>
+                                            )}
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
                             </div>
 
                             {/* BOOSTER PACKS CONTAINER */}
@@ -535,6 +653,8 @@ function Shop({
                                 {boosterPacks.map((pack, idx) => {
                                     const isPurchased = purchasedBoosters.includes(pack.slotId);
                                     const canAfford = money >= pack.price;
+                                    const isBoosterSelected = selectedShopItem?.type === 'booster' && selectedShopItem.index === idx;
+                                    const isBoosterHovered = activeTooltipItem?.slotId === pack.slotId;
 
                                     if (isPurchased) {
                                         return (
@@ -547,17 +667,33 @@ function Shop({
                                     return (
                                         <div
                                             key={pack.slotId || idx}
-                                            className={`booster-card-slot ${canAfford ? 'can-afford' : 'cant-afford'}`}
+                                            className={`booster-card-slot ${isBoosterSelected ? 'is-selected' : ''} ${canAfford ? 'can-afford' : 'cant-afford'}`}
                                             onMouseEnter={() => setActiveTooltipItem({
                                                 slotId: pack.slotId,
                                                 title: pack.title,
                                                 description: pack.description,
                                                 rarity: 'Booster'
                                             })}
-                                            onMouseLeave={() => setActiveTooltipItem(null)}
-                                            onClick={() => handleBuyBooster(pack, idx)}
-                                            title={`Buy Booster Pack for $${pack.price}`}
+                                            onMouseLeave={() => {
+                                                if (selectedShopItem?.slotId !== pack.slotId) {
+                                                    if (!selectedShopItem) setActiveTooltipItem(null);
+                                                }
+                                            }}
+                                            onClick={() => handleBoosterClick(pack, idx)}
+                                            title={isBoosterSelected ? "Click to deselect" : `Click to select (Cost: $${pack.price})`}
                                         >
+                                            {/* DYNAMIC SIDE TOOLTIP */}
+                                            {(isBoosterHovered || isBoosterSelected) && (
+                                                <ShopItemTooltip
+                                                    item={{
+                                                        title: pack.title,
+                                                        description: pack.description,
+                                                        rarity: 'Booster'
+                                                    }}
+                                                    side={idx === boosterPacks.length - 1 ? 'left' : 'right'}
+                                                />
+                                            )}
+
                                             <div className="shop-price-badge">
                                                 ${pack.price}
                                             </div>
@@ -571,6 +707,23 @@ function Shop({
                                                     animated={true}
                                                 />
                                             </div>
+
+                                            {/* ACTION BUTTON (OPEN) */}
+                                            {isBoosterSelected && (
+                                                <button
+                                                    className={`shop-item-action-btn open-btn ${canAfford ? 'can-buy' : 'cant-buy'}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (canAfford) {
+                                                            handleBuyBooster(pack, idx);
+                                                            setSelectedShopItem(null);
+                                                        }
+                                                    }}
+                                                    disabled={!canAfford}
+                                                >
+                                                    OPEN
+                                                </button>
+                                            )}
                                         </div>
                                     );
                                 })}

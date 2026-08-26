@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import Balatro from '../components/BalatroBackground/BalatroBackground.jsx';
+import bgm from '../assets/music/1-main-theme.mp3';
 
 import BlindSelection from '../components/Gameplay/BlindSelection/BlindSelection.jsx';
 import GameBoard from '../components/Gameplay/GameBoard/GameBoard.jsx';
@@ -9,16 +10,80 @@ import Cashout from '../components/Gameplay/Cashout/Cashout.jsx';
 import Shop from '../components/Gameplay/Shop/Shop.jsx';
 import GameOver from '../components/Gameplay/GameOver/GameOver.jsx';
 import WinOver from '../components/Gameplay/WinOver/WinOver.jsx';
+import OptionsModal from '../components/Gameplay/OptionsModal/OptionsModal.jsx';
 
 function Gameplay() {
 
     const navigate = useNavigate();
 
     // =========================
-    // SETTINGS
+    // SETTINGS & AUDIO
     // =========================
 
     const [showSettings, setShowSettings] = useState(false);
+    const audioRef = useRef(null);
+
+    const [musicVolume, setMusicVolume] = useState(() => {
+        const saved = localStorage.getItem('balatro_music_volume');
+        return saved !== null ? parseFloat(saved) : 0.7;
+    });
+
+    const [isMusicMuted, setIsMusicMuted] = useState(() => {
+        const saved = localStorage.getItem('balatro_music_muted');
+        return saved !== null ? saved === 'true' : false;
+    });
+
+    const [sfxVolume, setSfxVolume] = useState(() => {
+        const saved = localStorage.getItem('balatro_sfx_volume');
+        return saved !== null ? parseFloat(saved) : 0.8;
+    });
+
+    const [gameSpeed, setGameSpeed] = useState(() => {
+        const saved = localStorage.getItem('balatro_game_speed');
+        return saved !== null ? parseInt(saved, 10) : 1;
+    });
+
+    const [highContrast, setHighContrast] = useState(() => {
+        const saved = localStorage.getItem('balatro_high_contrast');
+        return saved !== null ? saved === 'true' : false;
+    });
+
+    // Handle music volume & mute
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.volume = isMusicMuted ? 0 : musicVolume;
+            if (!isMusicMuted && musicVolume > 0) {
+                audioRef.current.play().catch(() => {});
+            } else {
+                audioRef.current.pause();
+            }
+        }
+        localStorage.setItem('balatro_music_volume', musicVolume.toString());
+        localStorage.setItem('balatro_music_muted', isMusicMuted.toString());
+    }, [musicVolume, isMusicMuted]);
+
+    // Handle SFX, speed, contrast storage
+    useEffect(() => {
+        localStorage.setItem('balatro_sfx_volume', sfxVolume.toString());
+    }, [sfxVolume]);
+
+    useEffect(() => {
+        localStorage.setItem('balatro_game_speed', gameSpeed.toString());
+    }, [gameSpeed]);
+
+    useEffect(() => {
+        localStorage.setItem('balatro_high_contrast', highContrast.toString());
+    }, [highContrast]);
+
+    // Attempt autoplay on mount
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.volume = isMusicMuted ? 0 : musicVolume;
+            if (!isMusicMuted && musicVolume > 0) {
+                audioRef.current.play().catch(() => {});
+            }
+        }
+    }, []);
 
 
     // =========================
@@ -79,10 +144,11 @@ function Gameplay() {
             reward: '$$$+'
         },
 
-        currentHandName: 'Flush',
+        currentHandName: '',
         currentHandLevel: 1,
-        currentHandChips: 73,
-        currentHandMult: 4
+        currentHandChips: 0,
+        currentHandMult: 0,
+        redeemedVouchers: []
     });
 
 
@@ -222,10 +288,11 @@ function Gameplay() {
                 reward: '$$$+'
             },
 
-            currentHandName: 'Flush',
+            currentHandName: '',
             currentHandLevel: 1,
-            currentHandChips: 73,
-            currentHandMult: 4
+            currentHandChips: 0,
+            currentHandMult: 0,
+            redeemedVouchers: []
         });
 
         setGameState(GAME_STATE.BLIND_SELECTION);
@@ -359,89 +426,33 @@ function Gameplay() {
 
 
             {/* =====================================
-                SETTINGS OVERLAY
+                AUDIO ELEMENT
             ====================================== */}
+            <audio
+                ref={audioRef}
+                src={bgm}
+                loop
+                preload="auto"
+            />
 
-            {showSettings && (
-
-                <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-
-                        zIndex: 200,
-
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-
-                        backgroundColor:
-                            'rgba(0, 0, 0, 0.7)'
-                    }}
-                >
-
-                    <div
-                        style={{
-                            width: '400px',
-                            maxWidth: '80%',
-
-                            padding: '30px',
-
-                            borderRadius: '12px',
-
-                            backgroundColor: '#222',
-
-                            textAlign: 'center'
-                        }}
-                    >
-
-                        <h2>
-                            SETTINGS
-                        </h2>
-
-
-                        <button
-                            onClick={() => navigate('/')}
-                            style={{
-                                display: 'block',
-                                width: '100%',
-
-                                padding: '12px',
-
-                                marginTop: '20px',
-
-                                cursor: 'pointer',
-
-                                fontSize: '18px'
-                            }}
-                        >
-                            MAIN MENU
-                        </button>
-
-
-                        <button
-                            onClick={() => setShowSettings(false)}
-                            style={{
-                                display: 'block',
-                                width: '100%',
-
-                                padding: '12px',
-
-                                marginTop: '10px',
-
-                                cursor: 'pointer',
-
-                                fontSize: '18px'
-                            }}
-                        >
-                            BACK TO GAME
-                        </button>
-
-                    </div>
-
-                </div>
-
-            )}
+            {/* =====================================
+                OPTIONS / SETTINGS MODAL
+            ====================================== */}
+            <OptionsModal
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+                onMainMenu={() => navigate('/')}
+                musicVolume={musicVolume}
+                setMusicVolume={setMusicVolume}
+                isMusicMuted={isMusicMuted}
+                setIsMusicMuted={setIsMusicMuted}
+                sfxVolume={sfxVolume}
+                setSfxVolume={setSfxVolume}
+                gameSpeed={gameSpeed}
+                setGameSpeed={setGameSpeed}
+                highContrast={highContrast}
+                setHighContrast={setHighContrast}
+            />
 
         </div>
     );

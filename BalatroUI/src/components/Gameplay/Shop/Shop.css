@@ -210,30 +210,49 @@
     align-items: center;
     justify-content: center;
     min-height: 140px;
+    overflow: visible;
 }
 
-/* Tooltip Description Box */
+/* Tooltip Description Box - Dynamic Side Placement */
 .shop-item-tooltip-box {
     position: absolute;
-    right: calc(50% + 96px);
-    width: 155px;
-    background: #2b383b;
-    border: 2px solid #8e9a9d;
-    border-radius: 12px;
+    width: 165px;
+    background: #243033;
+    border: 2px solid #6b7f84;
+    border-radius: 10px;
     padding: 10px 12px;
-    min-height: 125px;
+    min-height: 105px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-    z-index: 50;
-    animation: fadeIn 0.15s ease-out;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.9), 0 0 16px rgba(0, 0, 0, 0.6);
+    z-index: 999;
     pointer-events: none;
+    box-sizing: border-box;
+    animation: tooltipSidePop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.98); }
-    to { opacity: 1; transform: scale(1); }
+.shop-item-tooltip-box.pos-left {
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.shop-item-tooltip-box.pos-right {
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+@keyframes tooltipSidePop {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
 }
 
 .tooltip-title {
@@ -242,28 +261,30 @@
     color: #ffffff;
     text-align: center;
     margin-bottom: 4px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.3px;
 }
 
 .tooltip-description {
-    font-size: 11px;
-    font-weight: 600;
-    color: #cfd8dc;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff; /* Teks putih jelas */
     line-height: 1.35;
     text-align: center;
     margin-bottom: 6px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .tooltip-rarity-pill {
     align-self: center;
     padding: 2px 14px;
-    border-radius: 10px;
+    border-radius: 8px;
     font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
     color: white;
     letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .rarity-rare {
@@ -324,8 +345,11 @@
     align-items: center;
 }
 
-.shop-card-slot:hover {
+.shop-card-slot:hover,
+.voucher-card-slot:hover,
+.booster-card-slot:hover {
     transform: translateY(-4px);
+    z-index: 100;
 }
 
 .shop-card-slot.active-hover .shop-card-visual {
@@ -334,6 +358,119 @@
 
 .shop-card-slot.cant-afford {
     opacity: 0.85;
+}
+
+/* Card Selection & Elevation */
+.shop-card-slot.is-selected,
+.voucher-card-slot.is-selected,
+.booster-card-slot.is-selected {
+    transform: translateY(-8px);
+    z-index: 120;
+}
+
+.shop-card-slot.is-selected .shop-card-visual,
+.voucher-card-slot.is-selected .voucher-visual,
+.booster-card-slot.is-selected .booster-visual {
+    filter: drop-shadow(0 0 10px rgba(255, 212, 59, 0.8));
+}
+
+/* Action Buttons (BUY, REDEEM, OPEN) */
+.shop-item-action-btn {
+    position: absolute;
+    bottom: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 6px;
+    padding: 3px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-align: center;
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+    z-index: 40;
+    box-sizing: border-box;
+    transition: transform 0.1s ease, filter 0.1s ease;
+    animation: shopBtnPop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes shopBtnPop {
+    0% {
+        transform: translateX(-50%) scale(0.6);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* BUY Button (Yellow / Orange) */
+.shop-item-action-btn.buy-btn.can-buy {
+    background: #ff9d00;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    box-shadow: 0 3px 0 #b86e00, 0 4px 8px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.shop-item-action-btn.buy-btn.can-buy:hover {
+    transform: translateX(-50%) scale(1.06);
+    filter: brightness(1.1);
+}
+
+.shop-item-action-btn.buy-btn.can-buy:active {
+    transform: translateX(-50%) translateY(2px) scale(0.98);
+}
+
+/* REDEEM Button (Red) */
+.shop-item-action-btn.redeem-btn.can-buy {
+    background: #fe4747;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    box-shadow: 0 3px 0 #b32a2a, 0 4px 8px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    font-size: 12.5px;
+}
+
+.shop-item-action-btn.redeem-btn.can-buy:hover {
+    transform: translateX(-50%) scale(1.06);
+    filter: brightness(1.1);
+}
+
+.shop-item-action-btn.redeem-btn.can-buy:active {
+    transform: translateX(-50%) translateY(2px) scale(0.98);
+}
+
+/* OPEN Button (Teal / Green) */
+.shop-item-action-btn.open-btn.can-buy {
+    background: #1cb68b;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    box-shadow: 0 3px 0 #0f7a5d, 0 4px 8px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.shop-item-action-btn.open-btn.can-buy:hover {
+    transform: translateX(-50%) scale(1.06);
+    filter: brightness(1.1);
+}
+
+.shop-item-action-btn.open-btn.can-buy:active {
+    transform: translateX(-50%) translateY(2px) scale(0.98);
+}
+
+/* Disabled State (Cannot Afford) */
+.shop-item-action-btn.cant-buy {
+    background: #252f31;
+    color: #55686c;
+    border: 2px solid #161e20;
+    box-shadow: 0 2px 0 #0f1416;
+    cursor: not-allowed;
+    opacity: 0.85;
+    text-shadow: none;
 }
 
 /* Price Badge */
@@ -398,6 +535,12 @@
     gap: 10px;
     min-height: 136px;
     box-sizing: border-box;
+    position: relative;
+    overflow: visible;
+}
+
+.shop-voucher-container:hover {
+    z-index: 50;
 }
 
 .voucher-ante-label {
@@ -442,6 +585,12 @@
     gap: 14px;
     min-height: 136px;
     box-sizing: border-box;
+    position: relative;
+    overflow: visible;
+}
+
+.shop-boosters-container:hover {
+    z-index: 50;
 }
 
 .booster-card-slot {

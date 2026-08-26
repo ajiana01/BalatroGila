@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import RunInfoModal from './RunInfoModal';
+import ShopSign from '../../ShopSign/ShopSign';
 import './GameSidebar.css';
 
 // SVG Icons for authentic Balatro look
@@ -33,6 +36,8 @@ function RunInfoIcon() {
 }
 
 function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isShop = false }) {
+    const [isRunInfoOpen, setIsRunInfoOpen] = useState(false);
+
     const blind = gameData?.currentBlind || {
         type: 'big',
         title: 'Big Blind',
@@ -48,27 +53,15 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
 
     return (
         <aside className="game-sidebar">
-            {/* TOP SECTION: Shop Marquee OR Choose Blind OR Active Blind */}
+            {/* TOP SECTION: Shop Sign OR Choose Blind OR Active Blind */}
             {isShop ? (
-                <div className="sidebar-shop-marquee-box">
-                    <div className="shop-marquee-frame">
-                        <div className="shop-marquee-border-lights">
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                            <span className="light-dot"></span>
-                        </div>
-                        <div className="shop-marquee-title">SHOP</div>
-                    </div>
-                    <div className="shop-marquee-subtitle">Improve your run!</div>
+                <div className="sidebar-shop-sign-container">
+                    <ShopSign
+                        width={210}
+                        height={106}
+                        animated={true}
+                        fps={6}
+                    />
                 </div>
             ) : isBlindSelection ? (
                 <div className="sidebar-blind-section selection-mode">
@@ -117,19 +110,25 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
             <div className={`sidebar-box hand-eval-box ${isShop ? 'shop-eval-box' : ''}`}>
                 {!isShop && (
                     <div className="hand-name-lvl">
-                        {gameData.currentHandName || 'Flush'} <span className="hand-lvl">lvl.{gameData.currentHandLevel || 1}</span>
+                        {gameData?.currentHandName ? (
+                            <>
+                                {gameData.currentHandName} <span className="hand-lvl">lvl.{gameData.currentHandLevel || 1}</span>
+                            </>
+                        ) : (
+                            '\u00A0'
+                        )}
                     </div>
                 )}
 
                 <div className="chips-mult-row">
                     <div className="chips-box">
-                        {isShop ? 0 : (gameData.currentHandChips || 73)}
+                        {isShop ? 0 : (gameData?.currentHandChips || 0)}
                     </div>
 
                     <span className="mult-sign">X</span>
 
                     <div className="mult-box">
-                        {isShop ? 0 : (gameData.currentHandMult || 4)}
+                        {isShop ? 0 : (gameData?.currentHandMult || 0)}
                     </div>
                 </div>
             </div>
@@ -138,7 +137,11 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
             <div className="sidebar-bottom-grid">
                 {/* Left Column: Action Buttons */}
                 <div className="sidebar-left-col">
-                    <button className="sidebar-btn btn-run-info" title="Run Info">
+                    <button
+                        className="sidebar-btn btn-run-info"
+                        title="Run Info"
+                        onClick={() => setIsRunInfoOpen(true)}
+                    >
                         <span className="btn-text">Run Info</span>
                         <RunInfoIcon />
                     </button>
@@ -187,6 +190,13 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
                     </div>
                 </div>
             </div>
+
+            {/* RUN INFO MODAL */}
+            <RunInfoModal
+                isOpen={isRunInfoOpen}
+                onClose={() => setIsRunInfoOpen(false)}
+                gameData={gameData}
+            />
         </aside>
     );
 }
