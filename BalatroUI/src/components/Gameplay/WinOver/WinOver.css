@@ -1,70 +1,567 @@
-﻿.win-over {
-    width: 100%;
-    height: 100%;
+/* =========================================
+   WIN OVER - AUTHENTIC BALATRO YOU WIN MODAL
+========================================= */
 
+.win-over-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    background: rgba(8, 14, 12, 0.65);
+    backdrop-filter: blur(3px);
     display: flex;
-
     align-items: center;
     justify-content: center;
-
-    background:
-            radial-gradient(
-                    circle,
-                    #365f2e,
-                    #101e12
-            );
+    font-family: 'Balatro', sans-serif;
+    user-select: none;
+    animation: win-backdrop-in 0.25s ease-out;
 }
 
-.win-over-panel {
-    text-align: center;
+@keyframes win-backdrop-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
-.win-icon {
-    font-size: 100px;
-
-    color: #ffd43b;
+/* =========================================
+   CONFETTI PARTICLES
+========================================= */
+.win-confetti-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
 }
 
-.win-over-panel h1 {
-    font-size: 80px;
-
-    margin: 10px 0;
-
-    color: #ffd43b;
+.win-confetti-piece {
+    position: absolute;
+    border-radius: 2px;
+    opacity: 0.85;
+    animation: confetti-flutter 3.5s ease-in-out infinite alternate;
 }
 
-.win-over-panel p {
-    font-size: 24px;
+@keyframes confetti-flutter {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+    }
+    50% {
+        transform: translateY(-25px) rotate(180deg) scale(1.15);
+    }
+    100% {
+        transform: translateY(20px) rotate(360deg) scale(0.95);
+    }
 }
 
-.win-stats {
-    margin: 30px;
+/* =========================================
+   MAIN LAYOUT (MASCOT + MODAL PANEL)
+========================================= */
+.win-over-layout {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    max-width: 95vw;
+    animation: win-modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 
+@keyframes win-modal-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* =========================================
+   LEFT MASCOT (JIMBO & SPEECH BUBBLE)
+========================================= */
+.win-mascot-wrapper {
     display: flex;
     flex-direction: column;
-
-    gap: 5px;
-}
-
-.win-stats strong {
-    font-size: 30px;
-
-    margin-bottom: 15px;
-}
-
-.win-over-panel button {
-    border: none;
-
-    padding: 15px 50px;
-
-    border-radius: 10px;
-
-    background: #ffb000;
-
-    color: white;
-
-    font-size: 20px;
-    font-weight: bold;
-
+    align-items: center;
+    gap: 12px;
     cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.win-mascot-wrapper:hover {
+    transform: scale(1.05);
+}
+
+.win-jimbo-card {
+    position: relative;
+    background: #ffffff;
+    border: 3px solid #e1e4ea;
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 215, 0, 0.3);
+    animation: jimbo-sway 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes jimbo-sway {
+    0% {
+        transform: rotate(-3deg);
+    }
+    100% {
+        transform: rotate(3deg) translateY(-4px);
+    }
+}
+
+.jimbo-confetti {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+.jimbo-confetti.c1 { top: -6px; left: -6px; background: #ff4757; transform: rotate(15deg); }
+.jimbo-confetti.c2 { top: -8px; right: -4px; background: #ffa502; transform: rotate(45deg); }
+.jimbo-confetti.c3 { bottom: -6px; left: -4px; background: #2ed573; transform: rotate(30deg); }
+.jimbo-confetti.c4 { bottom: -6px; right: -6px; background: #1e90ff; transform: rotate(60deg); }
+
+.win-speech-bubble {
+    position: relative;
+    background: #ffffff;
+    color: #212529;
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 155px;
+    text-align: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+    border: 2px solid #dde1e7;
+}
+
+.win-speech-bubble p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.speech-bubble-tail {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 8px solid #ffffff;
+}
+
+/* =========================================
+   MODAL PANEL
+========================================= */
+.win-modal-panel {
+    width: 440px;
+    background: #1c202a;
+    border: 4px solid #7c68cb;
+    border-radius: 18px;
+    padding: 16px 20px 20px 20px;
+    box-sizing: border-box;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(124, 104, 203, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* =========================================
+   TITLE HEADER
+========================================= */
+.win-header {
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.win-title {
+    margin: 0;
+    font-size: 54px;
+    letter-spacing: 2.5px;
+    color: #a4b4ff;
+    text-shadow: 0 4px 0 #4f4779, 0 6px 12px rgba(0, 0, 0, 0.7);
+    line-height: 1;
+    font-weight: 900;
+}
+
+/* =========================================
+   STATS GRID & ROWS
+========================================= */
+.win-body-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.win-stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.win-stat-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 10px;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.win-stat-row:hover {
+    transform: translateX(2px);
+    filter: brightness(1.08);
+}
+
+.win-stat-row.full-width {
+    width: 100%;
+}
+
+.win-pill-label {
+    flex: 1;
+    background: #2d3340;
+    color: #e2e8f0;
+    border: 1px solid #3f4758;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+.win-pill-value {
+    position: relative;
+    background: #14171f;
+    color: #ffffff;
+    border: 1px solid #282f3d;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 16px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    min-width: 60px;
+}
+
+/* BEST HAND SPECIFIC */
+.value-best-hand {
+    min-width: 130px;
+    color: #ff4757;
+    background: #14171f;
+    border-color: #3b2326;
+}
+
+.best-score-text {
+    font-size: 18px;
+    color: #ff4d4d;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+}
+
+.win-chip-icon {
+    flex-shrink: 0;
+}
+
+/* HIGH SCORE FLOATING BADGE */
+.high-score-badge {
+    position: absolute;
+    top: -10px;
+    right: -6px;
+    font-family: 'Balatro', sans-serif;
+    font-style: italic;
+    font-size: 11px;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    letter-spacing: 0.5px;
+    transform: rotate(-8deg);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.high-score-badge.top-right {
+    top: -11px;
+    right: 4px;
+}
+
+/* MOST PLAYED HAND */
+.value-hand-name {
+    min-width: 120px;
+    font-size: 15px;
+}
+
+.hand-count-sub {
+    color: #94a3b8;
+    font-size: 13px;
+    margin-left: 2px;
+}
+
+/* TWO COLUMNS ROWS (CARDS PLAYED/ANTE, DISCARDED/ROUND) */
+.win-two-col-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.win-stat-col {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.win-stat-col:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.win-stat-col .win-pill-label {
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+.win-stat-col .win-pill-value {
+    min-width: 42px;
+    padding: 6px 8px;
+    font-size: 15px;
+}
+
+/* BADGE COLORS */
+.value-badge-blue {
+    background: #2574d4;
+    border-color: #1a56a0;
+    color: #ffffff;
+}
+
+.value-badge-red {
+    background: #cb3234;
+    border-color: #962123;
+    color: #ffffff;
+}
+
+.value-badge-dark {
+    background: #14171f;
+    border-color: #282f3d;
+    color: #ffffff;
+}
+
+/* SPLIT ROW (CARDS PURCHASED + TIMES REROLLED | ACTION BUTTONS) */
+.win-action-split-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    margin-top: 2px;
+}
+
+.win-split-left {
+    flex: 1.3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+}
+
+.win-split-left .win-stat-row .win-pill-label {
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+.win-split-left .win-stat-row .win-pill-value {
+    min-width: 40px;
+    padding: 6px 10px;
+    font-size: 15px;
+}
+
+.win-split-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+}
+
+/* =========================================
+   ACTION BUTTONS
+========================================= */
+.win-action-btn {
+    border: none;
+    border-radius: 10px;
+    font-family: 'Balatro', sans-serif;
+    font-weight: 900;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.btn-new-run {
+    background: #e43838;
+    box-shadow: 0 4px 0 #9e1c1c;
+    padding: 10px 14px;
+    font-size: 18px;
+}
+
+.btn-new-run:hover {
+    background: #f04444;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #9e1c1c;
+    filter: brightness(1.1);
+}
+
+.btn-new-run:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #9e1c1c;
+}
+
+.btn-main-menu {
+    background: #7a2323;
+    box-shadow: 0 4px 0 #4f1010;
+    padding: 10px 14px;
+    font-size: 17px;
+}
+
+.btn-main-menu:hover {
+    background: #8e2b2b;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #4f1010;
+    filter: brightness(1.1);
+}
+
+.btn-main-menu:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #4f1010;
+}
+
+/* ENDLESS MODE BUTTON */
+.win-endless-wrapper {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.btn-endless {
+    width: 100%;
+    background: #1976d2;
+    box-shadow: 0 4px 0 #0d47a1;
+    padding: 12px 18px;
+    font-size: 22px;
+    letter-spacing: 1px;
+}
+
+.btn-endless:hover {
+    background: #2196f3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #0d47a1;
+    filter: brightness(1.12);
+}
+
+.btn-endless:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #0d47a1;
+}
+
+/* =========================================
+   TOOLTIP POPUP ON HOVER
+========================================= */
+.win-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10131a;
+    border: 2px solid #7c68cb;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
+    pointer-events: none;
+    animation: tooltip-fade 0.15s ease-out;
+}
+
+@keyframes tooltip-fade {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 4px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.win-tooltip.hands-breakdown {
+    white-space: normal;
+    min-width: 180px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.tooltip-title {
+    color: #a4b4ff;
+    font-size: 13px;
+    font-weight: 900;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #2d3340;
+    padding-bottom: 4px;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 2px 0;
+}
+
+.breakdown-row strong {
+    color: #ffa502;
+}
+
+/* =========================================
+   RESPONSIVE ADJUSTMENTS
+========================================= */
+@media (max-width: 768px) {
+    .win-over-layout {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .win-modal-panel {
+        width: 92vw;
+        padding: 14px 16px;
+    }
+
+    .win-title {
+        font-size: 42px;
+    }
+
+    .win-mascot-wrapper {
+        flex-direction: row;
+    }
+
+    .win-speech-bubble {
+        max-width: 200px;
+    }
 }

@@ -138,6 +138,9 @@ function GameBoard({
 
     const handlePlayHand = () => {
         if (selectedIds.length === 0) return;
+        if (gameData?.stats) {
+            gameData.stats.cardsPlayed = (gameData.stats.cardsPlayed || 0) + selectedIds.length;
+        }
         if (onWin) {
             onWin();
         }
@@ -145,6 +148,9 @@ function GameBoard({
 
     const handleDiscard = () => {
         if (selectedIds.length === 0) return;
+        if (gameData?.stats) {
+            gameData.stats.cardsDiscarded = (gameData.stats.cardsDiscarded || 0) + selectedIds.length;
+        }
         setCards(prev => prev.filter(c => !selectedIds.includes(c.id)));
         setSelectedIds([]);
     };

@@ -1,62 +1,559 @@
-﻿.game-over {
-    width: 100%;
-    height: 100%;
+/* =========================================
+   GAME OVER - AUTHENTIC BALATRO GAME OVER MODAL
+========================================= */
 
+.game-over-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    background: rgba(160, 30, 30, 0.48);
+    backdrop-filter: blur(3px);
     display: flex;
-
     align-items: center;
     justify-content: center;
-
-    background:
-            radial-gradient(
-                    circle,
-                    #4a1515,
-                    #150909
-            );
+    font-family: 'Balatro', sans-serif;
+    user-select: none;
+    animation: game-over-backdrop-in 0.25s ease-out;
 }
 
-.game-over-panel {
-    text-align: center;
+@keyframes game-over-backdrop-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
-.game-over-panel h1 {
-    font-size: 80px;
-
-    margin: 0;
-
-    color: #ff4545;
+/* =========================================
+   CONFETTI / PARTICLE DRIFT
+========================================= */
+.game-over-confetti-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
 }
 
-.game-over-panel p {
-    font-size: 20px;
-
-    opacity: 0.7;
+.game-over-confetti-piece {
+    position: absolute;
+    border-radius: 2px;
+    opacity: 0.75;
+    animation: confetti-drift 4s ease-in-out infinite alternate;
 }
 
-.game-over-stats {
-    margin: 40px;
+@keyframes confetti-drift {
+    0% {
+        transform: translateY(0) rotate(0deg);
+    }
+    100% {
+        transform: translateY(25px) rotate(180deg);
+    }
+}
 
+/* =========================================
+   MAIN LAYOUT (MASCOT + MODAL PANEL)
+========================================= */
+.game-over-layout {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    max-width: 95vw;
+    animation: game-over-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes game-over-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* =========================================
+   LEFT MASCOT (JIMBO & SPEECH BUBBLE)
+========================================= */
+.game-over-mascot-wrapper {
     display: flex;
     flex-direction: column;
-}
-
-.game-over-stats strong {
-    font-size: 40px;
-}
-
-.game-over-panel button {
-    border: none;
-
-    padding: 15px 50px;
-
-    border-radius: 10px;
-
-    background: #ff4545;
-
-    color: white;
-
-    font-size: 20px;
-    font-weight: bold;
-
+    align-items: center;
+    gap: 12px;
     cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.game-over-mascot-wrapper:hover {
+    transform: scale(1.05);
+}
+
+.game-over-jimbo-card {
+    position: relative;
+    background: #ffffff;
+    border: 3px solid #e1e4ea;
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 71, 87, 0.25);
+    animation: jimbo-mourn 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes jimbo-mourn {
+    0% {
+        transform: rotate(-2deg);
+    }
+    100% {
+        transform: rotate(2deg) translateY(2px);
+    }
+}
+
+.jimbo-confetti {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+.jimbo-confetti.c1 { top: -6px; left: -6px; background: #ff4757; transform: rotate(15deg); }
+.jimbo-confetti.c2 { top: -8px; right: -4px; background: #ffa502; transform: rotate(45deg); }
+.jimbo-confetti.c3 { bottom: -6px; left: -4px; background: #1e90ff; transform: rotate(30deg); }
+
+.game-over-speech-bubble {
+    position: relative;
+    background: #ffffff;
+    color: #212529;
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 155px;
+    text-align: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+    border: 2px solid #dde1e7;
+}
+
+.game-over-speech-bubble p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.speech-bubble-tail {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 8px solid #ffffff;
+}
+
+/* =========================================
+   MODAL PANEL
+========================================= */
+.game-over-modal-panel {
+    width: 440px;
+    background: #1c232a;
+    border: 4px solid #788691;
+    border-radius: 18px;
+    padding: 16px 20px 20px 20px;
+    box-sizing: border-box;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 35px rgba(231, 76, 60, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* =========================================
+   TITLE HEADER
+========================================= */
+.game-over-header {
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.game-over-title {
+    margin: 0;
+    font-size: 52px;
+    letter-spacing: 2.5px;
+    color: #ff4757;
+    text-shadow: 0 4px 0 #781c1c, 0 6px 12px rgba(0, 0, 0, 0.8);
+    line-height: 1;
+    font-weight: 900;
+}
+
+/* =========================================
+   STATS GRID & ROWS
+========================================= */
+.game-over-body-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.game-over-stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.game-over-stat-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 10px;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.game-over-stat-row:hover {
+    transform: translateX(2px);
+    filter: brightness(1.08);
+}
+
+.game-over-stat-row.full-width {
+    width: 100%;
+}
+
+.game-over-pill-label {
+    flex: 1;
+    background: #2d3340;
+    color: #e2e8f0;
+    border: 1px solid #3f4758;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+.game-over-pill-value {
+    position: relative;
+    background: #14171f;
+    color: #ffffff;
+    border: 1px solid #282f3d;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 16px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    min-width: 60px;
+}
+
+/* BEST HAND SPECIFIC */
+.value-best-hand {
+    min-width: 130px;
+    color: #ff4757;
+    background: #14171f;
+    border-color: #3b2326;
+}
+
+.best-score-text {
+    font-size: 18px;
+    color: #ff4d4d;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+}
+
+.game-over-chip-icon {
+    flex-shrink: 0;
+}
+
+/* MOST PLAYED HAND */
+.value-hand-name {
+    min-width: 120px;
+    font-size: 15px;
+}
+
+.hand-count-sub {
+    color: #94a3b8;
+    font-size: 13px;
+    margin-left: 2px;
+}
+
+/* TWO COLUMNS ROWS (CARDS PLAYED/ANTE, DISCARDED/ROUND) */
+.game-over-two-col-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.game-over-stat-col {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.game-over-stat-col:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.game-over-stat-col .game-over-pill-label {
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+.game-over-stat-col .game-over-pill-value {
+    min-width: 42px;
+    padding: 6px 8px;
+    font-size: 15px;
+}
+
+/* BADGE COLORS */
+.value-badge-blue {
+    background: #2574d4;
+    border-color: #1a56a0;
+    color: #ffffff;
+}
+
+.value-badge-red {
+    background: #cb3234;
+    border-color: #962123;
+    color: #ffffff;
+}
+
+.value-badge-dark {
+    background: #14171f;
+    border-color: #282f3d;
+    color: #ffffff;
+}
+
+/* SPLIT ROW (CARDS PURCHASED + REROLLED | DEFEATED BY BOX) */
+.game-over-split-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    margin-top: 2px;
+}
+
+.game-over-split-left {
+    flex: 1.25;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+}
+
+.game-over-split-left .game-over-stat-row .game-over-pill-label {
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+.game-over-split-left .game-over-stat-row .game-over-pill-value {
+    min-width: 40px;
+    padding: 6px 10px;
+    font-size: 15px;
+}
+
+/* DEFEATED BY BOX */
+.game-over-defeated-box {
+    flex: 1;
+    position: relative;
+    background: #14171f;
+    border: 2px solid #3d4756;
+    border-radius: 10px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.game-over-defeated-box:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    border-color: #ff4757;
+}
+
+.defeated-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: #cbd5e1;
+    letter-spacing: 0.3px;
+}
+
+.defeated-title {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffffff;
+    margin-bottom: 2px;
+}
+
+.defeated-blind-token {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================================
+   ACTION BUTTONS
+========================================= */
+.game-over-actions-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.game-over-action-btn {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Balatro', sans-serif;
+    font-weight: 900;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #ffffff;
+    padding: 10px 14px;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+.btn-new-run {
+    background: #c93434;
+    box-shadow: 0 4px 0 #851c1c;
+    border: 2px solid #ffffff20;
+}
+
+.btn-new-run:hover {
+    background: #e03a3a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #851c1c;
+    filter: brightness(1.1);
+}
+
+.btn-new-run:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #851c1c;
+}
+
+.btn-main-menu {
+    background: #7a2323;
+    box-shadow: 0 4px 0 #4f1010;
+    border: 2px solid #ffffff15;
+    font-size: 17px;
+}
+
+.btn-main-menu:hover {
+    background: #8e2b2b;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #4f1010;
+    filter: brightness(1.1);
+}
+
+.btn-main-menu:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #4f1010;
+}
+
+/* =========================================
+   TOOLTIP POPUP ON HOVER
+========================================= */
+.game-over-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10131a;
+    border: 2px solid #ff4757;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
+    pointer-events: none;
+    animation: tooltip-fade 0.15s ease-out;
+}
+
+@keyframes tooltip-fade {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 4px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.game-over-tooltip.hands-breakdown {
+    white-space: normal;
+    min-width: 180px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.tooltip-title {
+    color: #ff6b81;
+    font-size: 13px;
+    font-weight: 900;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #2d3340;
+    padding-bottom: 4px;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 2px 0;
+}
+
+.breakdown-row strong {
+    color: #ffa502;
+}
+
+/* =========================================
+   RESPONSIVE ADJUSTMENTS
+========================================= */
+@media (max-width: 768px) {
+    .game-over-layout {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .game-over-modal-panel {
+        width: 92vw;
+        padding: 14px 16px;
+    }
+
+    .game-over-title {
+        font-size: 40px;
+    }
+
+    .game-over-mascot-wrapper {
+        flex-direction: row;
+    }
+
+    .game-over-speech-bubble {
+        max-width: 200px;
+    }
 }

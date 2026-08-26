@@ -231,6 +231,10 @@ function Shop({
         updateMoney(newMoney);
         setRerollCost(prev => prev + 1);
 
+        if (gameData?.stats) {
+            gameData.stats.timesRerolled = (gameData.stats.timesRerolled || 0) + 1;
+        }
+
         const newCards = generateShopCards(2);
         setShopCards(newCards);
         setActiveTooltipItem(null);
@@ -282,6 +286,10 @@ function Shop({
             }
         }
 
+        if (gameData?.stats) {
+            gameData.stats.cardsPurchased = (gameData.stats.cardsPurchased || 0) + 1;
+        }
+
         const newMoney = money - item.price;
         updateMoney(newMoney);
 
@@ -306,6 +314,9 @@ function Shop({
         // Apply voucher effects
         if (gameData) {
             gameData.redeemedVouchers = [...(gameData.redeemedVouchers || []), voucher.id];
+            if (gameData.stats) {
+                gameData.stats.cardsPurchased = (gameData.stats.cardsPurchased || 0) + 1;
+            }
         }
         if (voucher.id === 'Wasteful' && gameData) {
             gameData.discards = (gameData.discards || 4) + 1;
@@ -327,6 +338,11 @@ function Shop({
         updateMoney(newMoney);
         setPurchasedBoosters(prev => [...prev, pack.slotId]);
         setActiveTooltipItem(null);
+
+        if (gameData?.stats) {
+            gameData.stats.cardsPurchased = (gameData.stats.cardsPurchased || 0) + 1;
+        }
+
         showToast(`Opened ${pack.title}!`);
     };
 

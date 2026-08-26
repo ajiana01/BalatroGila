@@ -109,6 +109,28 @@ function Gameplay() {
     // GAME DATA
     // =========================
 
+    const DEFAULT_GAME_STATS = {
+        bestHandScore: 33750,
+        bestHandName: 'Flush',
+        mostPlayedHand: 'Flush',
+        mostPlayedCount: 38,
+        cardsPlayed: 350,
+        cardsDiscarded: 128,
+        cardsPurchased: 40,
+        timesRerolled: 5,
+        handsHistory: {
+            'Flush': 38,
+            'High Card': 12,
+            'Pair': 8,
+            'Two Pair': 6,
+            'Three of a Kind': 4,
+            'Straight': 3,
+            'Full House': 2,
+            'Four of a Kind': 1,
+            'Straight Flush': 0
+        }
+    };
+
     const [gameData, setGameData] = useState({
         money: 4,
 
@@ -149,7 +171,9 @@ function Gameplay() {
         currentHandLevel: 1,
         currentHandChips: 0,
         currentHandMult: 0,
-        redeemedVouchers: []
+        redeemedVouchers: [],
+        stats: { ...DEFAULT_GAME_STATS },
+        isEndless: false
     });
 
 
@@ -193,6 +217,11 @@ function Gameplay() {
 
 
     function handleRoundWin() {
+        const isFinalBoss = (gameData.ante >= 8 && (gameData.blindIndex >= 2 || gameData.currentBlind?.type === 'boss')) && !gameData.isEndless;
+        if (isFinalBoss) {
+            setGameState(GAME_STATE.WIN_OVER);
+            return;
+        }
 
         setGameState(GAME_STATE.CASHOUT);
     }
@@ -216,11 +245,26 @@ function Gameplay() {
     }
 
 
+    function handleEndlessMode() {
+        setGameData(prev => ({
+            ...prev,
+            isEndless: true,
+            ante: Math.max(9, prev.ante + 1),
+            round: prev.round + 1,
+            blindIndex: 0,
+            score: 0,
+            hands: 4,
+            discards: 4
+        }));
+        setGameState(GAME_STATE.CASHOUT);
+    }
+
+
     function handleLeaveShop() {
 
         if (gameData.blindIndex >= 2) {
             // Completed the Boss Blind of current Ante
-            if (gameData.ante >= 8) {
+            if (gameData.ante >= 8 && !gameData.isEndless) {
                 setGameState(GAME_STATE.WIN_OVER);
                 return;
             }
@@ -343,7 +387,9 @@ function Gameplay() {
             currentHandLevel: 1,
             currentHandChips: 0,
             currentHandMult: 0,
-            redeemedVouchers: []
+            redeemedVouchers: [],
+            stats: { ...DEFAULT_GAME_STATS },
+            isEndless: false
         });
 
         setGameState(GAME_STATE.BLIND_SELECTION);
@@ -452,22 +498,36 @@ function Gameplay() {
 
 
                 {gameState === GAME_STATE.GAME_OVER && (
-
-                    <GameOver
-                        gameData={gameData}
-                        onRestart={handleRestart}
-                    />
-
+                    <>
+                        <GameBoard
+                            gameData={gameData}
+                            onWin={handleRoundWin}
+                            onLose={handleRoundLose}
+                            onOpenSettings={() => setShowSettings(true)}
+                        />
+                        <GameOver
+                            gameData={gameData}
+                            onRestart={handleRestart}
+                            onMainMenu={() => navigate('/')}
+                        />
+                    </>
                 )}
 
 
                 {gameState === GAME_STATE.WIN_OVER && (
-
-                    <WinOver
-                        gameData={gameData}
-                        onRestart={handleRestart}
-                    />
-
+                    <>
+                        <GameBoard
+                            gameData={gameData}
+                            onWin={handleRoundWin}
+                            onLose={handleRoundLose}
+                            onOpenSettings={() => setShowSettings(true)}
+                        />
+                        <WinOver
+                            gameData={gameData}
+                            onRestart={handleRestart}
+                            onMainMenu={() => navigate('/')}
+                        />
+                    </>
                 )}
 
             </div>
