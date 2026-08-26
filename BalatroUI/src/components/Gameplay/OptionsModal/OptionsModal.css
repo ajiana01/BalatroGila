@@ -284,3 +284,54 @@
 .btn-resume:active {
     box-shadow: 0 2px 0 #b86e00;
 }
+
+/* =========================================
+   DEBUG BUTTONS IN OPTIONS
+========================================= */
+.debug-options-group {
+    border-color: rgba(255, 157, 0, 0.3);
+    background: #1c272a;
+}
+
+.debug-buttons-row {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px;
+}
+
+.options-debug-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.1s ease;
+    text-align: center;
+}
+
+.options-debug-btn:hover {
+    filter: brightness(1.15);
+}
+
+.options-debug-btn:active {
+    transform: translateY(2px);
+}
+
+.options-debug-btn.win {
+    background: #10b981;
+    box-shadow: 0 3px 0 #059669;
+}
+
+.options-debug-btn.lose {
+    background: #ef4444;
+    box-shadow: 0 3px 0 #b91c1c;
+}
+
+.options-debug-btn.jump {
+    background: #8b5cf6;
+    box-shadow: 0 3px 0 #6d28d9;
+}
+

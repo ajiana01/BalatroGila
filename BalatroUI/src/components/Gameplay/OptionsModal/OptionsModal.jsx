@@ -14,7 +14,10 @@ function OptionsModal({
     gameSpeed = 1,
     setGameSpeed,
     highContrast = false,
-    setHighContrast
+    setHighContrast,
+    onForceWin,
+    onForceLose,
+    onJumpAnte8
 }) {
     const [localMusicVol, setLocalMusicVol] = useState(Math.round(musicVolume * 100));
     const [localMusicMuted, setLocalMusicMuted] = useState(isMusicMuted);
@@ -214,6 +217,51 @@ function OptionsModal({
                             </button>
                         </div>
                     </div>
+
+                    {/* SECTION 3: QUICK DEBUG & TESTING */}
+                    {(onForceWin || onForceLose || onJumpAnte8) && (
+                        <div className="options-group debug-options-group">
+                            <div className="group-label" style={{ color: '#ff9d00' }}>🛠️ DEBUG & TESTING</div>
+                            <div className="option-row debug-buttons-row" style={{ gap: '8px' }}>
+                                {onForceWin && (
+                                    <button
+                                        className="options-debug-btn win"
+                                        onClick={() => {
+                                            onClose();
+                                            onForceWin();
+                                        }}
+                                        title="Trigger YOU WIN! screen"
+                                    >
+                                        ★ Trigger Win
+                                    </button>
+                                )}
+                                {onForceLose && (
+                                    <button
+                                        className="options-debug-btn lose"
+                                        onClick={() => {
+                                            onClose();
+                                            onForceLose();
+                                        }}
+                                        title="Trigger GAME OVER screen"
+                                    >
+                                        ☠ Game Over
+                                    </button>
+                                )}
+                                {onJumpAnte8 && (
+                                    <button
+                                        className="options-debug-btn jump"
+                                        onClick={() => {
+                                            onClose();
+                                            onJumpAnte8();
+                                        }}
+                                        title="Jump to Ante 8 Boss Blind"
+                                    >
+                                        👑 Ante 8 Boss
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* BOTTOM ACTION BUTTONS */}

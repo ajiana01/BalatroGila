@@ -11,6 +11,7 @@ import Shop from '../components/Gameplay/Shop/Shop.jsx';
 import GameOver from '../components/Gameplay/GameOver/GameOver.jsx';
 import WinOver from '../components/Gameplay/WinOver/WinOver.jsx';
 import OptionsModal from '../components/Gameplay/OptionsModal/OptionsModal.jsx';
+import DebugMenu from '../components/Gameplay/DebugMenu/DebugMenu.jsx';
 
 function Gameplay() {
 
@@ -250,6 +251,56 @@ function Gameplay() {
     }
 
 
+    function handleForceWin() {
+        setGameState(GAME_STATE.WIN_OVER);
+    }
+
+    function handleForceLose() {
+        setGameState(GAME_STATE.GAME_OVER);
+    }
+
+    function handleJumpToAnte8Boss() {
+        setGameData(prev => ({
+            ...prev,
+            ante: 8,
+            round: 24,
+            blindIndex: 2,
+            score: 0,
+            targetScore: 100000,
+            hands: 4,
+            discards: 4,
+            currentBlind: {
+                type: 'boss',
+                blind: 'AmberAcorn',
+                title: 'Amber Acorn (Boss)',
+                score: 100000,
+                reward: '$$$$$$'
+            }
+        }));
+        setGameState(GAME_STATE.GAMEPLAY);
+    }
+
+    // Global keyboard shortcuts for debug & testing
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+
+            if (e.shiftKey && (e.key === 'W' || e.key === 'w')) {
+                e.preventDefault();
+                handleForceWin();
+            } else if (e.shiftKey && (e.key === 'L' || e.key === 'l')) {
+                e.preventDefault();
+                handleForceLose();
+            } else if (e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+                e.preventDefault();
+                handleRestart();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     function handleRestart() {
 
         setGameData({
@@ -449,6 +500,24 @@ function Gameplay() {
                 setGameSpeed={setGameSpeed}
                 highContrast={highContrast}
                 setHighContrast={setHighContrast}
+                onForceWin={handleForceWin}
+                onForceLose={handleForceLose}
+                onJumpAnte8={handleJumpToAnte8Boss}
+            />
+
+            {/* =====================================
+                DEV / DEBUG TESTING MENU
+            ====================================== */}
+            <DebugMenu
+                gameState={gameState}
+                setGameState={setGameState}
+                gameData={gameData}
+                setGameData={setGameData}
+                onForceWin={handleForceWin}
+                onForceLose={handleForceLose}
+                onRoundWin={handleRoundWin}
+                onRoundLose={handleRoundLose}
+                onRestart={handleRestart}
             />
 
         </div>
