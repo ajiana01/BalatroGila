@@ -8,6 +8,7 @@ import Voucher from '../../Voucher/Voucher';
 import BoosterPack from '../../BoosterPacks/BoosterPacks';
 import CardBack from '../../CardBack/CardBack';
 import DeckViewModal from '../GameBoard/DeckViewModal';
+import DeckHoverPreview from '../GameBoard/DeckHoverPreview';
 import { generateShopCards, getAnteVoucher, generateBoosterPacks, SHOP_JOKERS } from '../../../data/shopData';
 import './Shop.css';
 
@@ -48,8 +49,9 @@ function Shop({
     // Money state synchronized with gameData
     const [money, setMoney] = useState(gameData?.money ?? 10);
 
-    // Deck peek modal state
+    // Deck view modal & hover preview
     const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
+    const [isDeckHovered, setIsDeckHovered] = useState(false);
 
     // Jokers & Consumables inventory
     const maxJokers = gameData?.maxJokers || 5;
@@ -733,9 +735,18 @@ function Shop({
                 </div>
 
                 {/* BOTTOM RIGHT: DECK COUNTER AREA */}
+                {isDeckHovered && (
+                    <DeckHoverPreview
+                        gameData={gameData}
+                        handCards={gameData?.handCards || []}
+                    />
+                )}
+
                 <div
                     className="game-deck-area"
                     onClick={() => setIsDeckModalOpen(true)}
+                    onMouseEnter={() => setIsDeckHovered(true)}
+                    onMouseLeave={() => setIsDeckHovered(false)}
                     title="Click to Peek Deck"
                 >
                     <div className="peek-deck-label">

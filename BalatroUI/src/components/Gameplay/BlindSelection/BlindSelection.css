@@ -70,14 +70,40 @@
     border-color: #d94e9d;
 }
 
-/* Header */
+/* Header / Select Button */
 .blind-card-header {
-    padding: 8px 10px;
-    border-radius: 8px;
-    background: #222c2f;
-    font-size: 18px;
-    font-weight: 800;
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
     color: white;
+    text-align: center;
+    box-sizing: border-box;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.blind-card-header.select-button {
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.blind-card-header.select-button:hover {
+    filter: brightness(1.15);
+    transform: scale(1.03);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+}
+
+.blind-card-header.select-button:active {
+    transform: translateY(2px) scale(0.99);
 }
 
 .small .blind-card-header {
@@ -87,6 +113,7 @@
 .big .blind-card-header {
     background: #e5a400;
     color: #1a1a1a;
+    text-shadow: none;
 }
 
 .boss .blind-card-header {
@@ -166,68 +193,6 @@
     font-weight: bold;
 }
 
-/* Actions */
-.blind-actions {
-    margin-top: 8px;
-    min-height: 88px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 8px;
-}
-
-.blind-actions button {
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 800;
-    cursor: pointer;
-    font-family: inherit;
-    transition: filter 0.15s ease, transform 0.1s ease;
-}
-
-.blind-actions button:hover {
-    filter: brightness(1.1);
-}
-
-.blind-actions button:active {
-    transform: translateY(2px);
-}
-
-.select-button {
-    background: #ff4a4a;
-    color: white;
-    padding: 10px;
-}
-
-.small .select-button {
-    background: #008cff;
-}
-
-.big .select-button {
-    background: #e5a400;
-    color: #1a1a1a;
-}
-
-.boss .select-button {
-    background: #d94e9d;
-}
-
-.skip-button {
-    background: #e07025;
-    color: white;
-    padding: 8px;
-    font-size: 14px;
-}
-
-.action-placeholder {
-    height: 32px;
-}
-
-.action-placeholder-full {
-    height: 80px;
-}
-
 /* =========================================
    STATUSES & BADGES
 ========================================= */
@@ -249,33 +214,5 @@
 .blind-card.upcoming .blind-card-header {
     background: #1f2937 !important;
     color: #6b7280 !important;
-}
-
-.defeated-badge {
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: rgba(16, 185, 129, 0.15);
-    border: 2px solid #10b981;
-    color: #34d399;
-    font-size: 16px;
-    font-weight: 900;
-    letter-spacing: 1px;
-}
-
-.upcoming-badge {
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 2px dashed rgba(255, 255, 255, 0.2);
-    color: #9ca3af;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 1px;
 }
 

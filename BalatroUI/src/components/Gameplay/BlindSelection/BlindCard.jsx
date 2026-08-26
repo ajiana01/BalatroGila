@@ -9,31 +9,38 @@ function BlindCard({
     description,
     status,
     active = false,
-    onSelect,
-    onSkip
+    onSelect
 }) {
     const cardStatus = status || (active ? 'active' : 'upcoming');
     const isActive = cardStatus === 'active';
-    const isDefeated = cardStatus === 'defeated' || cardStatus === 'skipped';
+    const isDefeated = cardStatus === 'defeated';
 
     const blindKey = blind || (
         type === 'small' ? 'SmallBlind' :
         type === 'big' ? 'BigBlind' : 'TheGoad'
     );
 
-    const headerText = isActive
-        ? 'Select'
-        : isDefeated
-            ? (cardStatus === 'skipped' ? 'Skipped' : 'Defeated')
-            : 'Upcoming';
-
     return (
         <article
             className={`blind-card ${type} ${cardStatus}`}
         >
-            <div className="blind-card-header">
-                {headerText}
-            </div>
+            {/* TOP HEADER: SELECT BUTTON (if active) OR STATUS BANNER */}
+            {isActive ? (
+                <button
+                    onClick={onSelect}
+                    className="blind-card-header select-button"
+                >
+                    Select
+                </button>
+            ) : isDefeated ? (
+                <div className="blind-card-header defeated-header">
+                    Defeated
+                </div>
+            ) : (
+                <div className="blind-card-header upcoming-header">
+                    Upcoming
+                </div>
+            )}
 
             <div className="blind-card-title">
                 {title}
@@ -59,38 +66,6 @@ function BlindCard({
 
             <div className="blind-reward">
                 Reward: {reward}
-            </div>
-
-            <div className="blind-actions">
-                {isActive ? (
-                    <>
-                        <button
-                            onClick={onSelect}
-                            className="select-button"
-                        >
-                            Select
-                        </button>
-
-                        {onSkip ? (
-                            <button
-                                onClick={onSkip}
-                                className="skip-button"
-                            >
-                                Skip Blind
-                            </button>
-                        ) : (
-                            <div className="action-placeholder" />
-                        )}
-                    </>
-                ) : isDefeated ? (
-                    <div className="defeated-badge">
-                        <span>{cardStatus === 'skipped' ? 'SKIPPED' : 'DEFEATED'}</span>
-                    </div>
-                ) : (
-                    <div className="upcoming-badge">
-                        <span>LOCKED</span>
-                    </div>
-                )}
             </div>
         </article>
     );

@@ -6,6 +6,7 @@ import JokerCard from '../../JokerCard/JokerCard';
 import TarotCard from '../../TarotCard/TarotCard';
 import PlanetCard from '../../PlanetCard/PlanetCard';
 import DeckViewModal from './DeckViewModal';
+import DeckHoverPreview from './DeckHoverPreview';
 import './GameBoard.css';
 
 const defaultHandCards = [
@@ -46,6 +47,7 @@ function GameBoard({
     onOpenSettings
 }) {
     const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
+    const [isDeckHovered, setIsDeckHovered] = useState(false);
     const [cards, setCards] = useState(gameData?.handCards || defaultHandCards);
     const [selectedIds, setSelectedIds] = useState([]);
 
@@ -249,86 +251,103 @@ function GameBoard({
                     </div>
                 </div>
 
-                {/* 2. MIDDLE AREA: PLAYER HAND */}
-                <div className="game-hand-area">
-                    <PlayerHand
-                        cards={cards}
-                        setCards={setCards}
-                        selectedIds={selectedIds}
-                        onToggleSelect={handleToggleSelectCard}
-                        maxSelected={5}
-                    />
-                </div>
+                {/* 2. PLAY SECTION: CENTER (HAND + ACTIONS) & RIGHT (DECK) */}
+                <div className="game-play-section">
+                    <div className="game-play-center">
+                        {/* PLAYER HAND */}
+                        <div className="game-hand-area">
+                            <PlayerHand
+                                cards={cards}
+                                setCards={setCards}
+                                selectedIds={selectedIds}
+                                onToggleSelect={handleToggleSelectCard}
+                                maxSelected={5}
+                            />
+                        </div>
 
-                {/* 3. BOTTOM ACTIONS: PLAY HAND | SORT (RANK / SUIT) | DISCARD */}
-                <div className="game-actions-wrapper">
-                    <div className="hand-cards-counter">
-                        {cards.length}/{maxHandSize}
-                    </div>
+                        {/* BOTTOM ACTIONS: PLAY HAND | SORT (RANK / SUIT) | DISCARD */}
+                        <div className="game-actions-wrapper">
+                            <div className="hand-cards-counter">
+                                {cards.length}/{maxHandSize}
+                            </div>
 
-                    <div className="game-actions">
-                        <button
-                            onClick={handlePlayHand}
-                            disabled={selectedIds.length === 0}
-                            className={`action-btn play-button ${selectedIds.length > 0 ? 'active' : 'disabled'}`}
-                        >
-                            Play Hand
-                        </button>
-
-                        <div className="sort-hand-container">
-                            <span className="sort-label">Sort Hand</span>
-                            <div className="sort-buttons-row">
+                            <div className="game-actions">
                                 <button
-                                    className="sort-btn rank-btn"
-                                    onClick={handleSortByRank}
-                                    title="Sort by Rank"
+                                    onClick={handlePlayHand}
+                                    disabled={selectedIds.length === 0}
+                                    className={`action-btn play-button ${selectedIds.length > 0 ? 'active' : 'disabled'}`}
                                 >
-                                    Rank
+                                    Play Hand
                                 </button>
+
+                                <div className="sort-hand-container">
+                                    <span className="sort-label">Sort Hand</span>
+                                    <div className="sort-buttons-row">
+                                        <button
+                                            className="sort-btn rank-btn"
+                                            onClick={handleSortByRank}
+                                            title="Sort by Rank"
+                                        >
+                                            Rank
+                                        </button>
+                                        <button
+                                            className="sort-btn suit-btn"
+                                            onClick={handleSortBySuit}
+                                            title="Sort by Suit"
+                                        >
+                                            Suit
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <button
-                                    className="sort-btn suit-btn"
-                                    onClick={handleSortBySuit}
-                                    title="Sort by Suit"
+                                    onClick={handleDiscard}
+                                    disabled={selectedIds.length === 0}
+                                    className={`action-btn discard-button ${selectedIds.length > 0 ? 'active' : 'disabled'}`}
                                 >
-                                    Suit
+                                    Discard
                                 </button>
                             </div>
                         </div>
-
-                        <button
-                            onClick={handleDiscard}
-                            disabled={selectedIds.length === 0}
-                            className={`action-btn discard-button ${selectedIds.length > 0 ? 'active' : 'disabled'}`}
-                        >
-                            Discard
-                        </button>
-                    </div>
-                </div>
-
-                {/* 4. DECK COUNTER AREA (BOTTOM RIGHT) */}
-                <div
-                    className="game-deck-area"
-                    onClick={() => setIsDeckModalOpen(true)}
-                    title="Click to Peek Deck"
-                >
-                    <div className="peek-deck-label">
-                        <span>PEEK</span>
-                        <span>DECK</span>
-                        <div className="deck-key-hint">LT</div>
                     </div>
 
-                    <div className="deck-card-stack">
-                        <div className="deck-card-visual">
-                            <CardBack
-                                type="BackNormal"
-                                width={80}
-                                height={112}
+                    {/* DECK COUNTER AREA (FAR RIGHT COLUMN) */}
+                    <div className="game-deck-column">
+                        {/* DECK HOVER REMAINING CARDS BREAKDOWN */}
+                        {isDeckHovered && (
+                            <DeckHoverPreview
+                                gameData={gameData}
+                                handCards={cards}
                             />
-                        </div>
-                    </div>
+                        )}
 
-                    <div className="deck-count-text">
-                        {gameData.deckRemaining || 52}/52
+                        <div
+                            className="game-deck-area"
+                            onClick={() => setIsDeckModalOpen(true)}
+                            onMouseEnter={() => setIsDeckHovered(true)}
+                            onMouseLeave={() => setIsDeckHovered(false)}
+                            title="Click to Peek Deck"
+                        >
+                            <div className="peek-deck-label">
+                                <span>PEEK</span>
+                                <span>DECK</span>
+                                <div className="deck-key-hint">LT</div>
+                            </div>
+
+                            <div className="deck-card-stack">
+                                <div className="deck-card-visual">
+                                    <CardBack
+                                        type="BackNormal"
+                                        width={80}
+                                        height={112}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="deck-count-text">
+                                {gameData.deckRemaining || 52}/52
+                            </div>
+                        </div>
                     </div>
                 </div>
 

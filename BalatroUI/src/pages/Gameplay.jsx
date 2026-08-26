@@ -358,14 +358,11 @@ function Gameplay() {
                 ================================== */}
 
                 {gameState === GAME_STATE.BLIND_SELECTION && (
-
                     <BlindSelection
                         gameData={gameData}
                         onSelectBlind={handleSelectBlind}
-                        onSkipBlind={handleSkipBlind}
                         onOpenSettings={() => setShowSettings(true)}
                     />
-
                 )}
 
 

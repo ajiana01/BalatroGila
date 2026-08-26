@@ -5,7 +5,6 @@ import './BlindSelection.css';
 function BlindSelection({
     gameData,
     onSelectBlind,
-    onSkipBlind,
     onOpenSettings
 }) {
     const currentBlindIndex = gameData.blindIndex ?? 0;
@@ -64,7 +63,6 @@ function BlindSelection({
                         reward={smallBlindData.reward}
                         status={getStatus(0)}
                         onSelect={() => onSelectBlind(smallBlindData)}
-                        onSkip={onSkipBlind}
                     />
 
                     <BlindCard
@@ -75,7 +73,6 @@ function BlindSelection({
                         reward={bigBlindData.reward}
                         status={getStatus(1)}
                         onSelect={() => onSelectBlind(bigBlindData)}
-                        onSkip={onSkipBlind}
                     />
 
                     <BlindCard
@@ -87,7 +84,6 @@ function BlindSelection({
                         description={bossBlindData.description}
                         status={getStatus(2)}
                         onSelect={() => onSelectBlind(bossBlindData)}
-                        onSkip={null}
                     />
                 </div>
             </section>

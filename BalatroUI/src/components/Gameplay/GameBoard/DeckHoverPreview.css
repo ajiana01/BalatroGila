@@ -1,0 +1,209 @@
+/* Deck Hover Preview Container */
+.deck-hover-preview-container {
+    position: absolute;
+    bottom: 130px;
+    right: 0;
+    z-index: 500;
+    pointer-events: none;
+    user-select: none;
+    animation: deckPreviewPop 0.16s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes deckPreviewPop {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Outer Matrix Box */
+.deck-hover-matrix-box {
+    background: #141d20;
+    border: 2.5px solid #4a5c62;
+    border-radius: 14px;
+    padding: 10px 14px 12px 14px;
+    box-shadow:
+        0 16px 36px rgba(0, 0, 0, 0.85),
+        0 0 20px rgba(0, 0, 0, 0.5),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    width: 495px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: 'Balatro', sans-serif;
+}
+
+/* Header Row with Rank Pills */
+.deck-matrix-header-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.matrix-header-spacer {
+    width: 58px;
+    min-width: 58px;
+}
+
+.matrix-ranks-list {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.matrix-rank-column-header {
+    display: flex;
+    justify-content: center;
+    width: 26px;
+}
+
+.rank-white-pill {
+    background: #ffffff;
+    border: 1.5px solid #bdc7cc;
+    border-radius: 6px;
+    padding: 2px 0 3px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    width: 25px;
+    height: 38px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.rank-letter {
+    font-size: 13px;
+    font-weight: 900;
+    color: #162022;
+    line-height: 1;
+    margin-top: 1px;
+}
+
+.rank-count-badge {
+    background: #253336;
+    color: #ffffff;
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    font-size: 9.5px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* Matrix Body & Suit Rows */
+.deck-matrix-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.deck-matrix-suit-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Left Suit Badge */
+.suit-left-badge {
+    width: 58px;
+    min-width: 58px;
+    height: 25px;
+    background: #1a2528;
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.suit-symbol {
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.suit-spades .suit-symbol {
+    color: #9d85ff;
+}
+
+.suit-hearts .suit-symbol {
+    color: #fe4747;
+}
+
+.suit-clubs .suit-symbol {
+    color: #00d2d3;
+}
+
+.suit-diamonds .suit-symbol {
+    color: #ff9f1a;
+}
+
+.suit-total-num {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+/* Suit Cells Track */
+.suit-cells-track {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 6px;
+    height: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+    padding: 0 1px;
+}
+
+.suit-spades .suit-cells-track {
+    background: #3e2f6c;
+}
+
+.suit-hearts .suit-cells-track {
+    background: #8b1e2c;
+}
+
+.suit-clubs .suit-cells-track {
+    background: #066077;
+}
+
+.suit-diamonds .suit-cells-track {
+    background: #946305;
+}
+
+/* Matrix Count Cells */
+.matrix-count-cell {
+    width: 26px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.matrix-count-cell.count-positive {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.matrix-count-cell.count-zero {
+    color: rgba(255, 255, 255, 0.18);
+    text-shadow: none;
+}

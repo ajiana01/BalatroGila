@@ -94,14 +94,38 @@
 }
 
 /* =========================================
-   2. MIDDLE AREA (PLAYER HAND)
+   2. PLAY SECTION (CENTER PLAY AREA + RIGHT DECK)
 ========================================= */
+.game-play-section {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 0;
+    position: relative;
+    gap: 16px;
+    padding-top: 6px;
+}
+
+.game-play-center {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+}
+
 .game-hand-area {
-    margin: auto 0;
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
+    min-height: 0;
+    overflow: visible;
 }
 
 /* =========================================
@@ -113,6 +137,7 @@
     align-items: center;
     gap: 6px;
     margin-bottom: 6px;
+    width: 100%;
 }
 
 .hand-cards-counter {
@@ -229,19 +254,28 @@
 }
 
 /* =========================================
-   4. DECK COUNTER (BOTTOM RIGHT)
+   4. DECK COUNTER (FAR RIGHT COLUMN)
 ========================================= */
+.game-deck-column {
+    width: 105px;
+    min-width: 105px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding-bottom: 6px;
+    box-sizing: border-box;
+}
+
 .game-deck-area {
-    position: absolute;
-    right: 36px;
-    bottom: 24px;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
     user-select: none;
-    z-index: 10;
     cursor: pointer;
+    transition: transform 0.15s ease-out;
 }
 
 .peek-deck-label {

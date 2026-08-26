@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import RunInfoModal from './RunInfoModal';
 import ShopSign from '../../ShopSign/ShopSign';
+import Blind from '../../Blind/Blind';
 import './GameSidebar.css';
 
 // SVG Icons for authentic Balatro look
@@ -49,7 +50,10 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
     const blindTitle = blind.title || 'Big Blind';
     const blindScore = blind.score || gameData?.targetScore || 450;
     const blindReward = blind.reward || '$$$$';
-    const tokenText = blind.title ? blind.title.toUpperCase() : 'BIG BLIND';
+    const blindKey = blind.blind || (
+        blindType === 'small' ? 'SmallBlind' :
+        blindType === 'big' ? 'BigBlind' : 'TheGoad'
+    );
 
     return (
         <aside className="game-sidebar">
@@ -77,8 +81,13 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
                     </div>
 
                     <div className="blind-info-box">
-                        <div className="blind-token">
-                            <span>{tokenText}</span>
+                        <div className="blind-token-visual">
+                            <Blind
+                                blind={blindKey}
+                                width={62}
+                                height={62}
+                                animated={true}
+                            />
                         </div>
 
                         <div className="blind-score-pill">
