@@ -22,5 +22,16 @@ public class ScoreCalculationResultDto
     public List<PlayingCard> ScoringCards { get; set; } = new();
     public List<PlayingCard> UnscoredCards { get; set; } = new();
     public List<string> JokerTriggerMessages { get; set; } = new();
+    public List<JokerTriggerEffectDto> JokerTriggers { get; set; } = new();
     public int LuckyMoneyWon { get; set; }
+}
+
+public class JokerTriggerEffectDto
+{
+    public string JokerId { get; set; } = string.Empty;
+    public int JokerIndex { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public int ChipsAdded { get; set; }
+    public float MultAdded { get; set; }
+    public float XMultMultiplied { get; set; } = 1.0f;
 }

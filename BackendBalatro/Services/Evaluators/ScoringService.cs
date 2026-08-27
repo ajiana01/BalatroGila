@@ -132,45 +132,71 @@ public class ScoringService : IScoringService
         int jokerChips = 0;
         float jokerMult = 0f;
         float jokerXMult = 1.0f;
+        var jokerTriggers = new List<JokerTriggerEffectDto>();
 
-        foreach (var joker in jokers)
+        for (int i = 0; i < jokers.Count; i++)
         {
+            var joker = jokers[i];
+            int thisJokerChips = 0;
+            float thisJokerMult = 0f;
+            float thisJokerXMult = 1.0f;
+            var thisJokerMessages = new List<string>();
+
             // Joker Editions
             if (joker.Edition == JokerEdition.Foil)
             {
-                jokerChips += 50;
-                triggerMessages.Add($"{joker.Name} (Foil): +50 Chips");
+                thisJokerChips += 50;
+                thisJokerMessages.Add("+50 Chips");
             }
             else if (joker.Edition == JokerEdition.Holographic)
             {
-                jokerMult += 10f;
-                triggerMessages.Add($"{joker.Name} (Holo): +10 Mult");
+                thisJokerMult += 10f;
+                thisJokerMessages.Add("+10 Mult");
             }
             else if (joker.Edition == JokerEdition.Polychrome)
             {
-                jokerXMult *= 1.5f;
-                triggerMessages.Add($"{joker.Name} (Poly): X1.5 Mult");
+                thisJokerXMult *= 1.5f;
+                thisJokerMessages.Add("X1.5 Mult");
             }
 
             // Joker Modifier Types
             if (joker.ChipsValue > 0)
             {
-                jokerChips += joker.ChipsValue;
-                triggerMessages.Add($"{joker.Name}: +{joker.ChipsValue} Chips");
+                thisJokerChips += joker.ChipsValue;
+                thisJokerMessages.Add($"+{joker.ChipsValue} Chips");
             }
             if (joker.MultValue > 0)
             {
-                jokerMult += joker.MultValue;
-                triggerMessages.Add($"{joker.Name}: +{joker.MultValue} Mult");
+                thisJokerMult += joker.MultValue;
+                thisJokerMessages.Add($"+{joker.MultValue} Mult");
             }
             if (joker.XMultValue > 1.0f)
             {
-                jokerXMult *= joker.XMultValue;
-                triggerMessages.Add($"{joker.Name}: X{joker.XMultValue} Mult");
+                thisJokerXMult *= joker.XMultValue;
+                thisJokerMessages.Add($"X{joker.XMultValue} Mult");
             }
 
             // Specific Joker Key Logic
-            ApplySpecificJokerLogic(joker, handType, playedCards, scoringCards, handCardsRemaining, ref jokerChips, ref jokerMult, ref jokerXMult, triggerMessages);
+            ApplySpecificJokerLogic(joker, handType, playedCards, scoringCards, handCardsRemaining, ref thisJokerChips, ref thisJokerMult, ref thisJokerXMult, thisJokerMessages);
+
+            jokerChips += thisJokerChips;
+            jokerMult += thisJokerMult;
+            jokerXMult *= thisJokerXMult;
+
+            if (thisJokerMessages.Count > 0)
+            {
+                string combinedMsg = string.Join(", ", thisJokerMessages);
+                jokerTriggers.Add(new JokerTriggerEffectDto
+                {
+                    JokerId = joker.Id,
+                    JokerIndex = i,
+                    Message = combinedMsg,
+                    ChipsAdded = thisJokerChips,
+                    MultAdded = thisJokerMult,
+                    XMultMultiplied = thisJokerXMult
+                });
+                triggerMessages.Add($"{joker.Name}: {combinedMsg}");
+            }
         }
 
         totalChips += jokerChips;
@@ -197,6 +223,7 @@ public class ScoringService : IScoringService
             ScoringCards = scoringCards,
             UnscoredCards = unscoredCards,
             JokerTriggerMessages = triggerMessages,
+            JokerTriggers = jokerTriggers,
             LuckyMoneyWon = luckyMoney
         };
     }

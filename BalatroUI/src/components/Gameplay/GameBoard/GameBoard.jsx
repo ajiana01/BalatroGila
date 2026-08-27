@@ -169,6 +169,12 @@ function GameBoard({
         setLocalJokers(newJokers);
         latestJokersRef.current = newJokers;
         setActiveSlot(null);
+
+        console.log(
+            '%c[Joker Container - Arranging]%c ' + newJokers.map((j, idx) => `[Slot ${idx}] ${j.title || j.name || j.jokerKey}`).join('  ➔  '),
+            'background: #7952b3; color: white; font-weight: bold; padding: 2px 6px; border-radius: 3px;',
+            'color: #e599f7; font-weight: bold;'
+        );
     };
 
     const handleJokerDragEnd = async () => {
@@ -177,11 +183,25 @@ function GameBoard({
         const jokerIds = latestJokersRef.current.map(j => j.id);
         if (jokerIds.length <= 1) return;
 
+        console.group('%c[Joker Container - Arrange Confirmed]', 'background: #2b393b; color: #00e5ff; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+        console.log('%cTotal Jokers:', 'color: #ffd43b; font-weight: bold;', latestJokersRef.current.length);
+        console.table(latestJokersRef.current.map((j, idx) => ({
+            Slot: idx,
+            Name: j.title || j.name || j.jokerKey,
+            Id: j.id,
+            Edition: j.edition || 'Base',
+            Rarity: j.rarity || 'Common'
+        })));
+        console.log('%cSyncing new order to Backend (jokerIds):', 'color: #69db7c;', jokerIds);
+
         try {
             const state = await reorderJokers(jokerIds);
+            console.log('%cBackend Response State (Jokers Synced):', 'color: #4dabf7; font-weight: bold;', (state?.jokers || []).map((j, idx) => `[Slot ${idx}] ${j.name || j.jokerId} (${j.id})`));
+            console.groupEnd();
             if (onSyncState) onSyncState(state);
         } catch (err) {
             console.error('Failed to reorder jokers:', err);
+            console.groupEnd();
         }
     };
 
@@ -191,6 +211,12 @@ function GameBoard({
         setLocalConsumables(newConsumables);
         latestConsumablesRef.current = newConsumables;
         setActiveSlot(null);
+
+        console.log(
+            '%c[Consumables Container - Arranging]%c ' + newConsumables.map((c, idx) => `[Slot ${idx}] ${c.title || c.name || c.id}`).join('  ➔  '),
+            'background: #00897b; color: white; font-weight: bold; padding: 2px 6px; border-radius: 3px;',
+            'color: #80cbc4; font-weight: bold;'
+        );
     };
 
     const handleConsumableDragEnd = async () => {
@@ -199,11 +225,23 @@ function GameBoard({
         const consumableIds = latestConsumablesRef.current.map(c => c.id);
         if (consumableIds.length <= 1) return;
 
+        console.group('%c[Consumables Container - Arrange Confirmed]', 'background: #2b393b; color: #26a69a; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+        console.table(latestConsumablesRef.current.map((c, idx) => ({
+            Slot: idx,
+            Name: c.title || c.name || c.id,
+            Type: c.type,
+            Id: c.id
+        })));
+        console.log('%cSyncing new order to Backend (consumableIds):', 'color: #69db7c;', consumableIds);
+
         try {
             const state = await reorderConsumables(consumableIds);
+            console.log('%cBackend Response State (Consumables Synced):', 'color: #4dabf7; font-weight: bold;', (state?.consumables || []).map((c, idx) => `[Slot ${idx}] ${c.name || c.id}`));
+            console.groupEnd();
             if (onSyncState) onSyncState(state);
         } catch (err) {
             console.error('Failed to reorder consumables:', err);
+            console.groupEnd();
         }
     };
 
@@ -394,11 +432,59 @@ function GameBoard({
                 await waitDelay(300);
 
                 // 5. JOKERS TRIGGER PHASE
-                if (jokerTriggerMessages && jokerTriggerMessages.length > 0) {
-                    for (let i = 0; i < jokerTriggerMessages.length; i++) {
+                const backendJokerTriggers = scoreResult.jokerTriggers || scoreResult.JokerTriggers;
+                if (backendJokerTriggers && backendJokerTriggers.length > 0) {
+                    console.group('%c[Joker Trigger Animation Sequence]', 'background: #fe4747; color: white; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+                    console.log('%cCurrent Jokers in Slots:', 'color: #00e5ff; font-weight: bold;', localJokers.map((j, i) => `[Slot ${i}] ${j.title || j.name || j.jokerKey} (id: ${j.id})`));
+                    console.log('%cTriggers Received from Backend:', 'color: #ffd43b;', backendJokerTriggers);
+
+                    for (const trigger of backendJokerTriggers) {
+                        const targetJokerId = trigger.jokerId || trigger.JokerId;
+                        const targetJokerIndex = trigger.jokerIndex !== undefined ? trigger.jokerIndex : trigger.JokerIndex;
+                        const message = trigger.message || trigger.Message;
+
+                        // Find matching index in localJokers
+                        let targetIndex = -1;
+                        if (targetJokerId) {
+                            targetIndex = localJokers.findIndex(j => j.id === targetJokerId);
+                        }
+                        if (targetIndex === -1 && targetJokerIndex !== undefined && targetJokerIndex >= 0 && targetJokerIndex < localJokers.length) {
+                            targetIndex = targetJokerIndex;
+                        }
+                        if (targetIndex === -1) {
+                            targetIndex = 0;
+                        }
+
+                        const targetJoker = localJokers[targetIndex];
+                        console.log(`%c➔ Firing Slot ${targetIndex}:%c ${targetJoker?.title || targetJoker?.name || 'Unknown'} %c("${message}")`, 'color: #ff922b; font-weight: bold;', 'color: #ffffff; font-weight: bold;', 'color: #69db7c; font-weight: bold;');
+
                         setActiveJokerTrigger({
-                            index: i % (localJokers.length || 1),
-                            text: jokerTriggerMessages[i]
+                            index: targetIndex,
+                            jokerId: targetJokerId,
+                            text: message
+                        });
+                        sfx.playJokerTrigger();
+                        await waitDelay(500);
+                        setActiveJokerTrigger(null);
+                        await waitDelay(150);
+                    }
+                    console.groupEnd();
+                } else if (jokerTriggerMessages && jokerTriggerMessages.length > 0) {
+                    for (const msg of jokerTriggerMessages) {
+                        // Match joker by title or name
+                        let targetIndex = localJokers.findIndex(j => {
+                            const title = (j.title || j.name || j.jokerKey || '').toLowerCase();
+                            return title && msg.toLowerCase().startsWith(title);
+                        });
+                        if (targetIndex === -1) {
+                            targetIndex = 0;
+                        }
+
+                        const displayText = msg.includes(': ') ? msg.split(': ')[1] : msg;
+                        setActiveJokerTrigger({
+                            index: targetIndex,
+                            jokerId: localJokers[targetIndex]?.id,
+                            text: displayText
                         });
                         sfx.playJokerTrigger();
                         await waitDelay(500);
@@ -410,6 +496,7 @@ function GameBoard({
                     for (const effect of jokerEffects) {
                         setActiveJokerTrigger({
                             index: effect.index,
+                            jokerId: localJokers[effect.index]?.id,
                             text: effect.text
                         });
                         sfx.playJokerTrigger();
@@ -542,7 +629,10 @@ function GameBoard({
                         >
                             {localJokers.map((joker, index) => {
                                 const isSelected = activeSlot?.type === 'joker' && activeSlot.index === index;
-                                const isTriggered = activeJokerTrigger?.index === index;
+                                const isTriggered = Boolean(
+                                    (activeJokerTrigger?.jokerId && activeJokerTrigger.jokerId === joker.id) ||
+                                    (activeJokerTrigger && activeJokerTrigger.index === index)
+                                );
                                 const triggeredText = isTriggered ? activeJokerTrigger.text : '';
 
                                 return (
