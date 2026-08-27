@@ -33,6 +33,7 @@ import {
     reorderJokers,
     reorderConsumables
 } from '../../../services/api';
+import { sfx } from '../../../utils/sfx';
 import './Shop.css';
 
 function ShopItemTooltip({ item, side = 'left' }) {
@@ -396,15 +397,23 @@ function Shop({
         });
     };
 
+    const isJokerDraggingRef = useRef(false);
+    const isConsumableDraggingRef = useRef(false);
+
     const handleJokerReorder = (newJokers) => {
+        isJokerDraggingRef.current = true;
         setLocalJokers(newJokers);
         latestJokersRef.current = newJokers;
         setActiveSlot(null);
     };
 
     const handleJokerDragEnd = async () => {
+        if (!isJokerDraggingRef.current) return;
+        isJokerDraggingRef.current = false;
+        const jokerIds = latestJokersRef.current.map(j => j.id);
+        if (jokerIds.length <= 1) return;
+
         try {
-            const jokerIds = latestJokersRef.current.map(j => j.id);
             const state = await reorderJokers(jokerIds);
             if (onSyncState) onSyncState(state);
         } catch (err) {
@@ -413,14 +422,19 @@ function Shop({
     };
 
     const handleConsumableReorder = (newConsumables) => {
+        isConsumableDraggingRef.current = true;
         setLocalConsumables(newConsumables);
         latestConsumablesRef.current = newConsumables;
         setActiveSlot(null);
     };
 
     const handleConsumableDragEnd = async () => {
+        if (!isConsumableDraggingRef.current) return;
+        isConsumableDraggingRef.current = false;
+        const consumableIds = latestConsumablesRef.current.map(c => c.id);
+        if (consumableIds.length <= 1) return;
+
         try {
-            const consumableIds = latestConsumablesRef.current.map(c => c.id);
             const state = await reorderConsumables(consumableIds);
             if (onSyncState) onSyncState(state);
         } catch (err) {
@@ -472,7 +486,12 @@ function Shop({
             console.log('[Balatro Shop] useConsumable response:', state);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
-            showToast(`Used ${consumable.title || 'Consumable'}!`);
+
+            if (consumable.type === 'planet') {
+                sfx.playLevelUp();
+            }
+            const msg = state?.lastMessage || (consumable.type === 'planet' ? `Level Up! Upgraded ${consumable.title}!` : `Used ${consumable.title || 'Consumable'}!`);
+            showToast(msg);
         } catch (err) {
             console.error('[Balatro Shop] Error using consumable:', err);
             showToast(err.message);
@@ -659,8 +678,8 @@ function Shop({
                     cards={activeBoosterPack.cards}
                     picksRemaining={activeBoosterPack.picksRemaining}
                     gameData={{ ...gameData, money }}
-                    jokers={jokers}
-                    consumables={consumables}
+                    jokers={localJokers}
+                    consumables={localConsumables}
                     maxJokers={maxJokers}
                     maxConsumables={maxConsumables}
                     activeSlot={activeSlot}

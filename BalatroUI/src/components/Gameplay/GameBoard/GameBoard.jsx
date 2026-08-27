@@ -159,17 +159,24 @@ function GameBoard({
         });
     };
 
+    const isJokerDraggingRef = useRef(false);
+    const isConsumableDraggingRef = useRef(false);
+
     const handleJokerReorder = (newJokers) => {
         if (isScoring) return;
+        isJokerDraggingRef.current = true;
         setLocalJokers(newJokers);
         latestJokersRef.current = newJokers;
         setActiveSlot(null);
     };
 
     const handleJokerDragEnd = async () => {
-        if (isScoring) return;
+        if (isScoring || !isJokerDraggingRef.current) return;
+        isJokerDraggingRef.current = false;
+        const jokerIds = latestJokersRef.current.map(j => j.id);
+        if (jokerIds.length <= 1) return;
+
         try {
-            const jokerIds = latestJokersRef.current.map(j => j.id);
             const state = await reorderJokers(jokerIds);
             if (onSyncState) onSyncState(state);
         } catch (err) {
@@ -179,15 +186,19 @@ function GameBoard({
 
     const handleConsumableReorder = (newConsumables) => {
         if (isScoring) return;
+        isConsumableDraggingRef.current = true;
         setLocalConsumables(newConsumables);
         latestConsumablesRef.current = newConsumables;
         setActiveSlot(null);
     };
 
     const handleConsumableDragEnd = async () => {
-        if (isScoring) return;
+        if (isScoring || !isConsumableDraggingRef.current) return;
+        isConsumableDraggingRef.current = false;
+        const consumableIds = latestConsumablesRef.current.map(c => c.id);
+        if (consumableIds.length <= 1) return;
+
         try {
-            const consumableIds = latestConsumablesRef.current.map(c => c.id);
             const state = await reorderConsumables(consumableIds);
             if (onSyncState) onSyncState(state);
         } catch (err) {
@@ -238,7 +249,12 @@ function GameBoard({
             const state = await useConsumable(consumable.id, targetIds);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
-            if (onShowToast) onShowToast(`Used ${consumable.title || 'Consumable'}!`);
+
+            if (consumable.type === 'planet') {
+                sfx.playLevelUp();
+            }
+            const msg = state?.lastMessage || (consumable.type === 'planet' ? `Level Up! Upgraded ${consumable.title}!` : `Used ${consumable.title || 'Consumable'}!`);
+            if (onShowToast) onShowToast(msg);
         } catch (err) {
             console.error('Failed to use consumable:', err);
             if (onShowToast) onShowToast(err.message);

@@ -237,7 +237,8 @@ function Gameplay() {
                 availableBlinds: mappedAvailableBlinds,
                 redeemedVouchers: (apiState.purchasedVouchers || []).map(v => v.effect || v.name),
                 shop: apiState.shop,
-                handLevels: apiState.pokerHandLevels,
+                handLevels: apiState.pokerHandLevels || apiState.PokerHandLevels || prev.handLevels || {},
+                pokerHandPlayed: apiState.pokerHandPlayed || apiState.PokerHandPlayed || prev.pokerHandPlayed || {},
                 stats: newStats
             };
         });
@@ -463,6 +464,7 @@ function Gameplay() {
                         onContinue={handleCashout}
                         onOpenSettings={() => setShowSettings(true)}
                         onSyncState={syncGameData}
+                        onShowToast={showToast}
                     />
                 )}
 
@@ -472,6 +474,7 @@ function Gameplay() {
                         onContinue={handleLeaveShop}
                         onOpenSettings={() => setShowSettings(true)}
                         onSyncState={syncGameData}
+                        onShowToast={showToast}
                     />
                 )}
 

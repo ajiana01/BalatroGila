@@ -264,12 +264,16 @@ function BoosterPackOpening({
                                 const isSelected = activeSlot?.type === 'joker' && activeSlot.index === index;
                                 return (
                                     <div
-                                        key={index}
+                                        key={joker?.id || index}
                                         className={`joker-slot ${joker ? 'occupied' : 'empty'}`}
                                     >
                                         {joker ? (
                                             <JokerCard
                                                 id={joker.id}
+                                                spriteId={joker.spriteId}
+                                                title={joker.title}
+                                                description={joker.description}
+                                                rarity={joker.rarity}
                                                 width={78}
                                                 height={108}
                                                 animated={true}
@@ -299,13 +303,33 @@ function BoosterPackOpening({
                                 const isSelected = activeSlot?.type === 'consumable' && activeSlot.index === index;
                                 return (
                                     <div
-                                        key={index}
+                                        key={consumable?.id || index}
                                         className={`consumable-slot ${consumable ? 'occupied' : 'empty'}`}
                                     >
                                         {consumable ? (
                                             consumable.type === 'planet' ? (
                                                 <PlanetCard
                                                     planet={consumable.id}
+                                                    spriteId={consumable.spriteId}
+                                                    title={consumable.title}
+                                                    description={consumable.description}
+                                                    width={78}
+                                                    height={108}
+                                                    animated={true}
+                                                    isSelected={isSelected}
+                                                    onSelect={(e) => {
+                                                        e.stopPropagation();
+                                                        onToggleConsumable(index);
+                                                    }}
+                                                    onSell={() => onSellConsumable(index)}
+                                                    onUse={() => onUseConsumable(index)}
+                                                    sellPrice={consumable.sellPrice || 1}
+                                                />
+                                            ) : consumable.type === 'spectral' ? (
+                                                <SpectralCard
+                                                    spectral={consumable.spriteId || consumable.id}
+                                                    title={consumable.title}
+                                                    description={consumable.description}
                                                     width={78}
                                                     height={108}
                                                     animated={true}
@@ -321,6 +345,9 @@ function BoosterPackOpening({
                                             ) : (
                                                 <TarotCard
                                                     tarot={consumable.id}
+                                                    spriteId={consumable.spriteId}
+                                                    title={consumable.title}
+                                                    description={consumable.description}
                                                     width={78}
                                                     height={108}
                                                     animated={true}

@@ -9,13 +9,15 @@ import Blind from '../../Blind/Blind';
 import CardBack from '../../CardBack/CardBack';
 import DeckViewModal from '../GameBoard/DeckViewModal';
 import { sellCard, useConsumable, reorderJokers, reorderConsumables } from '../../../services/api';
+import { sfx } from '../../../utils/sfx';
 import './Cashout.css';
 
 function Cashout({
     gameData,
     onContinue,
     onOpenSettings,
-    onSyncState
+    onSyncState,
+    onShowToast
 }) {
     const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
 
@@ -62,15 +64,23 @@ function Cashout({
         });
     };
 
+    const isJokerDraggingRef = useRef(false);
+    const isConsumableDraggingRef = useRef(false);
+
     const handleJokerReorder = (newJokers) => {
+        isJokerDraggingRef.current = true;
         setLocalJokers(newJokers);
         latestJokersRef.current = newJokers;
         setActiveSlot(null);
     };
 
     const handleJokerDragEnd = async () => {
+        if (!isJokerDraggingRef.current) return;
+        isJokerDraggingRef.current = false;
+        const jokerIds = latestJokersRef.current.map(j => j.id);
+        if (jokerIds.length <= 1) return;
+
         try {
-            const jokerIds = latestJokersRef.current.map(j => j.id);
             const state = await reorderJokers(jokerIds);
             if (onSyncState) onSyncState(state);
         } catch (err) {
@@ -79,14 +89,19 @@ function Cashout({
     };
 
     const handleConsumableReorder = (newConsumables) => {
+        isConsumableDraggingRef.current = true;
         setLocalConsumables(newConsumables);
         latestConsumablesRef.current = newConsumables;
         setActiveSlot(null);
     };
 
     const handleConsumableDragEnd = async () => {
+        if (!isConsumableDraggingRef.current) return;
+        isConsumableDraggingRef.current = false;
+        const consumableIds = latestConsumablesRef.current.map(c => c.id);
+        if (consumableIds.length <= 1) return;
+
         try {
-            const consumableIds = latestConsumablesRef.current.map(c => c.id);
             const state = await reorderConsumables(consumableIds);
             if (onSyncState) onSyncState(state);
         } catch (err) {
@@ -102,8 +117,10 @@ function Cashout({
             const state = await sellCard(joker.id);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
+            if (onShowToast) onShowToast(`Sold ${joker.title || 'Joker'}!`);
         } catch (err) {
             console.error('Failed to sell joker in cashout:', err);
+            if (onShowToast) onShowToast(err.message);
         }
     };
 
@@ -115,8 +132,10 @@ function Cashout({
             const state = await sellCard(consumable.id);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
+            if (onShowToast) onShowToast(`Sold ${consumable.title || 'Consumable'}!`);
         } catch (err) {
             console.error('Failed to sell consumable in cashout:', err);
+            if (onShowToast) onShowToast(err.message);
         }
     };
 
@@ -128,8 +147,15 @@ function Cashout({
             const state = await useConsumable(consumable.id, []);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
+
+            if (consumable.type === 'planet') {
+                sfx.playLevelUp();
+            }
+            const msg = state?.lastMessage || (consumable.type === 'planet' ? `Level Up! Upgraded ${consumable.title}!` : `Used ${consumable.title || 'Consumable'}!`);
+            if (onShowToast) onShowToast(msg);
         } catch (err) {
             console.error('Failed to use consumable in cashout:', err);
+            if (onShowToast) onShowToast(err.message);
         }
     };
 

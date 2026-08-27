@@ -155,17 +155,56 @@ function formatVoucherDescription(desc) {
     });
 }
 
-const DEFAULT_POKER_HANDS = [
-    { id: 'straight_flush', name: 'Straight Flush', level: 1, chips: 100, mult: 8, played: 0 },
-    { id: 'four_of_a_kind', name: 'Four of a Kind', level: 1, chips: 60, mult: 7, played: 0 },
-    { id: 'full_house', name: 'Full House', level: 1, chips: 40, mult: 4, played: 0 },
-    { id: 'flush', name: 'Flush', level: 1, chips: 35, mult: 4, played: 0 },
-    { id: 'straight', name: 'Straight', level: 1, chips: 30, mult: 4, played: 0 },
-    { id: 'three_of_a_kind', name: 'Three of a Kind', level: 1, chips: 30, mult: 3, played: 0 },
-    { id: 'two_pair', name: 'Two Pair', level: 1, chips: 20, mult: 2, played: 0 },
-    { id: 'pair', name: 'Pair', level: 1, chips: 10, mult: 2, played: 0 },
-    { id: 'high_card', name: 'High Card', level: 1, chips: 5, mult: 1, played: 0 }
+const POKER_HAND_DEFINITIONS = [
+    { id: 'straight_flush', name: 'Straight Flush', baseChips: 100, baseMult: 8, chipLvl: 40, multLvl: 4 },
+    { id: 'four_of_a_kind', name: 'Four of a Kind', baseChips: 60, baseMult: 7, chipLvl: 30, multLvl: 3 },
+    { id: 'full_house', name: 'Full House', baseChips: 40, baseMult: 4, chipLvl: 25, multLvl: 2 },
+    { id: 'flush', name: 'Flush', baseChips: 35, baseMult: 4, chipLvl: 15, multLvl: 2 },
+    { id: 'straight', name: 'Straight', baseChips: 30, baseMult: 4, chipLvl: 30, multLvl: 3 },
+    { id: 'three_of_a_kind', name: 'Three of a Kind', baseChips: 30, baseMult: 3, chipLvl: 20, multLvl: 2 },
+    { id: 'two_pair', name: 'Two Pair', baseChips: 20, baseMult: 2, chipLvl: 20, multLvl: 1 },
+    { id: 'pair', name: 'Pair', baseChips: 10, baseMult: 2, chipLvl: 15, multLvl: 1 },
+    { id: 'high_card', name: 'High Card', baseChips: 5, baseMult: 1, chipLvl: 10, multLvl: 1 }
 ];
+
+function normalizeHandKey(nameOrKey) {
+    return String(nameOrKey || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const ENUM_INDEX_TO_HAND = {
+    '0': 'highcard',
+    '1': 'pair',
+    '2': 'twopair',
+    '3': 'threeofakind',
+    '4': 'straight',
+    '5': 'flush',
+    '6': 'fullhouse',
+    '7': 'fourofakind',
+    '8': 'straightflush'
+};
+
+function getHandLevel(handLevels, handName) {
+    if (!handLevels || typeof handLevels !== 'object') return 1;
+    const target = normalizeHandKey(handName);
+
+    for (const [k, v] of Object.entries(handLevels)) {
+        if (normalizeHandKey(k) === target) return v || 1;
+        if (ENUM_INDEX_TO_HAND[k] === target) return v || 1;
+    }
+    return 1;
+}
+
+function getHandPlayed(stats, handName) {
+    const history = stats?.handsHistory || stats?.pokerHandPlayed || stats || {};
+    if (!history || typeof history !== 'object') return 0;
+    const target = normalizeHandKey(handName);
+
+    for (const [k, v] of Object.entries(history)) {
+        if (normalizeHandKey(k) === target) return v || 0;
+        if (ENUM_INDEX_TO_HAND[k] === target) return v || 0;
+    }
+    return 0;
+}
 
 const POKER_HAND_INFO = {
     straight_flush: {
@@ -285,7 +324,25 @@ function RunInfoModal({ isOpen, onClose, gameData }) {
 
     if (!isOpen) return null;
 
-    const pokerHands = gameData?.pokerHands || DEFAULT_POKER_HANDS;
+    const handLevels = gameData?.handLevels || gameData?.pokerHandLevels || {};
+    const statsHistory = gameData?.pokerHandPlayed || gameData?.stats?.handsHistory || {};
+
+    const pokerHands = POKER_HAND_DEFINITIONS.map(def => {
+        const level = getHandLevel(handLevels, def.name);
+        const played = getHandPlayed(statsHistory, def.name);
+        const chips = def.baseChips + (level - 1) * def.chipLvl;
+        const mult = def.baseMult + (level - 1) * def.multLvl;
+
+        return {
+            id: def.id,
+            name: def.name,
+            level,
+            chips,
+            mult,
+            played
+        };
+    });
+
     const ante = gameData?.ante || 1;
     const blindIndex = gameData?.blindIndex || 0;
     const availableBlinds = gameData?.availableBlinds || [];
