@@ -164,6 +164,10 @@ export async function selectBoosterCard(cardId) {
   return apiRequest('/shop/select-booster-card', 'POST', { cardId });
 }
 
+export async function skipBooster() {
+  return apiRequest('/shop/skip-booster', 'POST');
+}
+
 export async function buyVoucher(voucherId) {
   return apiRequest('/shop/buy-voucher', 'POST', { voucherId });
 }

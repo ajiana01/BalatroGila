@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Balatro from '../../BalatroBackground/BalatroBackground';
 import JokerCard from '../../JokerCard/JokerCard';
 import TarotCard from '../../TarotCard/TarotCard';
@@ -180,6 +180,18 @@ function BoosterPackOpening({
     const [hoveredCardIndex, setHoveredCardIndex] = useState(0);
     // Selected card index (for controller/click focus)
     const [focusedCardIndex, setFocusedCardIndex] = useState(0);
+
+    // Keep focus within bounds if cards array shrinks after picking
+    useEffect(() => {
+        if (cards?.length > 0) {
+            if (focusedCardIndex >= cards.length) {
+                setFocusedCardIndex(Math.max(0, cards.length - 1));
+            }
+            if (hoveredCardIndex >= cards.length) {
+                setHoveredCardIndex(Math.max(0, cards.length - 1));
+            }
+        }
+    }, [cards?.length, focusedCardIndex, hoveredCardIndex]);
 
     // Deck modal
     const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);

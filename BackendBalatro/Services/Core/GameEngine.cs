@@ -467,6 +467,8 @@ public class GameEngine : IGameEngine
             return (false, "Cannot leave shop when not in Shop phase.");
         }
 
+        Shop.OpenedBoosterPack = null;
+
         if (CurrentBlind == null)
         {
             Phase = GameStatePhase.SelectingBlind;
@@ -738,6 +740,8 @@ public class GameEngine : IGameEngine
         }
 
         var pack = Shop.OpenedBoosterPack;
+        bool picked = false;
+        string resultMessage = string.Empty;
 
         // Check in each category of opened pack
         var joker = pack.JokerCards.FirstOrDefault(j => j.Id == cardId);
@@ -745,46 +749,86 @@ public class GameEngine : IGameEngine
         {
             if (Deck.IsJokerContainerFull() && joker.Edition != JokerEdition.Negative) return (false, "Joker slots are full.");
             Deck.JokerCards.Add(joker);
-            Shop.OpenedBoosterPack = null;
-            return (true, $"Added {joker.Name} to Jokers!");
+            pack.JokerCards.Remove(joker);
+            picked = true;
+            resultMessage = $"Added {joker.Name} to Jokers!";
         }
 
-        var tarot = pack.TarotCards.FirstOrDefault(t => t.Id == cardId);
-        if (tarot != null)
+        if (!picked)
         {
-            if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
-            Deck.UsableCards.Add(tarot);
-            Shop.OpenedBoosterPack = null;
-            return (true, $"Added {tarot.Name} to Consumables!");
+            var tarot = pack.TarotCards.FirstOrDefault(t => t.Id == cardId);
+            if (tarot != null)
+            {
+                if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+                Deck.UsableCards.Add(tarot);
+                pack.TarotCards.Remove(tarot);
+                picked = true;
+                resultMessage = $"Added {tarot.Name} to Consumables!";
+            }
         }
 
-        var planet = pack.PlanetCards.FirstOrDefault(p => p.Id == cardId);
-        if (planet != null)
+        if (!picked)
         {
-            if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
-            Deck.UsableCards.Add(planet);
-            Shop.OpenedBoosterPack = null;
-            return (true, $"Added {planet.Name} to Consumables!");
+            var planet = pack.PlanetCards.FirstOrDefault(p => p.Id == cardId);
+            if (planet != null)
+            {
+                if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+                Deck.UsableCards.Add(planet);
+                pack.PlanetCards.Remove(planet);
+                picked = true;
+                resultMessage = $"Added {planet.Name} to Consumables!";
+            }
         }
 
-        var spectral = pack.SpectralCards.FirstOrDefault(s => s.Id == cardId);
-        if (spectral != null)
+        if (!picked)
         {
-            if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
-            Deck.UsableCards.Add(spectral);
-            Shop.OpenedBoosterPack = null;
-            return (true, $"Added {spectral.Name} to Consumables!");
+            var spectral = pack.SpectralCards.FirstOrDefault(s => s.Id == cardId);
+            if (spectral != null)
+            {
+                if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+                Deck.UsableCards.Add(spectral);
+                pack.SpectralCards.Remove(spectral);
+                picked = true;
+                resultMessage = $"Added {spectral.Name} to Consumables!";
+            }
         }
 
-        var playingCard = pack.PlayingCards.FirstOrDefault(p => p.Id == cardId);
-        if (playingCard != null)
+        if (!picked)
         {
-            DrawPile.PlayingCards.Add(playingCard);
-            Shop.OpenedBoosterPack = null;
-            return (true, $"Added {playingCard.Name} to Deck!");
+            var playingCard = pack.PlayingCards.FirstOrDefault(p => p.Id == cardId);
+            if (playingCard != null)
+            {
+                DrawPile.PlayingCards.Add(playingCard);
+                pack.PlayingCards.Remove(playingCard);
+                picked = true;
+                resultMessage = $"Added {playingCard.Name} to Deck!";
+            }
         }
 
-        return (false, "Card not found in opened booster pack.");
+        if (!picked)
+        {
+            return (false, "Card not found in opened booster pack.");
+        }
+
+        pack.MaxPick--;
+        int totalRemainingCards = pack.PlayingCards.Count + pack.TarotCards.Count + pack.PlanetCards.Count + pack.SpectralCards.Count + pack.JokerCards.Count;
+        if (pack.MaxPick <= 0 || totalRemainingCards == 0)
+        {
+            Shop.OpenedBoosterPack = null;
+        }
+
+        return (true, resultMessage);
+    }
+
+    public (bool Success, string Message) SkipBoosterPack()
+    {
+        if (Shop.OpenedBoosterPack == null)
+        {
+            return (true, "No booster pack opened.");
+        }
+
+        Shop.OpenedBoosterPack = null;
+        return (true, "Booster pack skipped.");
     }
 
     public (bool Success, string Message) BuyVoucher(string voucherId)

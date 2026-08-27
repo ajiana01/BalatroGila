@@ -128,6 +128,22 @@ public class ShopController : ControllerBase
         return Ok(ApiResponse<GameStateResponseDto>.Ok(state, message));
     }
 
+    [HttpPost("skip-booster")]
+    public ActionResult<ApiResponse<GameStateResponseDto>> SkipBooster()
+    {
+        string sessionId = GetSessionId();
+        var engine = _sessionService.GetOrCreateSession(sessionId);
+
+        if (engine.Phase != GameStatePhase.InShop)
+        {
+            return BadRequest(ApiResponse<GameStateResponseDto>.Fail($"Cannot skip booster pack while in {engine.Phase} phase."));
+        }
+
+        var (success, message) = engine.SkipBoosterPack();
+        var state = engine.GetGameState(message);
+        return Ok(ApiResponse<GameStateResponseDto>.Ok(state, message));
+    }
+
     [HttpPost("buy-voucher")]
     public ActionResult<ApiResponse<GameStateResponseDto>> BuyVoucher([FromBody] BuyVoucherRequestDto request)
     {

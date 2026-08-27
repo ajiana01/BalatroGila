@@ -24,6 +24,7 @@ import {
     rerollShop,
     buyBooster,
     selectBoosterCard,
+    skipBooster,
     buyVoucher,
     leaveShop,
     sellCard,
@@ -296,8 +297,10 @@ function Shop({
                 setActiveBoosterPack({
                     pack: mappedPack,
                     cards: mappedCards,
-                    picksRemaining: mappedPack.picks_allowed || 1
+                    picksRemaining: mappedPack.picks_allowed ?? 1
                 });
+            } else {
+                setActiveBoosterPack(null);
             }
         }
     }, [gameData?.shop]);
@@ -544,19 +547,19 @@ function Shop({
 
             showToast(`Selected ${card.title}!`);
 
-            const nextPicks = (activeBoosterPack.picksRemaining || 1) - 1;
-            const remainingCards = activeBoosterPack.cards.filter((_, idx) => idx !== cardIndex);
-
-            if (nextPicks <= 0 || remainingCards.length === 0) {
+            if (state.shop?.openedBoosterPack) {
+                const opened = state.shop.openedBoosterPack;
+                const mappedPack = mapBackendBoosterPack(opened);
+                const mappedCards = mapOpenedBoosterCards(opened);
+                setActiveBoosterPack({
+                    pack: mappedPack,
+                    cards: mappedCards,
+                    picksRemaining: mappedPack.picks_allowed ?? Math.max(0, (activeBoosterPack.picksRemaining || 1) - 1)
+                });
+            } else {
                 setTimeout(() => {
                     setActiveBoosterPack(null);
                 }, 300);
-            } else {
-                setActiveBoosterPack({
-                    ...activeBoosterPack,
-                    cards: remainingCards,
-                    picksRemaining: nextPicks
-                });
             }
         } catch (err) {
             console.error('[Balatro Shop] Error selecting booster card:', err);
@@ -564,8 +567,14 @@ function Shop({
         }
     };
 
-    const handleSkipBooster = () => {
+    const handleSkipBooster = async () => {
         console.log('[Balatro Shop] Skipping booster pack');
+        try {
+            const state = await skipBooster();
+            if (onSyncState) onSyncState(state);
+        } catch (err) {
+            console.error('[Balatro Shop] Error skipping booster pack:', err);
+        }
         showToast("Skipped Booster Pack");
         setActiveBoosterPack(null);
     };

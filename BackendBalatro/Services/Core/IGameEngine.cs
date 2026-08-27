@@ -84,5 +84,6 @@ public interface IGameEngine
     (bool Success, string Message, BoosterPack? Pack) BuyBoosterPack(string boosterId);
     (bool Success, string Message) SelectBoosterCard(string cardId);
     (bool Success, string Message) BuyVoucher(string voucherId);
+    (bool Success, string Message) SkipBoosterPack();
     (bool Success, string Message) LeaveShop();
 }

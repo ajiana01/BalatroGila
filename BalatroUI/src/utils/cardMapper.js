@@ -195,7 +195,7 @@ export function mapBackendBoosterPack(pack, idx = 0) {
   const spriteType = `${packKind}_${size}`;
   const number = 1;
 
-  const maxPick = pack.maxPick || (size === 'Mega' ? 2 : 1);
+  const maxPick = pack.maxPick !== undefined ? pack.maxPick : (size === 'Mega' ? 2 : 1);
   const totalCards = pack.totalCard || (size === 'Normal' ? 3 : 5);
   const price = pack.price || (size === 'Mega' ? 8 : size === 'Jumbo' ? 6 : 4);
   const title = pack.name || `${size !== 'Normal' ? size + ' ' : ''}${packKind} Pack`;

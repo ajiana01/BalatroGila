@@ -85,4 +85,67 @@ public class ShopAndEconomyTests
         Assert.Null(_engine.Shop.Voucher);
         Assert.Contains(_engine.PurchasedVouchers, v => v.Id == voucher.Id);
     }
+
+    [Fact]
+    public void Shop_MegaBoosterPack_AllowsPickingTwoCards()
+    {
+        _engine.StartGame();
+        _engine.Money = 30;
+
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+        Assert.Equal(GameStatePhase.InShop, _engine.Phase);
+
+        var pack = new BoosterPack("Mega Arcana Pack", 8, 2, 5, BoosterType.Arcana, PackSize.Mega);
+        var tarot1 = new TarotCard("The Fool", 0, TarotType.TheFool);
+        var tarot2 = new TarotCard("The Magician", 0, TarotType.TheMagician);
+        var tarot3 = new TarotCard("The High Priestess", 0, TarotType.TheHighPriestess);
+        pack.TarotCards.AddRange(new[] { tarot1, tarot2, tarot3 });
+        _engine.Shop.BoosterPacks.Add(pack);
+
+        var (buySuccess, _, openedPack) = _engine.BuyBoosterPack(pack.Id);
+        Assert.True(buySuccess);
+        Assert.NotNull(_engine.Shop.OpenedBoosterPack);
+        Assert.Equal(2, _engine.Shop.OpenedBoosterPack.MaxPick);
+        Assert.True(openedPack!.TarotCards.Count >= 2);
+
+        var firstTarotId = openedPack.TarotCards[0].Id;
+        var secondTarotId = openedPack.TarotCards[1].Id;
+
+        // Pick card 1
+        var (pick1Success, _) = _engine.SelectBoosterCard(firstTarotId);
+        Assert.True(pick1Success);
+        Assert.Contains(_engine.Deck.UsableCards, c => c.Id == firstTarotId);
+        Assert.NotNull(_engine.Shop.OpenedBoosterPack); // Still open!
+        Assert.Equal(1, _engine.Shop.OpenedBoosterPack.MaxPick);
+        Assert.DoesNotContain(_engine.Shop.OpenedBoosterPack.TarotCards, c => c.Id == firstTarotId);
+
+        // Pick card 2
+        var (pick2Success, _) = _engine.SelectBoosterCard(secondTarotId);
+        Assert.True(pick2Success);
+        Assert.Contains(_engine.Deck.UsableCards, c => c.Id == secondTarotId);
+        Assert.Null(_engine.Shop.OpenedBoosterPack); // Closed after 2 picks!
+    }
+
+    [Fact]
+    public void Shop_SkipBoosterPack_ClosesOpenedPack()
+    {
+        _engine.StartGame();
+        _engine.Money = 30;
+
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+
+        var pack = new BoosterPack("Mega Buffoon Pack", 8, 2, 4, BoosterType.Buffoon, PackSize.Mega);
+        var joker1 = new JokerCard("Joker 1", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 10, 0);
+        pack.JokerCards.Add(joker1);
+        _engine.Shop.BoosterPacks.Add(pack);
+
+        _engine.BuyBoosterPack(pack.Id);
+        Assert.NotNull(_engine.Shop.OpenedBoosterPack);
+
+        var (skipSuccess, _) = _engine.SkipBoosterPack();
+        Assert.True(skipSuccess);
+        Assert.Null(_engine.Shop.OpenedBoosterPack);
+    }
 }
