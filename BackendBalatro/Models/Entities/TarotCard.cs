@@ -42,6 +42,7 @@ public class TarotCard : IUsableCard
             TarotType.Strength => "Increases rank of up to 2 selected cards by 1.",
             TarotType.TheHangedMan => "Destroys up to 2 selected cards.",
             TarotType.Death => "Converts the left selected card into the right selected card.",
+            TarotType.TheTemperance => "Gives the total sell value of all current Jokers (Max of $50).",
             TarotType.TheDevil => "Enhances 1 selected card into a Gold Card ($3 held at end of round).",
             TarotType.TheTower => "Enhances 1 selected card into a Stone Card (+50 Chips, no rank/suit).",
             TarotType.TheStar => "Converts up to 3 selected cards to Diamonds.",

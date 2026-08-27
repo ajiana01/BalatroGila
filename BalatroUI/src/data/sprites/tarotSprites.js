@@ -1,4 +1,4 @@
-﻿import image from '../../assets/Balatro-TarotPlanetAndSpectralCards.png';
+import image from '../../assets/Balatro-TarotPlanetAndSpectralCards.png';
 
 export const tarotSprite = {
     image,
@@ -13,93 +13,51 @@ export const tarotSprite = {
     cellHeight: 570 / 6,
 
     tarots: {
-        TheFool: {
-            column: 0,
-            row: 0
-        },
-        TheMagician: {
-            column: 1,
-            row: 0
-        },
-        TheHighPriestess: {
-            column: 2,
-            row: 0
-        },
-        TheEmpress: {
-            column: 3,
-            row: 0
-        },
-        TheEmperor: {
-            column: 4,
-            row: 0
-        },
-        TheHierophant: {
-            column: 5,
-            row: 0
-        },
-        TheLovers: {
-            column: 6,
-            row: 0
-        },
-        TheChariot: {
-            column: 7,
-            row: 0
-        },
-        TheJustice: {
-            column: 8,
-            row: 0
-        },
-        TheHermit: {
-            column: 9,
-            row: 0
-        },
-        TheWheelOfFortune: {
-            column: 0,
-            row: 1
-        },
-        TheStrength: {
-            column: 1,
-            row: 1
-        },
-        TheHangedMan: {
-            column: 2,
-            row: 1
-        },
-        TheDeath: {
-            column: 3,
-            row: 1
-        },
-        TheTemperance: {
-            column: 4,
-            row: 1
-        },
-        TheDevil: {
-            column: 5,
-            row: 1
-        },
-        TheTower: {
-            column: 6,
-            row: 1
-        },
-        TheStar: {
-            column: 7,
-            row: 1
-        },
-        TheMoon: {
-            column: 8,
-            row: 1
-        },
-        TheSun: {
-            column: 9,
-            row: 1
-        },
-        TheJudgement: {
-            column: 0,
-            row: 2
-        },
-        TheWorld: {
-            column: 1,
-            row: 2
-        },
+        TheFool: { column: 0, row: 0 },
+        Fool: { column: 0, row: 0 },
+        TheMagician: { column: 1, row: 0 },
+        Magician: { column: 1, row: 0 },
+        TheHighPriestess: { column: 2, row: 0 },
+        HighPriestess: { column: 2, row: 0 },
+        TheEmpress: { column: 3, row: 0 },
+        Empress: { column: 3, row: 0 },
+        TheEmperor: { column: 4, row: 0 },
+        Emperor: { column: 4, row: 0 },
+        TheHierophant: { column: 5, row: 0 },
+        Hierophant: { column: 5, row: 0 },
+        TheLovers: { column: 6, row: 0 },
+        Lovers: { column: 6, row: 0 },
+        TheChariot: { column: 7, row: 0 },
+        Chariot: { column: 7, row: 0 },
+        TheJustice: { column: 8, row: 0 },
+        Justice: { column: 8, row: 0 },
+        TheHermit: { column: 9, row: 0 },
+        Hermit: { column: 9, row: 0 },
+        TheWheelOfFortune: { column: 0, row: 1 },
+        TheWheelFortune: { column: 0, row: 1 },
+        WheelOfFortune: { column: 0, row: 1 },
+        WheelFortune: { column: 0, row: 1 },
+        TheStrength: { column: 1, row: 1 },
+        Strength: { column: 1, row: 1 },
+        TheHangedMan: { column: 2, row: 1 },
+        HangedMan: { column: 2, row: 1 },
+        TheDeath: { column: 3, row: 1 },
+        Death: { column: 3, row: 1 },
+        TheTemperance: { column: 4, row: 1 },
+        Temperance: { column: 4, row: 1 },
+        TheDevil: { column: 5, row: 1 },
+        Devil: { column: 5, row: 1 },
+        TheTower: { column: 6, row: 1 },
+        Tower: { column: 6, row: 1 },
+        TheStar: { column: 7, row: 1 },
+        Star: { column: 7, row: 1 },
+        TheMoon: { column: 8, row: 1 },
+        Moon: { column: 8, row: 1 },
+        TheSun: { column: 9, row: 1 },
+        Sun: { column: 9, row: 1 },
+        TheJudgement: { column: 0, row: 2 },
+        Judgement: { column: 0, row: 2 },
+        TheWorld: { column: 1, row: 2 },
+        World: { column: 1, row: 2 }
     }
 };

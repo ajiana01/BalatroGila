@@ -230,6 +230,13 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 message = $"Converted {left.Name} to match {right.Name}.";
                 return true;
 
+            case TarotType.TheTemperance:
+                int sellSum = engine.Deck.JokerCards.Sum(j => j.SellValue);
+                int payout = Math.Min(50, sellSum);
+                engine.Money += payout;
+                message = $"Temperance gave ${payout} from Joker sell values!";
+                return true;
+
             case TarotType.TheDevil:
                 if (targetCards.Count != 1)
                 {

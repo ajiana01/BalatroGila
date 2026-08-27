@@ -3,11 +3,13 @@ import Sprite from '../Sprite/Sprite';
 import CardActionTabs from '../CardActionTabs/CardActionTabs';
 import { tarotSprite } from '../../data/sprites/tarotSprites';
 import { getCardInfo } from '../../data/shopData';
+import { normalizeTarotSpriteKey } from '../../utils/cardMapper';
 import './TarotCard.css';
 
 function TarotCard({
     tarot,
     spriteId,
+    name,
     title,
     description,
     width = 100,
@@ -21,12 +23,12 @@ function TarotCard({
     showHoverTooltip = true
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    const key = spriteId || tarot || 'TheFool';
-    const cleanedKey = tarotSprite.tarots[key] ? key : (Object.keys(tarotSprite.tarots).find(k => k.toLowerCase() === key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()) || 'TheFool');
+    const rawKey = spriteId || name || title || (tarotSprite.tarots[tarot] ? tarot : null);
+    const cleanedKey = normalizeTarotSpriteKey(rawKey || tarot);
     const tarotData = tarotSprite.tarots[cleanedKey] || tarotSprite.tarots['TheFool'];
     const fallbackInfo = getCardInfo(cleanedKey, 'tarot');
     const info = {
-        title: title || fallbackInfo?.title || cleanedKey,
+        title: title || name || fallbackInfo?.title || cleanedKey,
         description: description || fallbackInfo?.description || ''
     };
 

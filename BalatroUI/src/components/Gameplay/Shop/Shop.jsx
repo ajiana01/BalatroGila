@@ -4,6 +4,7 @@ import GameSidebar from '../GameSidebar/GameSidebar';
 import JokerCard from '../../JokerCard/JokerCard';
 import TarotCard from '../../TarotCard/TarotCard';
 import PlanetCard from '../../PlanetCard/PlanetCard';
+import SpectralCard from '../../SpectralCard/SpectralCard';
 import PlayingCard from '../../PlayingCard/PlayingCard';
 import Voucher from '../../Voucher/Voucher';
 import BoosterPack from '../../BoosterPacks/BoosterPacks';
@@ -788,8 +789,30 @@ function Shop({
                                         >
                                             {consumable.type === 'planet' ? (
                                                 <PlanetCard
+                                                    id={consumable.id}
                                                     planet={consumable.id}
                                                     spriteId={consumable.spriteId}
+                                                    name={consumable.name}
+                                                    title={consumable.title}
+                                                    description={consumable.description}
+                                                    width={78}
+                                                    height={108}
+                                                    animated={true}
+                                                    isSelected={isSelected}
+                                                    onSelect={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleConsumable(index);
+                                                    }}
+                                                    onSell={() => handleSellConsumable(index)}
+                                                    onUse={() => handleUseConsumable(index)}
+                                                    sellPrice={consumable.sellPrice || 1}
+                                                />
+                                            ) : consumable.type === 'spectral' ? (
+                                                <SpectralCard
+                                                    id={consumable.id}
+                                                    spectral={consumable.id}
+                                                    spriteId={consumable.spriteId}
+                                                    name={consumable.name}
                                                     title={consumable.title}
                                                     description={consumable.description}
                                                     width={78}
@@ -806,8 +829,10 @@ function Shop({
                                                 />
                                             ) : (
                                                 <TarotCard
+                                                    id={consumable.id}
                                                     tarot={consumable.id}
                                                     spriteId={consumable.spriteId}
+                                                    name={consumable.name}
                                                     title={consumable.title}
                                                     description={consumable.description}
                                                     width={78}

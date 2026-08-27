@@ -309,8 +309,10 @@ function BoosterPackOpening({
                                         {consumable ? (
                                             consumable.type === 'planet' ? (
                                                 <PlanetCard
+                                                    id={consumable.id}
                                                     planet={consumable.id}
                                                     spriteId={consumable.spriteId}
+                                                    name={consumable.name}
                                                     title={consumable.title}
                                                     description={consumable.description}
                                                     width={78}
@@ -327,7 +329,10 @@ function BoosterPackOpening({
                                                 />
                                             ) : consumable.type === 'spectral' ? (
                                                 <SpectralCard
-                                                    spectral={consumable.spriteId || consumable.id}
+                                                    id={consumable.id}
+                                                    spectral={consumable.id}
+                                                    spriteId={consumable.spriteId}
+                                                    name={consumable.name}
                                                     title={consumable.title}
                                                     description={consumable.description}
                                                     width={78}
@@ -344,8 +349,10 @@ function BoosterPackOpening({
                                                 />
                                             ) : (
                                                 <TarotCard
+                                                    id={consumable.id}
                                                     tarot={consumable.id}
                                                     spriteId={consumable.spriteId}
+                                                    name={consumable.name}
                                                     title={consumable.title}
                                                     description={consumable.description}
                                                     width={78}
@@ -372,8 +379,8 @@ function BoosterPackOpening({
                     </div>
                 </div>
 
-                {/* PLAYER HAND DISPLAY ROW (Matches screenshot 1 for spectral/tarot cards) */}
-                {isSpectral && (
+                {/* PLAYER HAND DISPLAY ROW (Shown for spectral and arcana/tarot cards) */}
+                {(isSpectral || isArcana) && (
                     <div className="booster-player-hand-section">
                         <div className="booster-hand-cards-row">
                             {handCards.map((card, idx) => {
@@ -387,6 +394,8 @@ function BoosterPackOpening({
                                         <PlayingCard
                                             rank={card.rank}
                                             suit={card.suit}
+                                            enhancement={card.enhancement}
+                                            edition={card.edition}
                                             isDebuffed={card.isDebuffed}
                                             width={72}
                                             height={100}
@@ -423,7 +432,12 @@ function BoosterPackOpening({
                                     <div className="booster-card-visual-box">
                                         {card.type === 'spectral' && (
                                             <SpectralCard
-                                                spectral={card.spriteId || card.id}
+                                                id={card.id}
+                                                spectral={card.id}
+                                                spriteId={card.spriteId}
+                                                name={card.name}
+                                                title={card.title}
+                                                description={card.description}
                                                 width={90}
                                                 height={126}
                                                 animated={true}
@@ -434,6 +448,9 @@ function BoosterPackOpening({
                                             <PlayingCard
                                                 rank={card.rank}
                                                 suit={card.suit}
+                                                enhancement={card.enhancement}
+                                                edition={card.edition}
+                                                isDebuffed={card.isDebuffed}
                                                 width={90}
                                                 height={126}
                                             />
@@ -441,8 +458,10 @@ function BoosterPackOpening({
 
                                         {card.type === 'planet' && (
                                             <PlanetCard
+                                                id={card.id}
                                                 planet={card.id}
                                                 spriteId={card.spriteId}
+                                                name={card.name}
                                                 title={card.title}
                                                 description={card.description}
                                                 width={90}
@@ -453,8 +472,10 @@ function BoosterPackOpening({
 
                                         {card.type === 'tarot' && (
                                             <TarotCard
+                                                id={card.id}
                                                 tarot={card.id}
                                                 spriteId={card.spriteId}
+                                                name={card.name}
                                                 title={card.title}
                                                 description={card.description}
                                                 width={90}

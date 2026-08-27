@@ -904,6 +904,15 @@ public class GameEngine : IGameEngine
         _shopService.OpenBoosterPack(pack, PurchasedVouchers, mostPlayedHand);
         Shop.OpenedBoosterPack = pack;
 
+        // For Arcana (Tarot) and Spectral booster packs, ensure hand cards are available to view/target
+        if (pack.BoosterPackType == BoosterType.Arcana || pack.BoosterPackType == BoosterType.Spectral)
+        {
+            if (Hand.Count == 0)
+            {
+                DrawCards(MaxHand);
+            }
+        }
+
         return (true, $"Opened {pack.Name}! Pick {pack.MaxPick} card(s).", pack);
     }
 

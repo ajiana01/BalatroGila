@@ -3,11 +3,13 @@ import Sprite from '../Sprite/Sprite';
 import CardActionTabs from '../CardActionTabs/CardActionTabs';
 import { planetSprite } from '../../data/sprites/planetSprites';
 import { getCardInfo } from '../../data/shopData';
+import { normalizePlanetSpriteKey } from '../../utils/cardMapper';
 import './PlanetCard.css';
 
 function PlanetCard({
     planet,
     spriteId,
+    name,
     title,
     description,
     width = 100,
@@ -21,12 +23,12 @@ function PlanetCard({
     showHoverTooltip = true
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    const key = spriteId || planet || 'Mercury';
-    const cleanedKey = planetSprite.planets[key] ? key : (Object.keys(planetSprite.planets).find(k => k.toLowerCase() === key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()) || 'Mercury');
+    const rawKey = spriteId || name || title || (planetSprite.planets[planet] ? planet : null);
+    const cleanedKey = normalizePlanetSpriteKey(rawKey || planet);
     const planetData = planetSprite.planets[cleanedKey] || planetSprite.planets['Mercury'];
     const fallbackInfo = getCardInfo(cleanedKey, 'planet');
     const info = {
-        title: title || fallbackInfo?.title || cleanedKey,
+        title: title || name || fallbackInfo?.title || cleanedKey,
         description: description || fallbackInfo?.description || ''
     };
 

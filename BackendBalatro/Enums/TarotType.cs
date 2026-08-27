@@ -16,6 +16,7 @@ public enum TarotType
     Strength,
     TheHangedMan,
     Death,
+    TheTemperance,
     TheDevil,
     TheTower,
     TheStar,

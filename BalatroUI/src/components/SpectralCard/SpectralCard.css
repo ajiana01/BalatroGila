@@ -1,0 +1,19 @@
+.spectral-card-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.spectral-card-container.selected {
+    transform: translateY(-8px) scale(1.06);
+    filter: drop-shadow(0 0 10px rgba(0, 148, 255, 0.65));
+    z-index: 40;
+}
+
+.rarity-spectral {
+    background: #0066cc;
+    border: 1px solid #0094ff;
+}

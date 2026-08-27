@@ -1,5 +1,8 @@
 // BalatroUI/src/utils/cardMapper.js
 import { jokerSprite } from '../data/sprites/jokerSprites';
+import { tarotSprite } from '../data/sprites/tarotSprites';
+import { spectralSprite } from '../data/sprites/spectralSprites';
+import { planetSprite } from '../data/sprites/planetSprites';
 
 export const RANK_MAP = {
   'Two': '2', '2': '2',
@@ -26,7 +29,6 @@ export const REVERSE_RANK_MAP = {
 // Normalisasi sprite key untuk Joker
 export function normalizeJokerSpriteKey(nameOrKey) {
   if (!nameOrKey) return 'Joker';
-  // Check exact match in jokerSprite
   if (jokerSprite.cards[nameOrKey]) return nameOrKey;
 
   const str = String(nameOrKey);
@@ -38,7 +40,6 @@ export function normalizeJokerSpriteKey(nameOrKey) {
     }
   }
 
-  // Alias dictionary for special names/cases
   const SPECIAL_MAP = {
     '8ball': 'EightBall',
     'eightball': 'EightBall',
@@ -58,6 +59,126 @@ export function normalizeJokerSpriteKey(nameOrKey) {
   }
 
   return 'Joker';
+}
+
+// Normalisasi sprite key untuk Tarot
+export function normalizeTarotSpriteKey(nameOrKey) {
+  if (!nameOrKey) return 'TheFool';
+  if (tarotSprite.tarots[nameOrKey]) return nameOrKey;
+
+  const str = String(nameOrKey);
+  const cleaned = str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+  for (const key of Object.keys(tarotSprite.tarots)) {
+    if (key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleaned) {
+      return key;
+    }
+  }
+
+  const SPECIAL_MAP = {
+    'thefool': 'TheFool',
+    'fool': 'TheFool',
+    'themagician': 'TheMagician',
+    'magician': 'TheMagician',
+    'thehighpriestess': 'TheHighPriestess',
+    'highpriestess': 'TheHighPriestess',
+    'theempress': 'TheEmpress',
+    'empress': 'TheEmpress',
+    'theemperor': 'TheEmperor',
+    'emperor': 'TheEmperor',
+    'thehierophant': 'TheHierophant',
+    'hierophant': 'TheHierophant',
+    'thelovers': 'TheLovers',
+    'lovers': 'TheLovers',
+    'thechariot': 'TheChariot',
+    'chariot': 'TheChariot',
+    'justice': 'TheJustice',
+    'thejustice': 'TheJustice',
+    'thehermit': 'TheHermit',
+    'hermit': 'TheHermit',
+    'thewheeloffortune': 'TheWheelOfFortune',
+    'thewheelfortune': 'TheWheelOfFortune',
+    'wheelfortune': 'TheWheelOfFortune',
+    'wheeloffortune': 'TheWheelOfFortune',
+    'thestrength': 'TheStrength',
+    'strength': 'TheStrength',
+    'thehangedman': 'TheHangedMan',
+    'hangedman': 'TheHangedMan',
+    'death': 'TheDeath',
+    'thedeath': 'TheDeath',
+    'temperance': 'TheTemperance',
+    'thetemperance': 'TheTemperance',
+    'thedevil': 'TheDevil',
+    'devil': 'TheDevil',
+    'thetower': 'TheTower',
+    'tower': 'TheTower',
+    'thestar': 'TheStar',
+    'star': 'TheStar',
+    'themoon': 'TheMoon',
+    'moon': 'TheMoon',
+    'thesun': 'TheSun',
+    'sun': 'TheSun',
+    'judgement': 'TheJudgement',
+    'thejudgement': 'TheJudgement',
+    'theworld': 'TheWorld',
+    'world': 'TheWorld'
+  };
+
+  if (SPECIAL_MAP[cleaned] && tarotSprite.tarots[SPECIAL_MAP[cleaned]]) {
+    return SPECIAL_MAP[cleaned];
+  }
+
+  return 'TheFool';
+}
+
+// Normalisasi sprite key untuk Spectral
+export function normalizeSpectralSpriteKey(nameOrKey) {
+  if (!nameOrKey) return 'Familiar';
+  if (spectralSprite.spectrals[nameOrKey]) return nameOrKey;
+
+  const str = String(nameOrKey);
+  const cleaned = str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+  for (const key of Object.keys(spectralSprite.spectrals)) {
+    if (key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleaned) {
+      return key;
+    }
+  }
+
+  const SPECIAL_MAP = {
+    'incantation': 'Incantation',
+    'incantantion': 'Incantation',
+    'immolate': 'Immolate',
+    'immobile': 'Immolate',
+    'dejavu': 'DejaVu',
+    'deja_vu': 'DejaVu',
+    'thesoul': 'TheSoul',
+    'soul': 'TheSoul',
+    'blackhole': 'BlackHole'
+  };
+
+  if (SPECIAL_MAP[cleaned] && spectralSprite.spectrals[SPECIAL_MAP[cleaned]]) {
+    return SPECIAL_MAP[cleaned];
+  }
+
+  return 'Familiar';
+}
+
+// Normalisasi sprite key untuk Planet
+export function normalizePlanetSpriteKey(nameOrKey) {
+  if (!nameOrKey) return 'Mercury';
+  if (planetSprite.planets[nameOrKey]) return nameOrKey;
+
+  const str = String(nameOrKey);
+  const cleaned = str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+  for (const key of Object.keys(planetSprite.planets)) {
+    if (key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleaned) {
+      return key;
+    }
+  }
+
+  return 'Mercury';
 }
 
 // Map Backend PlayingCard -> Frontend PlayingCard
@@ -123,19 +244,19 @@ export function mapBackendConsumable(c) {
   const sellPrice = c.sellValue || Math.max(1, Math.floor(price / 2));
   const desc = c.description || '';
 
-  // Determine type
+  // Determine type and resolved spriteId
   let type = 'tarot';
-  let spriteId = name.replace(/\s+/g, '');
+  let spriteId = '';
 
   if (c.planetType || c.pokerHandType || /Mercury|Venus|Earth|Mars|Jupiter|Saturn|Uranus|Neptune|Pluto/i.test(name)) {
     type = 'planet';
-    spriteId = c.planetType || name.replace(/\s+/g, '');
+    spriteId = normalizePlanetSpriteKey(c.planetType || name);
   } else if (c.spectralType || /Ankh|Hex|Wraith|Sigil|Ouija|Ectoplasm|Immolate|Talisman|Aura|Familiar|Grim|Incantation|Deja_vu|Trance|Medium|Cryptid|TheSoul|BlackHole/i.test(name)) {
     type = 'spectral';
-    spriteId = c.spectralType || name.replace(/\s+/g, '');
+    spriteId = normalizeSpectralSpriteKey(c.spectralType || name);
   } else {
     type = 'tarot';
-    spriteId = c.type || name.replace(/\s+/g, '');
+    spriteId = normalizeTarotSpriteKey(c.type || name);
   }
 
   return {
@@ -143,6 +264,7 @@ export function mapBackendConsumable(c) {
     type,
     spriteId,
     title: name || spriteId,
+    name: name || spriteId,
     price,
     sellPrice,
     description: desc

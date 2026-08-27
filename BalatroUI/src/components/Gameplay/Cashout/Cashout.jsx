@@ -281,8 +281,10 @@ function Cashout({
                                     >
                                         {consumable.type === 'planet' ? (
                                             <PlanetCard
+                                                id={consumable.id}
                                                 planet={consumable.id}
                                                 spriteId={consumable.spriteId}
+                                                name={consumable.name}
                                                 title={consumable.title}
                                                 description={consumable.description}
                                                 width={78}
@@ -299,7 +301,10 @@ function Cashout({
                                             />
                                         ) : consumable.type === 'spectral' ? (
                                             <SpectralCard
-                                                spectral={consumable.spriteId || consumable.id}
+                                                id={consumable.id}
+                                                spectral={consumable.id}
+                                                spriteId={consumable.spriteId}
+                                                name={consumable.name}
                                                 title={consumable.title}
                                                 description={consumable.description}
                                                 width={78}
@@ -316,8 +321,10 @@ function Cashout({
                                             />
                                         ) : (
                                             <TarotCard
+                                                id={consumable.id}
                                                 tarot={consumable.id}
                                                 spriteId={consumable.spriteId}
+                                                name={consumable.name}
                                                 title={consumable.title}
                                                 description={consumable.description}
                                                 width={78}
