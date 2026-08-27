@@ -36,8 +36,16 @@ function RunInfoIcon() {
     );
 }
 
-function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isShop = false }) {
+function GameSidebar({
+    gameData,
+    onOpenSettings,
+    isBlindSelection = false,
+    isShop = false,
+    isCashout = false
+}) {
     const [isRunInfoOpen, setIsRunInfoOpen] = useState(false);
+
+    const isOutsideRound = isShop || isCashout || isBlindSelection;
 
     const blind = gameData?.currentBlind || {
         type: 'big',
@@ -54,6 +62,12 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
         blindType === 'small' ? 'SmallBlind' :
         blindType === 'big' ? 'BigBlind' : 'TheGoad'
     );
+
+    const displayRoundScore = isOutsideRound ? 0 : (gameData?.score || 0);
+    const displayHands = isOutsideRound ? (gameData?.maxHands || 4) : (gameData?.hands ?? (gameData?.maxHands || 4));
+    const displayDiscards = isOutsideRound ? (gameData?.maxDiscards || 3) : (gameData?.discards ?? (gameData?.maxDiscards || 3));
+    const displayChips = isOutsideRound ? 0 : (gameData?.currentHandChips || 0);
+    const displayMult = isOutsideRound ? 0 : (gameData?.currentHandMult || 0);
 
     return (
         <aside className="game-sidebar">
@@ -111,13 +125,13 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
 
                 <div className="round-score-value">
                     <PokerChipIcon />
-                    <strong>{isShop ? 0 : (gameData.score || 0)}</strong>
+                    <strong>{displayRoundScore}</strong>
                 </div>
             </div>
 
             {/* POKER HAND & MULTIPLIER */}
-            <div className={`sidebar-box hand-eval-box ${isShop ? 'shop-eval-box' : ''}`}>
-                {!isShop && (
+            <div className={`sidebar-box hand-eval-box ${isOutsideRound ? 'shop-eval-box' : ''}`}>
+                {!isOutsideRound && (
                     <div className="hand-name-lvl">
                         {gameData?.currentHandName ? (
                             <>
@@ -131,13 +145,13 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
 
                 <div className="chips-mult-row">
                     <div className="chips-box">
-                        {isShop ? 0 : (gameData?.currentHandChips || 0)}
+                        {displayChips}
                     </div>
 
                     <span className="mult-sign">X</span>
 
                     <div className="mult-box">
-                        {isShop ? 0 : (gameData?.currentHandMult || 0)}
+                        {displayMult}
                     </div>
                 </div>
             </div>
@@ -171,17 +185,17 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
                     <div className="stat-split-box">
                         <div className="split-item hands-stat">
                             <span className="stat-label">Hands</span>
-                            <strong className="stat-val blue">{gameData.hands}</strong>
+                            <strong className="stat-val blue">{displayHands}</strong>
                         </div>
                         <div className="split-item discards-stat">
                             <span className="stat-label">Discards</span>
-                            <strong className="stat-val red">{gameData.discards}</strong>
+                            <strong className="stat-val red">{displayDiscards}</strong>
                         </div>
                     </div>
 
                     {/* Row 2: Money */}
                     <div className="money-box">
-                        <strong>${gameData.money}</strong>
+                        <strong>${gameData?.money ?? 0}</strong>
                     </div>
 
                     {/* Row 3: Ante & Round */}
@@ -189,12 +203,12 @@ function GameSidebar({ gameData, onOpenSettings, isBlindSelection = false, isSho
                         <div className="split-item ante-stat">
                             <span className="stat-label">Ante</span>
                             <strong className="stat-val orange">
-                                {gameData.ante} <span className="stat-sub">/ 8</span>
+                                {gameData?.ante ?? 1} <span className="stat-sub">/ 8</span>
                             </strong>
                         </div>
                         <div className="split-item round-stat">
                             <span className="stat-label">Round</span>
-                            <strong className="stat-val orange">{gameData.round}</strong>
+                            <strong className="stat-val orange">{gameData?.round ?? 1}</strong>
                         </div>
                     </div>
                 </div>

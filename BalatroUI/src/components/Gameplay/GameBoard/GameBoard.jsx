@@ -120,8 +120,8 @@ function GameBoard({
                 if (!isCurrent || isScoring) return;
                 setSidebarHandName(preview.handName);
                 setSidebarHandLevel(preview.handLevel || 1);
-                setSidebarChips(preview.totalChips || preview.baseChips);
-                setSidebarMult(preview.totalMult || preview.baseMult);
+                setSidebarChips(preview.baseChips ?? (preview.BaseChips ?? (liveHandPreview?.chips || 0)));
+                setSidebarMult(preview.baseMult ?? (preview.BaseMult ?? (liveHandPreview?.mult || 0)));
             })
             .catch(() => {
                 if (!isCurrent || isScoring) return;

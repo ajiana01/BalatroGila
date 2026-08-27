@@ -162,6 +162,7 @@ function Cashout({
                 gameData={gameData}
                 onOpenSettings={onOpenSettings}
                 isBlindSelection={false}
+                isCashout={true}
             />
 
             {/* MAIN CASHOUT AREA */}
