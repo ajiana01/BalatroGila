@@ -174,4 +174,139 @@ public class ShopAndEconomyTests
         Assert.Equal(c2.Id, _engine.Deck.UsableCards[0].Id);
         Assert.Equal(c1.Id, _engine.Deck.UsableCards[1].Id);
     }
+
+    [Fact]
+    public void Voucher_PersistsAcrossRoundsInSameAnte_WhenNotPurchased()
+    {
+        _engine.StartGame();
+        _engine.Money = 50;
+
+        // Round 1 (Small Blind)
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+        Assert.Equal(GameStatePhase.InShop, _engine.Phase);
+        Assert.NotNull(_engine.Shop.Voucher);
+        var initialVoucherId = _engine.Shop.Voucher.Id;
+        var initialVoucherEffect = _engine.Shop.Voucher.Effect;
+
+        // Leave shop and defeat Round 2 (Big Blind)
+        _engine.LeaveShop();
+        _engine.SelectBlind(2);
+        _engine.DefeatBlind();
+        Assert.Equal(GameStatePhase.InShop, _engine.Phase);
+
+        // Voucher should be the EXACT same voucher
+        Assert.NotNull(_engine.Shop.Voucher);
+        Assert.Equal(initialVoucherId, _engine.Shop.Voucher.Id);
+        Assert.Equal(initialVoucherEffect, _engine.Shop.Voucher.Effect);
+    }
+
+    [Fact]
+    public void Voucher_DoesNotAppearInSameAnte_AfterBeingPurchased()
+    {
+        _engine.StartGame();
+        _engine.Money = 50;
+
+        // Round 1 (Small Blind)
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+        Assert.NotNull(_engine.Shop.Voucher);
+
+        // Buy the voucher
+        var voucherId = _engine.Shop.Voucher.Id;
+        var (buySuccess, _) = _engine.BuyVoucher(voucherId);
+        Assert.True(buySuccess);
+        Assert.Null(_engine.Shop.Voucher);
+
+        // Leave shop and defeat Round 2 (Big Blind)
+        _engine.LeaveShop();
+        _engine.SelectBlind(2);
+        _engine.DefeatBlind();
+
+        // Shop voucher must be null in subsequent rounds of same Ante!
+        Assert.Null(_engine.Shop.Voucher);
+    }
+
+    [Fact]
+    public void Voucher_ChangesWhenAnteAdvances()
+    {
+        _engine.StartGame();
+        _engine.Money = 100;
+
+        // Round 1 (Small Blind) Ante 1
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+        var ante1VoucherId = _engine.Shop.Voucher!.Id;
+
+        // Defeat Big Blind & Boss Blind to advance Ante
+        _engine.LeaveShop();
+        _engine.SelectBlind(2);
+        _engine.DefeatBlind();
+
+        _engine.LeaveShop();
+        _engine.SelectBlind(3);
+        _engine.DefeatBlind();
+
+        // Leave shop after boss -> advances to Ante 2
+        _engine.LeaveShop();
+        Assert.Equal(2, _engine.CurrentAnte);
+
+        // Start Round 1 Ante 2
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+
+        // New Ante must have a newly generated voucher
+        Assert.NotNull(_engine.Shop.Voucher);
+        Assert.NotEqual(ante1VoucherId, _engine.Shop.Voucher.Id);
+    }
+
+    [Fact]
+    public void Voucher_SeedMoney_IncreasesInterestCapTo10()
+    {
+        _engine.StartGame();
+        _engine.Money = 50; // $50 => default interest is $5 (cap 5)
+
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+
+        var seedMoneyVoucher = new Voucher("Seed Money", VoucherEffect.SeedMoney, 10);
+        _engine.Shop.Voucher = seedMoneyVoucher;
+        _engine.BuyVoucher(seedMoneyVoucher.Id);
+
+        _engine.Money = 50; // Set money to $50 again
+        int cashout = _engine.Cashout(); // Base reward 3 + remaining hands + $10 interest (since $50/5 = 10)
+        // Check interest cap: with Seed Money, 50 / 5 = 10 interest
+        Assert.True(cashout >= 13);
+    }
+
+    [Fact]
+    public void Voucher_DirectorsCut_AllowsOneRerollPerAnteFor10Dollars()
+    {
+        _engine.StartGame();
+        _engine.Money = 50;
+
+        _engine.SelectBlind(1);
+        _engine.DefeatBlind();
+
+        // Cannot reroll without Director's Cut
+        var (failNoVoucher, _) = _engine.RerollBossBlind();
+        Assert.False(failNoVoucher);
+
+        // Buy Director's Cut
+        var directorsCut = new Voucher("Director's Cut", VoucherEffect.DirectorsCut, 10);
+        _engine.Shop.Voucher = directorsCut;
+        _engine.BuyVoucher(directorsCut.Id);
+
+        var initialBoss = _engine.GetAvailableBlinds().First(b => b.BlindType == BlindType.Boss);
+        var initialMoney = _engine.Money;
+
+        // Reroll Boss Blind
+        var (rerollSuccess, _) = _engine.RerollBossBlind();
+        Assert.True(rerollSuccess);
+        Assert.Equal(initialMoney - 10, _engine.Money);
+
+        // Cannot reroll twice in same Ante
+        var (secondReroll, _) = _engine.RerollBossBlind();
+        Assert.False(secondReroll);
+    }
 }

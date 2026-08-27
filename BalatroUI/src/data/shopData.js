@@ -500,6 +500,24 @@ export const SHOP_VOUCHERS = [
         title: 'Blank',
         price: 10,
         description: 'Does nothing?'
+    },
+    {
+        id: 'Hieroglyph',
+        title: 'Hieroglyph',
+        price: 10,
+        description: '-1 Ante, -1 Hand each round'
+    },
+    {
+        id: 'DirectorsCut',
+        title: "Director's Cut",
+        price: 10,
+        description: 'Reroll Boss Blind 1 time per Ante for $10'
+    },
+    {
+        id: 'PaintBrush',
+        title: 'Paint Brush',
+        price: 10,
+        description: '+1 Hand size'
     }
 ];
 

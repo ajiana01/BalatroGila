@@ -32,12 +32,17 @@ public class Voucher
             VoucherEffect.Hone => "Foil, Holographic, and Polychrome cards appear 2x more often.",
             VoucherEffect.RerollSurplus => "Rerolls cost $2 less.",
             VoucherEffect.CrystalBall => "+1 Consumable slot.",
+            VoucherEffect.Telescope => "Celestial Packs always contain the Planet card for your most played poker hand.",
             VoucherEffect.Grabber => "Permanently gain +1 Hand per round.",
             VoucherEffect.Wasteful => "Permanently gain +1 Discard per round.",
             VoucherEffect.TarotMerchant => "Tarot cards appear 2x more frequently in the shop.",
             VoucherEffect.PlanetMerchant => "Planet cards appear 2x more frequently in the shop.",
+            VoucherEffect.SeedMoney => "Raise the cap on interest earned per round to $10.",
+            VoucherEffect.Blank => "Does nothing?",
+            VoucherEffect.MagicTrick => "Standard playing cards can be purchased from the shop.",
             VoucherEffect.Hieroglyph => "-1 Ante, -1 Hand each round.",
             VoucherEffect.DirectorsCut => "Reroll Boss Blind 1 time per Ante for $10.",
+            VoucherEffect.PaintBrush => "+1 Hand size.",
             _ => "Voucher effect"
         };
     }

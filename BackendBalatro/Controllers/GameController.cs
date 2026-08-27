@@ -76,4 +76,20 @@ public class GameController : ControllerBase
         var state = engine.GetGameState($"Selected {engine.CurrentBlind?.Name}. Good luck!");
         return Ok(ApiResponse<GameStateResponseDto>.Ok(state, "Blind selected"));
     }
+
+    [HttpPost("blinds/reroll-boss")]
+    public ActionResult<ApiResponse<GameStateResponseDto>> RerollBossBlind([FromQuery] string? sessionId)
+    {
+        string resolvedSessionId = GetSessionId(sessionId);
+        var engine = _sessionService.GetOrCreateSession(resolvedSessionId);
+
+        var (success, message) = engine.RerollBossBlind();
+        if (!success)
+        {
+            return BadRequest(ApiResponse<GameStateResponseDto>.Fail(message));
+        }
+
+        var state = engine.GetGameState(message);
+        return Ok(ApiResponse<GameStateResponseDto>.Ok(state, message));
+    }
 }

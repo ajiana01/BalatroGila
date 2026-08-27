@@ -28,6 +28,8 @@ public interface IGameEngine
     Deck Deck { get; }
     ShopEntity Shop { get; }
     List<Voucher> PurchasedVouchers { get; }
+    Voucher? CurrentAnteVoucher { get; }
+    bool IsAnteVoucherPurchased { get; }
 
     Blind? CurrentBlind { get; }
     GameStatePhase Phase { get; }
@@ -64,6 +66,7 @@ public interface IGameEngine
     bool SelectBlind(int blindId);
     Blind? GetCurrentBlind();
     bool DefeatBlind();
+    (bool Success, string Message) RerollBossBlind();
 
     // Hand Actions
     List<PlayingCard> DrawCards(int count);

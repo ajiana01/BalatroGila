@@ -7,7 +7,12 @@ public class ShopService : IShopService
 {
     private static readonly Random _random = new();
 
-    public void PopulateShop(BackendBalatro.Models.Entities.Shop shop, int ante, List<Voucher> purchasedVouchers)
+    public void PopulateShop(
+        BackendBalatro.Models.Entities.Shop shop,
+        int ante,
+        List<Voucher> purchasedVouchers,
+        Voucher? currentAnteVoucher = null,
+        bool isAnteVoucherPurchased = false)
     {
         shop.ResetForNewShop();
 
@@ -24,11 +29,18 @@ public class ShopService : IShopService
         // Generate 2 Booster Packs
         for (int i = 0; i < shop.MaxItemBoosterPacks; i++)
         {
-            shop.BoosterPacks.Add(GenerateRandomBoosterPack());
+            shop.BoosterPacks.Add(GenerateRandomBoosterPack(purchasedVouchers));
         }
 
-        // Generate 1 Voucher for the Ante if not already purchased
-        shop.Voucher = GenerateVoucherForAnte(ante, purchasedVouchers);
+        // Voucher retention per Ante
+        if (!isAnteVoucherPurchased && currentAnteVoucher != null)
+        {
+            shop.Voucher = currentAnteVoucher;
+        }
+        else
+        {
+            shop.Voucher = null;
+        }
     }
 
     public void RerollShop(BackendBalatro.Models.Entities.Shop shop, int ante, List<Voucher> purchasedVouchers)
@@ -47,37 +59,59 @@ public class ShopService : IShopService
 
     private static void GenerateRandomShopCard(BackendBalatro.Models.Entities.Shop shop, int ante, List<Voucher> vouchers)
     {
-        int roll = _random.Next(100);
-
-        // Hone voucher effect
         bool hasHone = vouchers.Any(v => v.Effect == VoucherEffect.Hone);
+        bool hasClearance = vouchers.Any(v => v.Effect == VoucherEffect.ClearanceSale);
+        bool hasTarotMerchant = vouchers.Any(v => v.Effect == VoucherEffect.TarotMerchant);
+        bool hasPlanetMerchant = vouchers.Any(v => v.Effect == VoucherEffect.PlanetMerchant);
+        bool hasMagicTrick = vouchers.Any(v => v.Effect == VoucherEffect.MagicTrick);
 
-        if (roll < 60)
+        // Calculate dynamic weighted chances based on merchant vouchers
+        // Default weights: Joker: 60, Tarot: 20, Planet: 15, PlayingCard: 5 (or 15 with Magic Trick)
+        int weightJoker = 60;
+        int weightTarot = hasTarotMerchant ? 40 : 20;
+        int weightPlanet = hasPlanetMerchant ? 30 : 15;
+        int weightPlayingCard = hasMagicTrick ? 20 : 5;
+
+        int totalWeight = weightJoker + weightTarot + weightPlanet + weightPlayingCard;
+        int roll = _random.Next(totalWeight);
+
+        if (roll < weightJoker)
         {
-            // Joker (60% chance)
+            // Joker
             var joker = GenerateRandomJoker(hasHone);
+            if (hasClearance)
+            {
+                joker.Price = Math.Max(1, (int)Math.Floor(joker.Price * 0.75));
+            }
             shop.JokerCardOffers.Add(joker);
         }
-        else if (roll < 80)
+        else if (roll < weightJoker + weightTarot)
         {
-            // Tarot (20% chance)
+            // Tarot
             var tarotType = (TarotType)_random.Next(Enum.GetValues<TarotType>().Length);
-            shop.TarotCardOffers.Add(new TarotCard(tarotType.ToString(), 3, tarotType));
+            int price = hasClearance ? Math.Max(1, (int)Math.Floor(3 * 0.75)) : 3;
+            shop.TarotCardOffers.Add(new TarotCard(tarotType.ToString(), price, tarotType));
         }
-        else if (roll < 95)
+        else if (roll < weightJoker + weightTarot + weightPlanet)
         {
-            // Planet (15% chance)
+            // Planet
             var handType = (PokerHandType)_random.Next(Enum.GetValues<PokerHandType>().Length);
-            shop.PlanetCardOffers.Add(PlanetCard.CreateForHand(handType));
+            var planet = PlanetCard.CreateForHand(handType);
+            if (hasClearance)
+            {
+                planet.Price = Math.Max(1, (int)Math.Floor(planet.Price * 0.75));
+            }
+            shop.PlanetCardOffers.Add(planet);
         }
         else
         {
-            // Playing Card (5% chance)
+            // Playing Card
             var suit = (Suit)_random.Next(4);
             var rank = (Rank)_random.Next(2, 15);
             var enhancement = _random.Next(100) < 50 ? (EnhancePokerCard)_random.Next(1, Enum.GetValues<EnhancePokerCard>().Length) : EnhancePokerCard.None;
             var edition = hasHone && _random.Next(100) < 20 ? (JokerEdition)_random.Next(1, 4) : JokerEdition.Base;
-            shop.PlayingCardOffers.Add(new PlayingCard(suit, rank, enhancement, 2) { Edition = edition });
+            int price = hasClearance ? Math.Max(1, (int)Math.Floor(2 * 0.75)) : 2;
+            shop.PlayingCardOffers.Add(new PlayingCard(suit, rank, enhancement, price) { Edition = edition });
         }
     }
 
@@ -217,7 +251,7 @@ public class ShopService : IShopService
         };
     }
 
-    private static BoosterPack GenerateRandomBoosterPack()
+    private static BoosterPack GenerateRandomBoosterPack(List<Voucher>? vouchers = null)
     {
         var types = new[] { BoosterType.Arcana, BoosterType.Celestial, BoosterType.Standard, BoosterType.Buffoon, BoosterType.Spectral };
         var type = types[_random.Next(types.Length)];
@@ -233,6 +267,11 @@ public class ShopService : IShopService
         if (size == PackSize.Jumbo) price += 2;
         if (size == PackSize.Mega) price += 4;
 
+        if (vouchers?.Any(v => v.Effect == VoucherEffect.ClearanceSale) == true)
+        {
+            price = Math.Max(1, (int)Math.Floor(price * 0.75));
+        }
+
         int totalCards = size switch
         {
             PackSize.Normal => 3,
@@ -247,7 +286,7 @@ public class ShopService : IShopService
         return new BoosterPack(name, price, maxPick, totalCards, type, size);
     }
 
-    public BoosterPack OpenBoosterPack(BoosterPack pack)
+    public BoosterPack OpenBoosterPack(BoosterPack pack, List<Voucher>? purchasedVouchers = null, PokerHandType mostPlayedHand = PokerHandType.HighCard)
     {
         pack.IsOpened = true;
         pack.PlayingCards.Clear();
@@ -255,6 +294,8 @@ public class ShopService : IShopService
         pack.PlanetCards.Clear();
         pack.SpectralCards.Clear();
         pack.JokerCards.Clear();
+
+        bool hasTelescope = purchasedVouchers?.Any(v => v.Effect == VoucherEffect.Telescope) == true;
 
         for (int i = 0; i < pack.TotalCard; i++)
         {
@@ -265,8 +306,16 @@ public class ShopService : IShopService
                     pack.TarotCards.Add(new TarotCard(tarot.ToString(), 0, tarot));
                     break;
                 case BoosterType.Celestial:
-                    var hand = (PokerHandType)_random.Next(Enum.GetValues<PokerHandType>().Length);
-                    pack.PlanetCards.Add(PlanetCard.CreateForHand(hand));
+                    // If Telescope voucher is active, the first planet card is guaranteed for the most played hand
+                    if (i == 0 && hasTelescope)
+                    {
+                        pack.PlanetCards.Add(PlanetCard.CreateForHand(mostPlayedHand));
+                    }
+                    else
+                    {
+                        var hand = (PokerHandType)_random.Next(Enum.GetValues<PokerHandType>().Length);
+                        pack.PlanetCards.Add(PlanetCard.CreateForHand(hand));
+                    }
                     break;
                 case BoosterType.Standard:
                     var suit = (Suit)_random.Next(4);
@@ -287,7 +336,7 @@ public class ShopService : IShopService
         return pack;
     }
 
-    private static Voucher? GenerateVoucherForAnte(int ante, List<Voucher> purchasedVouchers)
+    public Voucher? GenerateVoucherForAnte(int ante, List<Voucher> purchasedVouchers)
     {
         var allEffects = Enum.GetValues<VoucherEffect>()
             .Where(e => !purchasedVouchers.Any(p => p.Effect == e))

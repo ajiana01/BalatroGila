@@ -185,4 +185,20 @@ public class ShopController : ControllerBase
         var state = engine.GetGameState(message);
         return Ok(ApiResponse<GameStateResponseDto>.Ok(state, message));
     }
+
+    [HttpPost("reroll-boss")]
+    public ActionResult<ApiResponse<GameStateResponseDto>> RerollBossBlind()
+    {
+        string sessionId = GetSessionId();
+        var engine = _sessionService.GetOrCreateSession(sessionId);
+
+        var (success, message) = engine.RerollBossBlind();
+        if (!success)
+        {
+            return BadRequest(ApiResponse<GameStateResponseDto>.Fail(message));
+        }
+
+        var state = engine.GetGameState(message);
+        return Ok(ApiResponse<GameStateResponseDto>.Ok(state, message));
+    }
 }

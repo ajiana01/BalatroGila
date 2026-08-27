@@ -40,6 +40,9 @@ public class GameEngine : IGameEngine
     public Deck Deck { get; } = new(5, 2);
     public BackendBalatro.Models.Entities.Shop Shop { get; } = new();
     public List<Voucher> PurchasedVouchers { get; } = new();
+    public Voucher? CurrentAnteVoucher { get; private set; }
+    public bool IsAnteVoucherPurchased { get; private set; } = false;
+    public bool IsBossBlindRerolledThisAnte { get; private set; } = false;
 
     public Dictionary<int, List<Blind>> BlindEnemies { get; } = new();
     public Blind? CurrentBlind { get; private set; }
@@ -154,6 +157,8 @@ public class GameEngine : IGameEngine
         Deck.JokerCards.Clear();
         Deck.UsableCards.Clear();
         PurchasedVouchers.Clear();
+        IsAnteVoucherPurchased = false;
+        IsBossBlindRerolledThisAnte = false;
         Hand.Clear();
         DiscardPile.Clear();
         DrawPile.Clear();
@@ -174,6 +179,9 @@ public class GameEngine : IGameEngine
 
         // 2. Generate Blinds for Ante 1
         GenerateBlindsForAnte(CurrentAnte);
+
+        // 3. Generate Voucher for Ante 1
+        CurrentAnteVoucher = _shopService.GenerateVoucherForAnte(CurrentAnte, PurchasedVouchers);
 
         return true;
     }
@@ -266,16 +274,14 @@ public class GameEngine : IGameEngine
 
         RoundScore = 0;
 
-        // Apply voucher effects to hands & discards
-        int bonusHands = PurchasedVouchers.Count(v => v.Effect == VoucherEffect.Grabber);
-        int bonusDiscards = PurchasedVouchers.Count(v => v.Effect == VoucherEffect.Wasteful);
+        // Apply hands & discards
         if (selected.BlindId == BlindId.TheNeedle)
         {
             _currentHand = 1;
         }
         else
         {
-            _currentHand = MaxHands + bonusHands;
+            _currentHand = MaxHands;
         }
 
         if (selected.BlindId == BlindId.TheWater)
@@ -284,7 +290,7 @@ public class GameEngine : IGameEngine
         }
         else
         {
-            _currentDiscard = MaxDiscards + bonusDiscards;
+            _currentDiscard = MaxDiscards;
         }
 
         // Draw initial hand (taking The Manacle -1 hand size into account)
@@ -568,7 +574,7 @@ public class GameEngine : IGameEngine
         }
 
         // Open shop
-        _shopService.PopulateShop(Shop, CurrentAnte, PurchasedVouchers);
+        _shopService.PopulateShop(Shop, CurrentAnte, PurchasedVouchers, CurrentAnteVoucher, IsAnteVoucherPurchased);
         Phase = GameStatePhase.InShop;
         OnShopOpen?.Invoke();
 
@@ -581,7 +587,8 @@ public class GameEngine : IGameEngine
 
         int reward = CurrentBlind.RewardMoney;
         int remainingHandsMoney = _currentHand * 1;
-        int interest = Math.Min(5, Money / 5);
+        int maxInterest = PurchasedVouchers.Any(v => v.Effect == VoucherEffect.SeedMoney) ? 10 : 5;
+        int interest = Math.Min(maxInterest, Money / 5);
 
         int totalCashout = reward + remainingHandsMoney + interest;
         Money += totalCashout;
@@ -631,6 +638,9 @@ public class GameEngine : IGameEngine
     {
         CurrentAnte++;
         _playedCardIdsThisAnte.Clear();
+        IsAnteVoucherPurchased = false;
+        IsBossBlindRerolledThisAnte = false;
+        CurrentAnteVoucher = _shopService.GenerateVoucherForAnte(CurrentAnte, PurchasedVouchers);
         GenerateBlindsForAnte(CurrentAnte);
         OnAnteAdvance?.Invoke(CurrentAnte);
         return true;
@@ -886,7 +896,12 @@ public class GameEngine : IGameEngine
 
         Money -= pack.Price;
         Shop.BoosterPacks.Remove(pack);
-        _shopService.OpenBoosterPack(pack);
+
+        var mostPlayedHand = PokerHandPlayed.Values.Any(v => v > 0)
+            ? PokerHandPlayed.OrderByDescending(kv => kv.Value).First().Key
+            : PokerHandType.HighCard;
+
+        _shopService.OpenBoosterPack(pack, PurchasedVouchers, mostPlayedHand);
         Shop.OpenedBoosterPack = pack;
 
         return (true, $"Opened {pack.Name}! Pick {pack.MaxPick} card(s).", pack);
@@ -1012,12 +1027,14 @@ public class GameEngine : IGameEngine
         Money -= voucher.Price;
         voucher.IsPurchased = true;
         PurchasedVouchers.Add(voucher);
+        IsAnteVoucherPurchased = true;
+        CurrentAnteVoucher = null;
         Shop.Voucher = null;
 
         // Apply permanent voucher effects
         if (voucher.Effect == VoucherEffect.Overstock)
         {
-            Shop.MaxItemCardOffers++;
+            Shop.MaxItemCardOffers = 3;
         }
         else if (voucher.Effect == VoucherEffect.CrystalBall)
         {
@@ -1031,6 +1048,10 @@ public class GameEngine : IGameEngine
         {
             MaxDiscards++;
         }
+        else if (voucher.Effect == VoucherEffect.PaintBrush)
+        {
+            MaxHand++;
+        }
         else if (voucher.Effect == VoucherEffect.Hieroglyph)
         {
             CurrentAnte = Math.Max(1, CurrentAnte - 1);
@@ -1038,6 +1059,55 @@ public class GameEngine : IGameEngine
         }
 
         return (true, $"Purchased {voucher.Name} voucher!");
+    }
+
+    public (bool Success, string Message) RerollBossBlind()
+    {
+        if (!PurchasedVouchers.Any(v => v.Effect == VoucherEffect.DirectorsCut))
+        {
+            return (false, "Director's Cut voucher required to reroll Boss Blind.");
+        }
+        if (IsBossBlindRerolledThisAnte)
+        {
+            return (false, "Boss Blind can only be rerolled once per Ante.");
+        }
+        if (Money < 10)
+        {
+            return (false, "Not enough money to reroll Boss Blind (Costs $10).");
+        }
+
+        Money -= 10;
+        IsBossBlindRerolledThisAnte = true;
+
+        int baseScore = CurrentAnte switch
+        {
+            1 => 300,
+            2 => 800,
+            3 => 2000,
+            4 => 5000,
+            5 => 11000,
+            6 => 20000,
+            7 => 35000,
+            8 => 50000,
+            _ => (int)(50000 * Math.Pow(1.5, CurrentAnte - 8))
+        };
+
+        var newBoss = GenerateBossBlind(CurrentAnte, baseScore);
+        if (BlindEnemies.TryGetValue(CurrentAnte, out var blinds))
+        {
+            var bossIdx = blinds.FindIndex(b => b.BlindType == BlindType.Boss);
+            if (bossIdx >= 0)
+            {
+                blinds[bossIdx] = newBoss;
+            }
+        }
+
+        if (CurrentBlind?.BlindType == BlindType.Boss)
+        {
+            CurrentBlind = newBoss;
+        }
+
+        return (true, $"Boss Blind rerolled to {newBoss.Name} for $10.");
     }
 
     public GameStateResponseDto GetGameState(string? message = null, ScoreCalculationResultDto? lastScore = null)

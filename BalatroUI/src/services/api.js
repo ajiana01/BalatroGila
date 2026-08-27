@@ -179,3 +179,8 @@ export async function buyVoucher(voucherId) {
 export async function leaveShop() {
   return apiRequest('/shop/leave', 'POST');
 }
+
+export async function rerollBossBlind() {
+  return apiRequest('/shop/reroll-boss', 'POST');
+}
+
