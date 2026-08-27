@@ -449,6 +449,8 @@ function Gameplay() {
                         gameData={gameData}
                         onSelectBlind={handleSelectBlind}
                         onOpenSettings={() => setShowSettings(true)}
+                        onSyncState={syncGameData}
+                        onShowToast={showToast}
                     />
                 )}
 
