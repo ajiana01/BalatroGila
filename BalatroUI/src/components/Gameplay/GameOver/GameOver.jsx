@@ -40,43 +40,21 @@ function GameOver({
     const [quoteIndex, setQuoteIndex] = useState(0);
     const [hoveredStat, setHoveredStat] = useState(null);
 
-    const stats = gameData.stats || {
-        bestHandScore: 5022,
-        bestHandName: 'Flush',
-        mostPlayedHand: 'Flush',
-        mostPlayedCount: 13,
-        cardsPlayed: 146,
-        cardsDiscarded: 97,
-        cardsPurchased: 18,
-        timesRerolled: 0,
-        handsHistory: {
-            'Flush': 13,
-            'High Card': 6,
-            'Pair': 4,
-            'Two Pair': 3,
-            'Three of a Kind': 2,
-            'Straight': 1,
-            'Full House': 1,
-            'Four of a Kind': 0,
-            'Straight Flush': 0
-        }
-    };
+    const stats = gameData.stats || {};
 
-    const ante = gameData.ante || 5;
-    const round = gameData.round || 14;
-    const bestScore = stats.bestHandScore || 5022;
-    const mostPlayed = stats.mostPlayedHand || 'Flush';
-    const mostPlayedCount = stats.mostPlayedCount || 13;
-    const cardsPlayed = stats.cardsPlayed || 146;
-    const cardsDiscarded = stats.cardsDiscarded || 97;
-    const cardsPurchased = stats.cardsPurchased || 18;
-    const timesRerolled = stats.timesRerolled || 0;
+    const ante = gameData.ante || gameData.currentAnte || 1;
+    const round = gameData.round || gameData.currentRound || 1;
+    const bestScore = stats.bestHandScore ?? (gameData.score ?? 0);
+    const bestHandName = stats.bestHandName || 'High Card';
+    const mostPlayed = stats.mostPlayedHand || 'None';
+    const mostPlayedCount = stats.mostPlayedCount ?? 0;
+    const handsHistory = stats.handsHistory || {};
 
     // Defeated by blind determination
-    const blindType = gameData.currentBlind?.type || 'big';
+    const blindType = gameData.currentBlind?.type || 'small';
     const blindTitle = gameData.currentBlind?.title || (
         blindType === 'small' ? 'Small Blind' :
-        blindType === 'boss' ? 'The Goad' : 'Big Blind'
+        blindType === 'boss' ? 'Boss Blind' : 'Big Blind'
     );
     const blindKey = gameData.currentBlind?.blind || (
         blindType === 'small' ? 'SmallBlind' :
@@ -155,7 +133,7 @@ function GameOver({
                                 </div>
                                 {hoveredStat === 'bestHand' && (
                                     <div className="game-over-tooltip">
-                                        Highest scoring single hand ({stats.bestHandName || 'Flush'})
+                                        Highest scoring single hand ({bestHandName})
                                     </div>
                                 )}
                             </div>
@@ -174,8 +152,8 @@ function GameOver({
                                 {hoveredStat === 'mostPlayed' && (
                                     <div className="game-over-tooltip hands-breakdown">
                                         <div className="tooltip-title">Hands Played Breakdown:</div>
-                                        {stats.handsHistory ? (
-                                            Object.entries(stats.handsHistory)
+                                        {handsHistory && Object.keys(handsHistory).length > 0 ? (
+                                            Object.entries(handsHistory)
                                                 .filter(([_, count]) => count > 0)
                                                 .map(([name, count]) => (
                                                     <div key={name} className="breakdown-row">
@@ -190,92 +168,30 @@ function GameOver({
                                 )}
                             </div>
 
-                            {/* 3. CARDS PLAYED & ANTE (2 COLS) */}
-                            <div className="game-over-two-col-row">
-                                <div
-                                    className="game-over-stat-col"
-                                    onMouseEnter={() => setHoveredStat('cardsPlayed')}
-                                    onMouseLeave={() => setHoveredStat(null)}
-                                >
-                                    <div className="game-over-pill-label">Cards Played</div>
-                                    <div className="game-over-pill-value value-badge-blue">
-                                        {cardsPlayed}
-                                    </div>
-                                    {hoveredStat === 'cardsPlayed' && (
-                                        <div className="game-over-tooltip">Total cards played this run</div>
-                                    )}
-                                </div>
-
-                                <div
-                                    className="game-over-stat-col"
-                                    onMouseEnter={() => setHoveredStat('ante')}
-                                    onMouseLeave={() => setHoveredStat(null)}
-                                >
-                                    <div className="game-over-pill-label">Ante</div>
-                                    <div className="game-over-pill-value value-badge-dark">
-                                        {ante}
-                                    </div>
-                                    {hoveredStat === 'ante' && (
-                                        <div className="game-over-tooltip">Ante reached before defeat</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 4. CARDS DISCARDED & ROUND (2 COLS) */}
-                            <div className="game-over-two-col-row">
-                                <div
-                                    className="game-over-stat-col"
-                                    onMouseEnter={() => setHoveredStat('cardsDiscarded')}
-                                    onMouseLeave={() => setHoveredStat(null)}
-                                >
-                                    <div className="game-over-pill-label">Cards Discarded</div>
-                                    <div className="game-over-pill-value value-badge-red">
-                                        {cardsDiscarded}
-                                    </div>
-                                    {hoveredStat === 'cardsDiscarded' && (
-                                        <div className="game-over-tooltip">Total cards discarded</div>
-                                    )}
-                                </div>
-
-                                <div
-                                    className="game-over-stat-col"
-                                    onMouseEnter={() => setHoveredStat('round')}
-                                    onMouseLeave={() => setHoveredStat(null)}
-                                >
-                                    <div className="game-over-pill-label">Round</div>
-                                    <div className="game-over-pill-value value-badge-dark">
-                                        {round}
-                                    </div>
-                                    {hoveredStat === 'round' && (
-                                        <div className="game-over-tooltip">Total rounds played</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 5. CARDS PURCHASED / REROLLED + DEFEATED BY BOX */}
+                            {/* 3. ANTE / ROUND & DEFEATED BY (SPLIT ROW) */}
                             <div className="game-over-split-row">
                                 <div className="game-over-split-left">
                                     <div
                                         className="game-over-stat-row"
-                                        onMouseEnter={() => setHoveredStat('cardsPurchased')}
+                                        onMouseEnter={() => setHoveredStat('ante')}
                                         onMouseLeave={() => setHoveredStat(null)}
                                     >
-                                        <div className="game-over-pill-label">Cards Purchased</div>
-                                        <div className="game-over-pill-value value-badge-dark">{cardsPurchased}</div>
-                                        {hoveredStat === 'cardsPurchased' && (
-                                            <div className="game-over-tooltip">Cards bought from shop</div>
+                                        <div className="game-over-pill-label">Ante</div>
+                                        <div className="game-over-pill-value value-badge-dark">{ante}</div>
+                                        {hoveredStat === 'ante' && (
+                                            <div className="game-over-tooltip">Ante reached before defeat</div>
                                         )}
                                     </div>
 
                                     <div
                                         className="game-over-stat-row"
-                                        onMouseEnter={() => setHoveredStat('timesRerolled')}
+                                        onMouseEnter={() => setHoveredStat('round')}
                                         onMouseLeave={() => setHoveredStat(null)}
                                     >
-                                        <div className="game-over-pill-label">Times Rerolled</div>
-                                        <div className="game-over-pill-value value-badge-dark">{timesRerolled}</div>
-                                        {hoveredStat === 'timesRerolled' && (
-                                            <div className="game-over-tooltip">Shop rerolls used</div>
+                                        <div className="game-over-pill-label">Round</div>
+                                        <div className="game-over-pill-value value-badge-dark">{round}</div>
+                                        {hoveredStat === 'round' && (
+                                            <div className="game-over-tooltip">Total rounds played</div>
                                         )}
                                     </div>
                                 </div>

@@ -43,37 +43,15 @@ function WinOver({
     const [quoteIndex, setQuoteIndex] = useState(0);
     const [hoveredStat, setHoveredStat] = useState(null);
 
-    const stats = gameData.stats || {
-        bestHandScore: 33750,
-        bestHandName: 'Flush',
-        mostPlayedHand: 'Flush',
-        mostPlayedCount: 38,
-        cardsPlayed: 350,
-        cardsDiscarded: 128,
-        cardsPurchased: 40,
-        timesRerolled: 5,
-        handsHistory: {
-            'Flush': 38,
-            'High Card': 12,
-            'Pair': 8,
-            'Two Pair': 6,
-            'Three of a Kind': 4,
-            'Straight': 3,
-            'Full House': 2,
-            'Four of a Kind': 1,
-            'Straight Flush': 0
-        }
-    };
+    const stats = gameData.stats || {};
 
-    const ante = gameData.ante || 9;
-    const round = gameData.round || 24;
-    const bestScore = stats.bestHandScore || 33750;
-    const mostPlayed = stats.mostPlayedHand || 'Flush';
-    const mostPlayedCount = stats.mostPlayedCount || 38;
-    const cardsPlayed = stats.cardsPlayed || 350;
-    const cardsDiscarded = stats.cardsDiscarded || 128;
-    const cardsPurchased = stats.cardsPurchased || 40;
-    const timesRerolled = stats.timesRerolled || 5;
+    const ante = gameData.ante || gameData.currentAnte || 8;
+    const round = gameData.round || gameData.currentRound || 24;
+    const bestScore = stats.bestHandScore ?? (gameData.score ?? 0);
+    const bestHandName = stats.bestHandName || 'High Card';
+    const mostPlayed = stats.mostPlayedHand || 'None';
+    const mostPlayedCount = stats.mostPlayedCount ?? 0;
+    const handsHistory = stats.handsHistory || {};
 
     const handleNextQuote = () => {
         setQuoteIndex((prev) => (prev + 1) % VICTORY_QUOTES.length);
@@ -149,7 +127,7 @@ function WinOver({
                                 </div>
                                 {hoveredStat === 'bestHand' && (
                                     <div className="win-tooltip">
-                                        Highest scoring single hand in this run ({stats.bestHandName || 'Flush'})
+                                        Highest scoring single hand in this run ({bestHandName})
                                     </div>
                                 )}
                             </div>
@@ -168,8 +146,8 @@ function WinOver({
                                 {hoveredStat === 'mostPlayed' && (
                                     <div className="win-tooltip hands-breakdown">
                                         <div className="tooltip-title">Hands Played Breakdown:</div>
-                                        {stats.handsHistory ? (
-                                            Object.entries(stats.handsHistory)
+                                        {handsHistory && Object.keys(handsHistory).length > 0 ? (
+                                            Object.entries(handsHistory)
                                                 .filter(([_, count]) => count > 0)
                                                 .map(([name, count]) => (
                                                     <div key={name} className="breakdown-row">
@@ -184,22 +162,8 @@ function WinOver({
                                 )}
                             </div>
 
-                            {/* 3. CARDS PLAYED & ANTE (2 COLS) */}
+                            {/* 3. ANTE & ROUND (2 COLS) */}
                             <div className="win-two-col-row">
-                                <div
-                                    className="win-stat-col"
-                                    onMouseEnter={() => setHoveredStat('cardsPlayed')}
-                                    onMouseLeave={() => setHoveredStat(null)}
-                                >
-                                    <div className="win-pill-label">Cards Played</div>
-                                    <div className="win-pill-value value-badge-blue">
-                                        {cardsPlayed}
-                                    </div>
-                                    {hoveredStat === 'cardsPlayed' && (
-                                        <div className="win-tooltip">Total cards played into scoring hands</div>
-                                    )}
-                                </div>
-
                                 <div
                                     className="win-stat-col"
                                     onMouseEnter={() => setHoveredStat('ante')}
@@ -208,27 +172,10 @@ function WinOver({
                                     <div className="win-pill-label">Ante</div>
                                     <div className="win-pill-value value-badge-dark">
                                         {ante}
-                                        <span className="high-score-badge">High Score!</span>
+                                        <span className="high-score-badge">Conquered!</span>
                                     </div>
                                     {hoveredStat === 'ante' && (
                                         <div className="win-tooltip">Highest Ante reached (Ante 8 Boss conquered)</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 4. CARDS DISCARDED & ROUND (2 COLS) */}
-                            <div className="win-two-col-row">
-                                <div
-                                    className="win-stat-col"
-                                    onMouseEnter={() => setHoveredStat('cardsDiscarded')}
-                                    onMouseLeave={() => setHoveredStat(null)}
-                                >
-                                    <div className="win-pill-label">Cards Discarded</div>
-                                    <div className="win-pill-value value-badge-red">
-                                        {cardsDiscarded}
-                                    </div>
-                                    {hoveredStat === 'cardsDiscarded' && (
-                                        <div className="win-tooltip">Total cards discarded across all rounds</div>
                                     )}
                                 </div>
 
@@ -240,7 +187,6 @@ function WinOver({
                                     <div className="win-pill-label">Round</div>
                                     <div className="win-pill-value value-badge-dark">
                                         {round}
-                                        <span className="high-score-badge">High Score!</span>
                                     </div>
                                     {hoveredStat === 'round' && (
                                         <div className="win-tooltip">Total rounds completed in this run</div>
@@ -248,53 +194,23 @@ function WinOver({
                                 </div>
                             </div>
 
-                            {/* 5. CARDS PURCHASED & NEW RUN BUTTON ROW */}
-                            <div className="win-action-split-row">
-                                <div className="win-split-left">
-                                    <div
-                                        className="win-stat-row"
-                                        onMouseEnter={() => setHoveredStat('cardsPurchased')}
-                                        onMouseLeave={() => setHoveredStat(null)}
-                                    >
-                                        <div className="win-pill-label">Cards Purchased</div>
-                                        <div className="win-pill-value value-badge-dark">{cardsPurchased}</div>
-                                        {hoveredStat === 'cardsPurchased' && (
-                                            <div className="win-tooltip">Jokers, Tarots, and Planets bought from shop</div>
-                                        )}
-                                    </div>
+                            {/* 4. ACTION BUTTONS */}
+                            <div className="win-actions-stacked">
+                                <button
+                                    type="button"
+                                    className="win-action-btn btn-new-run"
+                                    onClick={onRestart}
+                                >
+                                    New Run
+                                </button>
 
-                                    {/* 6. TIMES REROLLED */}
-                                    <div
-                                        className="win-stat-row"
-                                        onMouseEnter={() => setHoveredStat('timesRerolled')}
-                                        onMouseLeave={() => setHoveredStat(null)}
-                                    >
-                                        <div className="win-pill-label">Times Rerolled</div>
-                                        <div className="win-pill-value value-badge-dark">{timesRerolled}</div>
-                                        {hoveredStat === 'timesRerolled' && (
-                                            <div className="win-tooltip">Shop inventory rerolls used</div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* RIGHT SIDE ACTION BUTTONS */}
-                                <div className="win-split-right">
-                                    <button
-                                        type="button"
-                                        className="win-action-btn btn-new-run"
-                                        onClick={onRestart}
-                                    >
-                                        New Run
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        className="win-action-btn btn-main-menu"
-                                        onClick={onMainMenu}
-                                    >
-                                        Main Menu
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    className="win-action-btn btn-main-menu"
+                                    onClick={onMainMenu}
+                                >
+                                    Main Menu
+                                </button>
                             </div>
                         </div>
                     </div>

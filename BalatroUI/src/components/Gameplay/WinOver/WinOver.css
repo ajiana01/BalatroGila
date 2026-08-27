@@ -398,6 +398,13 @@
 /* =========================================
    ACTION BUTTONS
 ========================================= */
+.win-actions-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
 .win-action-btn {
     border: none;
     border-radius: 10px;
