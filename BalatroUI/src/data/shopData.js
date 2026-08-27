@@ -503,8 +503,215 @@ export const SHOP_VOUCHERS = [
     }
 ];
 
+export const SHOP_SPECTRALS = [
+    {
+        id: 'Ankh',
+        title: 'Ankh',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Create a copy of a random Joker, destroy all other Jokers'
+    },
+    {
+        id: 'Medium',
+        title: 'Medium',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Add a Purple Seal to 1 selected card in your hand'
+    },
+    {
+        id: 'Familiar',
+        title: 'Familiar',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Destroy 1 random card in hand, add 3 random Enhanced face cards'
+    },
+    {
+        id: 'Grim',
+        title: 'Grim',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Destroy 1 random card in hand, add 2 random Enhanced Aces'
+    },
+    {
+        id: 'Incantantion',
+        title: 'Incantation',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Destroy 1 random card in hand, add 4 random Enhanced numbered cards'
+    },
+    {
+        id: 'Talisman',
+        title: 'Talisman',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Add a Gold Seal to 1 selected card in your hand'
+    },
+    {
+        id: 'Aura',
+        title: 'Aura',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Add Foil, Holographic, or Polychrome effect to 1 selected card'
+    },
+    {
+        id: 'Wraith',
+        title: 'Wraith',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Creates a random Rare Joker, sets money to $0'
+    },
+    {
+        id: 'Sigil',
+        title: 'Sigil',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Converts all cards in hand to a single random suit'
+    },
+    {
+        id: 'Ouija',
+        title: 'Ouija',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Converts all cards in hand to a single random rank, -1 Hand Size'
+    },
+    {
+        id: 'Ectoplasm',
+        title: 'Ectoplasm',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Add Negative to a random Joker, -1 Hand Size'
+    },
+    {
+        id: 'Immobile',
+        title: 'Immolate',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Destroys 5 random cards in hand, gain $20'
+    },
+    {
+        id: 'Dejavu',
+        title: 'Deja Vu',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Add a Red Seal to 1 selected card in your hand'
+    },
+    {
+        id: 'Hex',
+        title: 'Hex',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Add Polychrome to a random Joker, destroy all other Jokers'
+    },
+    {
+        id: 'Trance',
+        title: 'Trance',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Add a Blue Seal to 1 selected card in your hand'
+    },
+    {
+        id: 'Cryptid',
+        title: 'Cryptid',
+        rarity: 'Spectral',
+        price: 4,
+        description: 'Create 2 copies of 1 selected card in your hand'
+    }
+];
+
+export const BOOSTER_PACK_SPECS = {
+    Standard: {
+        card_type: 'PlayingCard',
+        action: 'add_to_deck',
+        theme: 'red',
+        colors: { color1: '#851212', color2: '#c92a2a', color3: '#180404' },
+        particleColor: '#fe4747',
+        sizes: {
+            Normal: { cost: 4, options_generated: 3, picks_allowed: 1, title: 'Standard Pack', type: 'Standard_Normal', number: 1 },
+            Jumbo: { cost: 6, options_generated: 5, picks_allowed: 1, title: 'Jumbo Standard Pack', type: 'Standard_Jumbo', number: 1 },
+            Mega: { cost: 8, options_generated: 5, picks_allowed: 2, title: 'Mega Standard Pack', type: 'Standard_Mega', number: 1 }
+        }
+    },
+    Arcana: {
+        card_type: 'Tarot',
+        action: 'use_immediately',
+        theme: 'purple',
+        colors: { color1: '#5e1255', color2: '#9b2c8c', color3: '#150517' },
+        particleColor: '#b545d6',
+        sizes: {
+            Normal: { cost: 4, options_generated: 3, picks_allowed: 1, title: 'Arcana Pack', type: 'Arcana_Normal', number: 1 },
+            Jumbo: { cost: 6, options_generated: 5, picks_allowed: 1, title: 'Jumbo Arcana Pack', type: 'Arcana_Jumbo', number: 1 },
+            Mega: { cost: 8, options_generated: 5, picks_allowed: 2, title: 'Mega Arcana Pack', type: 'Arcana_Mega', number: 1 }
+        }
+    },
+    Celestial: {
+        card_type: 'Planet',
+        action: 'use_immediately',
+        theme: 'celestial',
+        colors: { color1: '#062d3e', color2: '#028090', color3: '#041118' },
+        particleColor: '#00b4d8',
+        sizes: {
+            Normal: { cost: 4, options_generated: 3, picks_allowed: 1, title: 'Celestial Pack', type: 'Celestial_Normal', number: 1 },
+            Jumbo: { cost: 6, options_generated: 5, picks_allowed: 1, title: 'Jumbo Celestial Pack', type: 'Celestial_Jumbo', number: 1 },
+            Mega: { cost: 8, options_generated: 5, picks_allowed: 2, title: 'Mega Celestial Pack', type: 'Celestial_Mega', number: 1 }
+        }
+    },
+    Buffoon: {
+        card_type: 'Joker',
+        action: 'add_to_joker_slots',
+        theme: 'buffoon',
+        colors: { color1: '#8a4b08', color2: '#c67817', color3: '#180d03' },
+        particleColor: '#ff9d00',
+        sizes: {
+            Normal: { cost: 4, options_generated: 2, picks_allowed: 1, title: 'Buffoon Pack', type: 'Buffon_Normal', number: 1 },
+            Jumbo: { cost: 6, options_generated: 4, picks_allowed: 1, title: 'Jumbo Buffoon Pack', type: 'Buffon_Jumbo', number: 1 },
+            Mega: { cost: 8, options_generated: 4, picks_allowed: 2, title: 'Mega Buffoon Pack', type: 'Buffon_Mega', number: 1 }
+        }
+    },
+    Spectral: {
+        card_type: 'Spectral',
+        action: 'use_immediately',
+        theme: 'spectral',
+        colors: { color1: '#002b66', color2: '#0066cc', color3: '#020d1a' },
+        particleColor: '#0094ff',
+        sizes: {
+            Normal: { cost: 4, options_generated: 2, picks_allowed: 1, title: 'Spectral Pack', type: 'Spectral_Normal', number: 1 },
+            Jumbo: { cost: 6, options_generated: 4, picks_allowed: 1, title: 'Jumbo Spectral Pack', type: 'Spectral_Jumbo', number: 1 },
+            Mega: { cost: 8, options_generated: 4, picks_allowed: 2, title: 'Mega Spectral Pack', type: 'Spectral_Mega', number: 1 }
+        }
+    }
+};
+
+export const BOOSTER_RATES = [
+    { packKind: 'Standard', size: 'Normal', weight: 4.0 },
+    { packKind: 'Standard', size: 'Jumbo', weight: 2.0 },
+    { packKind: 'Standard', size: 'Mega', weight: 0.5 },
+    { packKind: 'Arcana', size: 'Normal', weight: 4.0 },
+    { packKind: 'Arcana', size: 'Jumbo', weight: 2.0 },
+    { packKind: 'Arcana', size: 'Mega', weight: 0.5 },
+    { packKind: 'Celestial', size: 'Normal', weight: 4.0 },
+    { packKind: 'Celestial', size: 'Jumbo', weight: 2.0 },
+    { packKind: 'Celestial', size: 'Mega', weight: 0.5 },
+    { packKind: 'Buffoon', size: 'Normal', weight: 1.2 },
+    { packKind: 'Buffoon', size: 'Jumbo', weight: 0.6 },
+    { packKind: 'Buffoon', size: 'Mega', weight: 0.15 },
+    { packKind: 'Spectral', size: 'Normal', weight: 0.6 },
+    { packKind: 'Spectral', size: 'Jumbo', weight: 0.3 },
+    { packKind: 'Spectral', size: 'Mega', weight: 0.07 }
+];
+
 export const BOOSTER_PACKS = [
     {
+        packKind: 'Spectral',
+        size: 'Normal',
+        type: 'Spectral_Normal',
+        number: 1,
+        title: 'Spectral Pack',
+        price: 4,
+        description: 'Choose 1 of 2 Spectral cards to immediately use'
+    },
+    {
+        packKind: 'Standard',
+        size: 'Normal',
         type: 'Standard_Normal',
         number: 1,
         title: 'Standard Pack',
@@ -512,20 +719,8 @@ export const BOOSTER_PACKS = [
         description: 'Choose 1 of 3 Playing cards to add to your deck'
     },
     {
-        type: 'Standard_Normal',
-        number: 2,
-        title: 'Standard Pack',
-        price: 4,
-        description: 'Choose 1 of 3 Playing cards to add to your deck'
-    },
-    {
-        type: 'Arcana_Normal',
-        number: 1,
-        title: 'Arcana Pack',
-        price: 4,
-        description: 'Choose 1 of 3 Tarot cards to immediately use'
-    },
-    {
+        packKind: 'Celestial',
+        size: 'Normal',
         type: 'Celestial_Normal',
         number: 1,
         title: 'Celestial Pack',
@@ -533,25 +728,22 @@ export const BOOSTER_PACKS = [
         description: 'Choose 1 of 3 Planet cards to immediately use'
     },
     {
+        packKind: 'Arcana',
+        size: 'Normal',
+        type: 'Arcana_Normal',
+        number: 1,
+        title: 'Arcana Pack',
+        price: 4,
+        description: 'Choose 1 of 3 Tarot cards to immediately use'
+    },
+    {
+        packKind: 'Buffoon',
+        size: 'Normal',
         type: 'Buffon_Normal',
         number: 1,
-        title: 'Buffon Pack',
-        price: 6,
+        title: 'Buffoon Pack',
+        price: 4,
         description: 'Choose 1 of 2 Joker cards to add to your collection'
-    },
-    {
-        type: 'Arcana_Jumbo',
-        number: 1,
-        title: 'Jumbo Arcana Pack',
-        price: 6,
-        description: 'Choose 1 of 5 Tarot cards to immediately use'
-    },
-    {
-        type: 'Celestial_Jumbo',
-        number: 1,
-        title: 'Jumbo Celestial Pack',
-        price: 6,
-        description: 'Choose 1 of 5 Planet cards to immediately use'
     }
 ];
 
@@ -630,14 +822,152 @@ export function getAnteVoucher(ante = 1) {
     return SHOP_VOUCHERS.find(v => v.id === vId) || SHOP_VOUCHERS[0];
 }
 
-// Generate 2 booster packs
+// Draw random booster pack by weighted rates
+export function generateRandomBoosterPack(slotIndex = 0) {
+    const totalWeight = BOOSTER_RATES.reduce((sum, r) => sum + r.weight, 0);
+    let rand = Math.random() * totalWeight;
+    let chosen = BOOSTER_RATES[0];
+    for (const r of BOOSTER_RATES) {
+        if (rand < r.weight) {
+            chosen = r;
+            break;
+        }
+        rand -= r.weight;
+    }
+
+    const spec = BOOSTER_PACK_SPECS[chosen.packKind];
+    const sizeSpec = spec.sizes[chosen.size];
+
+    return {
+        slotId: `booster-${Date.now()}-${slotIndex}`,
+        packKind: chosen.packKind,
+        size: chosen.size,
+        type: sizeSpec.type,
+        number: sizeSpec.number,
+        title: sizeSpec.title,
+        price: sizeSpec.cost,
+        card_type: spec.card_type,
+        action: spec.action,
+        options_generated: sizeSpec.options_generated,
+        picks_allowed: sizeSpec.picks_allowed,
+        theme: spec.theme,
+        colors: spec.colors,
+        particleColor: spec.particleColor,
+        description: `Choose ${sizeSpec.picks_allowed} of ${sizeSpec.options_generated} ${spec.card_type} cards`
+    };
+}
+
+// Generate 2 booster packs for the shop
 export function generateBoosterPacks() {
-    const pack1 = BOOSTER_PACKS[0]; // Standard Pack 1
-    const pack2 = BOOSTER_PACKS[1]; // Standard Pack 2
-    return [
-        { ...pack1, slotId: 'booster-0' },
-        { ...pack2, slotId: 'booster-1' }
-    ];
+    const pack1 = generateRandomBoosterPack(0);
+    let pack2 = generateRandomBoosterPack(1);
+    if (pack2.packKind === pack1.packKind) {
+        const otherKinds = ['Spectral', 'Standard', 'Celestial', 'Arcana', 'Buffoon'].filter(k => k !== pack1.packKind);
+        const altKind = getRandom(otherKinds);
+        const spec = BOOSTER_PACK_SPECS[altKind];
+        const sizeSpec = spec.sizes['Normal'];
+        pack2 = {
+            slotId: `booster-${Date.now()}-1`,
+            packKind: altKind,
+            size: 'Normal',
+            type: sizeSpec.type,
+            number: sizeSpec.number,
+            title: sizeSpec.title,
+            price: sizeSpec.cost,
+            card_type: spec.card_type,
+            action: spec.action,
+            options_generated: sizeSpec.options_generated,
+            picks_allowed: sizeSpec.picks_allowed,
+            theme: spec.theme,
+            colors: spec.colors,
+            particleColor: spec.particleColor,
+            description: `Choose ${sizeSpec.picks_allowed} of ${sizeSpec.options_generated} ${spec.card_type} cards`
+        };
+    }
+    return [pack1, pack2];
+}
+
+// Generate the cards inside a booster pack when opened
+export function generateBoosterCards(pack, gameData) {
+    const count = pack.options_generated || (pack.size === 'Mega' || pack.size === 'Jumbo' ? 4 : 2);
+    const cardType = pack.card_type || 'Spectral';
+    const cards = [];
+
+    if (cardType === 'Spectral') {
+        const pool = [...SHOP_SPECTRALS];
+        for (let i = 0; i < count; i++) {
+            if (pool.length === 0) break;
+            const idx = Math.floor(Math.random() * pool.length);
+            const item = pool.splice(idx, 1)[0];
+            cards.push({
+                ...item,
+                cardInstanceId: `spectral-choice-${Date.now()}-${i}`,
+                type: 'spectral'
+            });
+        }
+    } else if (cardType === 'Planet') {
+        const pool = [...SHOP_PLANETS];
+        for (let i = 0; i < count; i++) {
+            if (pool.length === 0) break;
+            const idx = Math.floor(Math.random() * pool.length);
+            const item = pool.splice(idx, 1)[0];
+            cards.push({
+                ...item,
+                cardInstanceId: `planet-choice-${Date.now()}-${i}`,
+                type: 'planet'
+            });
+        }
+    } else if (cardType === 'Tarot') {
+        const pool = [...SHOP_TAROTS];
+        for (let i = 0; i < count; i++) {
+            if (pool.length === 0) break;
+            const idx = Math.floor(Math.random() * pool.length);
+            const item = pool.splice(idx, 1)[0];
+            cards.push({
+                ...item,
+                cardInstanceId: `tarot-choice-${Date.now()}-${i}`,
+                type: 'tarot'
+            });
+        }
+    } else if (cardType === 'Joker') {
+        const pool = [...SHOP_JOKERS];
+        for (let i = 0; i < count; i++) {
+            if (pool.length === 0) break;
+            const idx = Math.floor(Math.random() * pool.length);
+            const item = pool.splice(idx, 1)[0];
+            cards.push({
+                ...item,
+                cardInstanceId: `joker-choice-${Date.now()}-${i}`,
+                type: 'joker'
+            });
+        }
+    } else if (cardType === 'PlayingCard') {
+        const suits = ['Spades', 'Hearts', 'Clubs', 'Diamonds'];
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        
+        const rankChips = {
+            '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+            'J': 10, 'Q': 10, 'K': 10, 'A': 11
+        };
+
+        for (let i = 0; i < count; i++) {
+            const suit = getRandom(suits);
+            const rank = getRandom(ranks);
+            const chips = rankChips[rank] || 10;
+            cards.push({
+                cardInstanceId: `playing-choice-${Date.now()}-${i}`,
+                type: 'playingCard',
+                rank,
+                suit,
+                title: `${rank === 'J' ? 'Jack' : rank === 'Q' ? 'Queen' : rank === 'K' ? 'King' : rank === 'A' ? 'Ace' : rank} of ${suit}`,
+                chipsBonus: `+${chips} chips`,
+                rarity: 'Playing Card',
+                description: `+${chips} base chips when scored in poker hand`
+            });
+        }
+    }
+
+    return cards;
 }
 
 // Universal card lookup function for tooltips
@@ -672,6 +1002,16 @@ export function getCardInfo(id, type = 'joker') {
             title: id,
             rarity: 'Planet',
             description: `Level up ${id} poker hand`
+        };
+    }
+    if (type === 'spectral') {
+        const found = SHOP_SPECTRALS.find(s => s.id === id);
+        if (found) return found;
+        return {
+            id,
+            title: id,
+            rarity: 'Spectral',
+            description: 'Special consumable effect'
         };
     }
     if (type === 'voucher') {

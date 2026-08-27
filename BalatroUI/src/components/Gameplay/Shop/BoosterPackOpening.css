@@ -1,0 +1,587 @@
+/* =========================================
+   BALATRO BOOSTER PACK OPENING STYLES
+========================================= */
+
+.booster-opening-screen {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 80;
+    user-select: none;
+    font-family: 'Balatro', sans-serif;
+    color: white;
+    animation: boosterFadeIn 0.25s ease-out;
+}
+
+@keyframes boosterFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Dynamic Shader Background Layer */
+.booster-background-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.booster-background-layer .balatro-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* Floating Ember / Star Particles */
+.booster-particles-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.booster-particle {
+    position: absolute;
+    border-radius: 1px;
+    pointer-events: none;
+    animation: boosterParticleFloat linear infinite;
+}
+
+@keyframes boosterParticleFloat {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(0.8);
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-50px) rotate(45deg) scale(1.2);
+    }
+    100% {
+        transform: translateY(-120px) rotate(90deg) scale(0.6);
+        opacity: 0;
+    }
+}
+
+/* Main Content Container */
+.booster-content-container {
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 28px 20px 28px;
+    box-sizing: border-box;
+    height: 100%;
+}
+
+/* Top Area Overrides for Booster View */
+.booster-top-area {
+    margin-bottom: 6px;
+}
+
+/* =========================================
+   PLAYER HAND CARDS DISPLAY ROW
+========================================= */
+.booster-player-hand-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2px;
+    margin-bottom: 12px;
+    z-index: 20;
+}
+
+.booster-hand-cards-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: -12px; /* Overlapping cards like authentic Balatro hand */
+}
+
+.booster-hand-card-item {
+    cursor: pointer;
+    margin: 0 -8px;
+    transition: transform 0.15s ease-out, filter 0.15s ease-out;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+}
+
+.booster-hand-card-item:hover {
+    transform: translateY(-16px) scale(1.05);
+    z-index: 30;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.85));
+}
+
+.booster-hand-card-item.hand-card-selected {
+    transform: translateY(-24px) scale(1.08);
+    z-index: 35;
+    filter: drop-shadow(0 0 12px rgba(255, 212, 59, 0.9));
+}
+
+/* =========================================
+   CENTER AREA: BOOSTER CARDS CHOICES
+========================================= */
+.booster-center-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 25;
+}
+
+.booster-cards-display-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 20px 10px;
+    position: relative;
+}
+
+/* Individual Card Wrapper */
+.booster-card-wrapper {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.18s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.booster-card-wrapper:hover,
+.booster-card-wrapper.is-elevated {
+    transform: translateY(-16px);
+    z-index: 50;
+}
+
+.booster-card-wrapper.is-elevated .booster-card-visual-box {
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.45)) drop-shadow(0 12px 24px rgba(0, 0, 0, 0.85));
+}
+
+.booster-card-visual-box {
+    position: relative;
+    border-radius: 8px;
+    transition: filter 0.15s ease-out;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.7));
+}
+
+/* =========================================
+   ATTACHED ACTION BUTTON (USE / SELECT)
+========================================= */
+.booster-action-tab {
+    position: absolute;
+    left: calc(100% - 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    user-select: none;
+    z-index: 60;
+    animation: actionTabPop 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.1s ease, filter 0.12s ease;
+    overflow: hidden;
+}
+
+@keyframes actionTabPop {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.85) translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1) translateX(0);
+    }
+}
+
+.booster-action-tab:hover {
+    transform: translateY(-50%) scale(1.08);
+    filter: brightness(1.15);
+}
+
+.booster-action-tab:active {
+    transform: translateY(-50%) scale(0.96);
+}
+
+.booster-action-tab .controller-keycap {
+    background: #243033;
+    border: 2px solid #3c4c50;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    padding: 6px 7px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #cfd8dc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.5px;
+}
+
+.booster-action-tab .action-tab-label {
+    padding: 6px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.8px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* USE Button (Red) */
+.booster-action-tab.btn-use-red .action-tab-label {
+    background: #fe4747;
+    border: 2px solid #ff7373;
+    border-left: none;
+}
+
+/* SELECT Button (Green) */
+.booster-action-tab.btn-select-green .action-tab-label {
+    background: #22a879;
+    border: 2px solid #4ade80;
+    border-left: none;
+}
+
+/* =========================================
+   DYNAMIC CARD TOOLTIPS (Above Card)
+========================================= */
+.booster-card-tooltip {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: tooltipFloatUp 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes tooltipFloatUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+/* 1. SPECTRAL TOOLTIP (Matches screenshot 1) */
+.spectral-tooltip {
+    width: 195px;
+}
+
+.spectral-tooltip .tooltip-header-badge {
+    background: #64748b;
+    border: 2px solid #94a3b8;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 3px 12px;
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.spectral-tooltip .tooltip-main-box {
+    background: #ffffff;
+    border: 2px solid #94a3b8;
+    border-radius: 0 0 10px 10px;
+    padding: 8px 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.spectral-tooltip .tooltip-desc-text {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #1e293b;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* 2. PLAYING CARD TOOLTIP (Matches screenshot 2) */
+.playing-card-tooltip {
+    width: 175px;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 10px;
+    padding: 7px 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.playing-card-tooltip .tooltip-card-title {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.3px;
+}
+
+.playing-card-tooltip .tooltip-card-title.suit-red {
+    color: #fe4747;
+}
+
+.playing-card-tooltip .tooltip-card-title.suit-black {
+    color: #1e293b;
+}
+
+.playing-card-tooltip .tooltip-chips-badge {
+    background: #f0f9ff;
+    border: 1.5px solid #0094ff;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #0094ff;
+}
+
+/* 3. PLANET TOOLTIP (Matches screenshot 3) */
+.planet-tooltip {
+    width: 185px;
+    background: #1c2628;
+    border: 2px solid #64748b;
+    border-radius: 12px;
+    padding: 8px 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.planet-tooltip-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.planet-tooltip-body {
+    background: #273538;
+    border-radius: 8px;
+    padding: 6px 8px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 11.5px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.35;
+    color: #ffffff;
+}
+
+.planet-tooltip-body .lvl-prefix {
+    color: #cfd8dc;
+    font-size: 11px;
+}
+
+.planet-tooltip-body .hand-highlight {
+    color: #ff9d00;
+    font-weight: 900;
+    font-size: 13px;
+    margin: 1px 0;
+}
+
+.planet-tooltip-body .mult-highlight {
+    color: #fe4747;
+    font-weight: 900;
+}
+
+.planet-tooltip-body .chips-highlight {
+    color: #0094ff;
+    font-weight: 900;
+}
+
+.planet-type-pill {
+    background: #00b4d8;
+    border: 1px solid #72ddf7;
+    border-radius: 8px;
+    padding: 2px 12px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* 4. TAROT / JOKER TOOLTIPS */
+.tarot-tooltip,
+.joker-tooltip {
+    width: 185px;
+    background: #1c2628;
+    border: 2px solid #64748b;
+    border-radius: 12px;
+    padding: 8px 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.tarot-tooltip .tooltip-title,
+.joker-tooltip .tooltip-title {
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.tarot-tooltip .tooltip-desc-text,
+.joker-tooltip .tooltip-desc-text {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+    line-height: 1.35;
+}
+
+.tooltip-pill {
+    padding: 2px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.tarot-pill {
+    background: #9c2168;
+    border: 1px solid #d8398b;
+}
+
+.rarity-common {
+    background: #0094ff;
+    border: 1px solid #54b8ff;
+}
+
+.rarity-uncommon {
+    background: #3ec476;
+    border: 1px solid #6ee39b;
+}
+
+.rarity-rare {
+    background: #fe4747;
+    border: 1px solid #ff7b7b;
+}
+
+/* =========================================
+   BOTTOM BAR: PACK NAME & SKIP BUTTON
+========================================= */
+.booster-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: auto;
+    padding-bottom: 8px;
+    z-index: 30;
+}
+
+/* Pack Title Banner Box */
+.booster-title-banner {
+    background: #1c2628;
+    border: 3.5px solid #0094ff; /* Fallback, set dynamically in jsx */
+    border-radius: 12px;
+    padding: 8px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    min-width: 170px;
+}
+
+.banner-pack-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    line-height: 1.1;
+}
+
+.banner-pack-subtitle {
+    font-size: 14px;
+    font-weight: 800;
+    color: #cfd8dc;
+    margin-top: 2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Skip Button */
+.booster-skip-btn {
+    background: #304044;
+    border: 2px solid #52676b;
+    border-radius: 12px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    transition: transform 0.1s ease, filter 0.12s ease, background 0.12s ease;
+    user-select: none;
+}
+
+.booster-skip-btn:hover {
+    background: #3c5054;
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.booster-skip-btn:active {
+    transform: translateY(1px);
+}
+
+.booster-skip-btn .skip-text {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.booster-skip-btn .controller-btn-badge {
+    background: #ff9d00;
+    color: #141b1d;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
