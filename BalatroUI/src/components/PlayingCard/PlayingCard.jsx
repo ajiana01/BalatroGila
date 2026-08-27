@@ -10,6 +10,7 @@ function PlayingCard({
                          width = 100,
                          height = 140,
                          effect = '',
+                         isDebuffed = false,
                          showBack = false,
                          className = '',
                          style = {}
@@ -23,22 +24,14 @@ function PlayingCard({
 
     return (
         <div
-            className={`playing-card ${effect} ${className}`}
+            className={`playing-card ${effect} ${isDebuffed ? 'is-debuffed' : ''} ${className}`}
             style={{
                 width: `${width}px`,
                 height: `${height}px`,
                 ...style
             }}
-        > {showBack ? (
-            <div className="playing-card-back">
-                <CardBack
-                    type={backType}
-                    width={width}
-                    height={height}
-                />
-            </div>
-        ) : (
-            <>
+        >
+            {showBack ? (
                 <div className="playing-card-back">
                     <CardBack
                         type={backType}
@@ -46,18 +39,33 @@ function PlayingCard({
                         height={height}
                     />
                 </div>
+            ) : (
+                <>
+                    <div className="playing-card-back">
+                        <CardBack
+                            type={backType}
+                            width={width}
+                            height={height}
+                        />
+                    </div>
 
-                <div className="playing-card-face">
-                    <Sprite
-                        sprite={playingCardSprite}
-                        column={card.column}
-                        row={card.row}
-                        width={width}
-                        height={height}
-                    />
-                </div>
-            </>
-        )}
+                    <div className="playing-card-face">
+                        <Sprite
+                            sprite={playingCardSprite}
+                            column={card.column}
+                            row={card.row}
+                            width={width}
+                            height={height}
+                        />
+                    </div>
+
+                    {isDebuffed && (
+                        <div className="playing-card-debuff-overlay">
+                            <div className="debuff-badge">DEBUFF</div>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 }

@@ -6,6 +6,7 @@ function BlindCard({
     title,
     score,
     reward,
+    description,
     status,
     active = false,
     onSelect
@@ -52,6 +53,10 @@ function BlindCard({
                     height={90}
                     animated={isActive}
                 />
+            </div>
+
+            <div className="blind-description">
+                {description || '\u00A0'}
             </div>
 
             <div className="blind-score">

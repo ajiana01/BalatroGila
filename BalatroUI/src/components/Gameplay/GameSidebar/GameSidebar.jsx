@@ -113,6 +113,12 @@ function GameSidebar({
                             <span className="reward-label">Reward: {blindReward}</span>
                         </div>
                     </div>
+
+                    {blind.description && (
+                        <div className="blind-debuff-description">
+                            {blind.description}
+                        </div>
+                    )}
                 </div>
             )}
 

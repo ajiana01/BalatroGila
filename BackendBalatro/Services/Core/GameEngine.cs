@@ -51,6 +51,49 @@ public class GameEngine : IGameEngine
     public TarotCard? LastTarotUsed { get; set; }
     public PlanetCard? LastPlanetUsed { get; set; }
 
+    // Boss Blind State Tracking
+    private readonly HashSet<string> _playedCardIdsThisAnte = new();
+    private readonly HashSet<PokerHandType> _playedHandTypesThisRound = new();
+    private PokerHandType? _allowedHandTypeThisRound = null;
+
+    private record BossBlindDef(
+        BlindId BlindId,
+        string Name,
+        string Description,
+        int MinAnte,
+        float Multiplier,
+        int Reward = 5,
+        bool IsShowdown = false);
+
+    private static readonly List<BossBlindDef> SupportedBossBlinds = new()
+    {
+        // Suit Debuffs
+        new(BlindId.TheClub, "The Club", "All Club cards are debuffed", 1, 2.0f, 5),
+        new(BlindId.TheGoad, "The Goad", "All Spade cards are debuffed", 1, 2.0f, 5),
+        new(BlindId.TheWindow, "The Window", "All Diamond cards are debuffed", 1, 2.0f, 5),
+        new(BlindId.TheHead, "The Head", "All Heart cards are debuffed", 1, 2.0f, 5),
+        new(BlindId.ThePlant, "The Plant", "All face cards are debuffed", 4, 2.0f, 5),
+
+        // Rules & Constraints
+        new(BlindId.ThePsychic, "The Psychic", "Must play exactly 5 cards", 1, 2.0f, 5),
+        new(BlindId.TheNeedle, "The Needle", "Play only 1 hand", 2, 1.0f, 5),
+        new(BlindId.TheWater, "The Water", "Start with 0 discards", 2, 2.0f, 5),
+        new(BlindId.TheManacle, "The Manacle", "-1 Hand Size", 1, 2.0f, 5),
+        new(BlindId.TheWall, "The Wall", "Extra large blind (4x base score)", 2, 4.0f, 5),
+        new(BlindId.TheArm, "The Arm", "Decrease level of played poker hand by 1", 2, 2.0f, 5),
+        new(BlindId.TheTooth, "The Tooth", "Lose $1 per card played", 3, 2.0f, 5),
+        new(BlindId.TheFlint, "The Flint", "Base Chips and Mult are halved", 2, 2.0f, 5),
+        new(BlindId.TheEye, "The Eye", "No repeat hand types this round", 3, 2.0f, 5),
+        new(BlindId.TheMouth, "The Mouth", "Only 1 hand type allowed this round", 2, 2.0f, 5),
+        new(BlindId.TheHook, "The Hook", "Discards 2 random cards in hand after each hand played", 1, 2.0f, 5),
+        new(BlindId.TheOx, "The Ox", "Playing the most played poker hand sets money to $0", 6, 2.0f, 5),
+        new(BlindId.ThePillar, "The Pillar", "Cards played previously this Ante are debuffed", 1, 2.0f, 5),
+
+        // Showdown Boss Blinds (Ante 8)
+        new(BlindId.VioletVessel, "Violet Vessel", "Very large blind (6x base score)", 8, 6.0f, 8, true),
+        new(BlindId.VerdantLeaf, "Verdant Leaf", "All cards are debuffed until 1 Joker is sold", 8, 2.0f, 8, true)
+    };
+
     // Events
     public event Action<Blind>? OnBlindSelected;
     public event Action<List<PlayingCard>>? OnPlayHand;
@@ -104,6 +147,10 @@ public class GameEngine : IGameEngine
         LastTarotUsed = null;
         LastPlanetUsed = null;
 
+        _playedCardIdsThisAnte.Clear();
+        _playedHandTypesThisRound.Clear();
+        _allowedHandTypeThisRound = null;
+
         Deck.JokerCards.Clear();
         Deck.UsableCards.Clear();
         PurchasedVouchers.Clear();
@@ -148,38 +195,34 @@ public class GameEngine : IGameEngine
 
         var blinds = new List<Blind>
         {
-            new Blind("Small Blind", BlindType.Small, baseScore, 3) { Id = 1 },
-            new Blind("Big Blind", BlindType.Big, (int)(baseScore * 1.5), 4) { Id = 2 },
-            GenerateBossBlind(ante, baseScore * 2)
+            new Blind(BlindId.SmallBlind, "Small Blind", BlindType.Small, baseScore, 3, "No special effect - can be skipped for Tag.") { Id = 1 },
+            new Blind(BlindId.BigBlind, "Big Blind", BlindType.Big, (int)(baseScore * 1.5), 4, "No special effect - can be skipped for Tag.") { Id = 2 },
+            GenerateBossBlind(ante, baseScore)
         };
 
         BlindEnemies[ante] = blinds;
     }
 
-    private static Blind GenerateBossBlind(int ante, int score)
+    private static Blind GenerateBossBlind(int ante, int baseScore)
     {
-        var bossNames = new[]
-        {
-            ("The Club", "All Club cards are debuffed", "club_debuff"),
-            ("The Goad", "All Spade cards are debuffed", "spade_debuff"),
-            ("The Window", "All Diamond cards are debuffed", "diamond_debuff"),
-            ("The Head", "All Heart cards are debuffed", "heart_debuff"),
-            ("The Pillar", "Cards played previously this Ante are debuffed", "pillar"),
-            ("The Psychic", "Must play exactly 5 cards", "psychic"),
-            ("The Needle", "Play only 1 hand", "needle"),
-            ("The Water", "Start with 0 discards", "water"),
-            ("The Wall", "Extra large blind (4x base score)", "wall"),
-            ("Cerulean Bell", "Forces 1 card to always be selected", "cerulean")
-        };
-
         var random = new Random();
-        var selected = bossNames[random.Next(bossNames.Length)];
-        int finalScore = selected.Item3 == "wall" ? score * 2 : score;
-
-        return new Blind(selected.Item1, BlindType.Boss, finalScore, 5, selected.Item2)
+        List<BossBlindDef> pool;
+        if (ante >= 8)
         {
-            Id = 3,
-            BossKey = selected.Item3
+            pool = SupportedBossBlinds.Where(b => b.IsShowdown).ToList();
+            if (pool.Count == 0) pool = SupportedBossBlinds.Where(b => b.MinAnte <= ante).ToList();
+        }
+        else
+        {
+            pool = SupportedBossBlinds.Where(b => !b.IsShowdown && b.MinAnte <= ante).ToList();
+        }
+
+        var selected = pool[random.Next(pool.Count)];
+        int finalScore = (int)(baseScore * selected.Multiplier);
+
+        return new Blind(selected.BlindId, selected.Name, BlindType.Boss, finalScore, selected.Reward, selected.Description)
+        {
+            Id = 3
         };
     }
 
@@ -214,6 +257,10 @@ public class GameEngine : IGameEngine
         // Reset Deck & Hand for the round
         RecycleAllCardsToDrawPile();
 
+        // Reset round constraints
+        _playedHandTypesThisRound.Clear();
+        _allowedHandTypeThisRound = null;
+
         // Apply boss debuffs
         ApplyBossBlindEffects(selected);
 
@@ -222,7 +269,7 @@ public class GameEngine : IGameEngine
         // Apply voucher effects to hands & discards
         int bonusHands = PurchasedVouchers.Count(v => v.Effect == VoucherEffect.Grabber);
         int bonusDiscards = PurchasedVouchers.Count(v => v.Effect == VoucherEffect.Wasteful);
-        if (selected.BossKey == "needle")
+        if (selected.BlindId == BlindId.TheNeedle)
         {
             _currentHand = 1;
         }
@@ -231,7 +278,7 @@ public class GameEngine : IGameEngine
             _currentHand = MaxHands + bonusHands;
         }
 
-        if (selected.BossKey == "water")
+        if (selected.BlindId == BlindId.TheWater)
         {
             _currentDiscard = 0;
         }
@@ -240,8 +287,9 @@ public class GameEngine : IGameEngine
             _currentDiscard = MaxDiscards + bonusDiscards;
         }
 
-        // Draw initial hand
-        DrawCards(MaxHand);
+        // Draw initial hand (taking The Manacle -1 hand size into account)
+        int initialDraw = (selected.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
+        DrawCards(initialDraw);
 
         Phase = GameStatePhase.Playing;
         OnBlindSelected?.Invoke(selected);
@@ -273,16 +321,31 @@ public class GameEngine : IGameEngine
 
         foreach (var card in DrawPile.PlayingCards)
         {
-            if (boss.BossKey == "club_debuff" && card.Suit == Suit.Clubs) card.IsDebuffed = true;
-            if (boss.BossKey == "spade_debuff" && card.Suit == Suit.Spades) card.IsDebuffed = true;
-            if (boss.BossKey == "diamond_debuff" && card.Suit == Suit.Diamonds) card.IsDebuffed = true;
-            if (boss.BossKey == "heart_debuff" && card.Suit == Suit.Hearts) card.IsDebuffed = true;
+            ApplyBossDebuffToCard(card, boss);
         }
+        foreach (var card in Hand)
+        {
+            ApplyBossDebuffToCard(card, boss);
+        }
+    }
+
+    private void ApplyBossDebuffToCard(PlayingCard card, Blind? boss)
+    {
+        if (boss == null || boss.BlindType != BlindType.Boss) return;
+
+        if (boss.BlindId == BlindId.TheClub && card.Suit == Suit.Clubs) card.IsDebuffed = true;
+        if (boss.BlindId == BlindId.TheGoad && card.Suit == Suit.Spades) card.IsDebuffed = true;
+        if (boss.BlindId == BlindId.TheWindow && card.Suit == Suit.Diamonds) card.IsDebuffed = true;
+        if (boss.BlindId == BlindId.TheHead && card.Suit == Suit.Hearts) card.IsDebuffed = true;
+        if (boss.BlindId == BlindId.ThePlant && (card.Rank == Rank.Jack || card.Rank == Rank.Queen || card.Rank == Rank.King)) card.IsDebuffed = true;
+        if (boss.BlindId == BlindId.ThePillar && _playedCardIdsThisAnte.Contains(card.Id)) card.IsDebuffed = true;
+        if (boss.BlindId == BlindId.VerdantLeaf) card.IsDebuffed = true;
     }
 
     public List<PlayingCard> DrawCards(int count)
     {
-        int needed = Math.Min(count, MaxHand - Hand.Count);
+        int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
+        int needed = Math.Min(count, effectiveMaxHand - Hand.Count);
         if (needed <= 0) return new List<PlayingCard>();
 
         if (DrawPile.Count < needed && DiscardPile.Count > 0)
@@ -293,6 +356,10 @@ public class GameEngine : IGameEngine
         }
 
         var drawn = DrawPile.DrawCards(needed);
+        foreach (var card in drawn)
+        {
+            ApplyBossDebuffToCard(card, CurrentBlind);
+        }
         Hand.AddRange(drawn);
         return drawn;
     }
@@ -309,7 +376,8 @@ public class GameEngine : IGameEngine
             return (false, "Must play between 1 and 5 cards.", null);
         }
 
-        if (CurrentBlind?.BossKey == "psychic" && cardIds.Count != 5)
+        // The Psychic: Must play exactly 5 cards
+        if (CurrentBlind?.BlindId == BlindId.ThePsychic && cardIds.Count != 5)
         {
             return (false, "The Psychic forces you to play exactly 5 cards!", null);
         }
@@ -320,15 +388,62 @@ public class GameEngine : IGameEngine
             return (false, "One or more selected cards are not in hand.", null);
         }
 
+        var remainingInHand = Hand.Except(playedCards).ToList();
+
+        // Calculate score & evaluate hand
+        var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels, CurrentBlind?.BlindId);
+
+        // The Eye: No repeat hand types this round
+        if (CurrentBlind?.BlindId == BlindId.TheEye && _playedHandTypesThisRound.Contains(result.HandType))
+        {
+            return (false, $"The Eye does not allow repeating {result.HandName} in this round!", null);
+        }
+
+        // The Mouth: Only 1 hand type allowed this round
+        if (CurrentBlind?.BlindId == BlindId.TheMouth)
+        {
+            if (_allowedHandTypeThisRound == null)
+            {
+                _allowedHandTypeThisRound = result.HandType;
+            }
+            else if (_allowedHandTypeThisRound != result.HandType)
+            {
+                return (false, $"The Mouth only allows playing {_allowedHandTypeThisRound} this round!", null);
+            }
+        }
+
         // Deduct 1 hand
         _currentHand--;
 
-        var remainingInHand = Hand.Except(playedCards).ToList();
+        // The Arm: Decrease level of played poker hand by 1 (min level 1)
+        if (CurrentBlind?.BlindId == BlindId.TheArm && PokerHandLevels.TryGetValue(result.HandType, out int lvl) && lvl > 1)
+        {
+            PokerHandLevels[result.HandType] = lvl - 1;
+        }
 
-        // Calculate score
-        var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels);
+        // The Tooth: Lose $1 per card played
+        if (CurrentBlind?.BlindId == BlindId.TheTooth)
+        {
+            Money = Math.Max(0, Money - playedCards.Count);
+        }
 
-        // Update statistics
+        // The Ox: Playing the most played poker hand sets money to $0
+        if (CurrentBlind?.BlindId == BlindId.TheOx && PokerHandPlayed.Values.Any(v => v > 0))
+        {
+            var mostPlayedType = PokerHandPlayed.OrderByDescending(kv => kv.Value).First().Key;
+            if (result.HandType == mostPlayedType)
+            {
+                Money = 0;
+            }
+        }
+
+        // Record stats and constraints
+        _playedHandTypesThisRound.Add(result.HandType);
+        foreach (var card in playedCards)
+        {
+            _playedCardIdsThisAnte.Add(card.Id);
+        }
+
         if (PokerHandPlayed.ContainsKey(result.HandType))
         {
             PokerHandPlayed[result.HandType]++;
@@ -351,6 +466,19 @@ public class GameEngine : IGameEngine
         }
         DiscardPile.DiscardCards(playedCards);
 
+        // The Hook: Discard 2 random cards in hand after each hand played
+        if (CurrentBlind?.BlindId == BlindId.TheHook && Hand.Count > 0)
+        {
+            var random = new Random();
+            int hookDiscardCount = Math.Min(2, Hand.Count);
+            var hookDiscarded = Hand.OrderBy(_ => random.Next()).Take(hookDiscardCount).ToList();
+            foreach (var card in hookDiscarded)
+            {
+                Hand.Remove(card);
+            }
+            DiscardPile.DiscardCards(hookDiscarded);
+        }
+
         // Check if Blind is defeated
         if (CurrentBlind != null && RoundScore >= CurrentBlind.ScoreToDefeat)
         {
@@ -366,7 +494,8 @@ public class GameEngine : IGameEngine
         }
 
         // Round continues: draw replacement cards
-        DrawCards(MaxHand - Hand.Count);
+        int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
+        DrawCards(effectiveMaxHand - Hand.Count);
 
         return (true, $"Played {result.HandName} for {result.FinalScore} points!", result);
     }
@@ -402,7 +531,8 @@ public class GameEngine : IGameEngine
         }
         DiscardPile.DiscardCards(toDiscard);
 
-        DrawCards(MaxHand - Hand.Count);
+        int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
+        DrawCards(effectiveMaxHand - Hand.Count);
 
         return (true, $"Discarded {toDiscard.Count} card(s).");
     }
@@ -417,7 +547,7 @@ public class GameEngine : IGameEngine
         var playedCards = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
         var remainingInHand = Hand.Except(playedCards).ToList();
 
-        var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels);
+        var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels, CurrentBlind?.BlindId);
         return (true, "Score preview calculated.", result);
     }
 
@@ -500,6 +630,7 @@ public class GameEngine : IGameEngine
     public bool AdvanceAnte()
     {
         CurrentAnte++;
+        _playedCardIdsThisAnte.Clear();
         GenerateBlindsForAnte(CurrentAnte);
         OnAnteAdvance?.Invoke(CurrentAnte);
         return true;
@@ -575,6 +706,15 @@ public class GameEngine : IGameEngine
         {
             Deck.JokerCards.Remove(joker);
             Money += joker.SellValue;
+
+            // Verdant Leaf: All cards debuffed until 1 Joker is sold
+            if (CurrentBlind?.BlindId == BlindId.VerdantLeaf)
+            {
+                foreach (var card in Hand) card.IsDebuffed = false;
+                foreach (var card in DrawPile.PlayingCards) card.IsDebuffed = false;
+                foreach (var card in DiscardPile.PlayingCards) card.IsDebuffed = false;
+            }
+
             return (true, $"Sold {joker.Name} for ${joker.SellValue}.");
         }
 

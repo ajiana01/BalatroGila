@@ -562,11 +562,9 @@ function RunInfoModal({ isOpen, onClose, gameData }) {
                                 <div className="blind-col-token">
                                     <Blind blind={bossBlindData.blind} width={68} height={68} animated={bossBlindData.status === 'Current'} />
                                 </div>
-                                {bossBlindData.description ? (
-                                    <div className="blind-col-ability">
-                                        {bossBlindData.description}
-                                    </div>
-                                ) : null}
+                                <div className="blind-col-ability">
+                                    {bossBlindData.description || '\u00A0'}
+                                </div>
                                 <div className="blind-col-score-box">
                                     <span className="blind-score-lbl">Score at least</span>
                                     <div className="blind-score-target">

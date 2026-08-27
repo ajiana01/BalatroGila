@@ -68,6 +68,7 @@ function BlindSelection({
                                 title={blind.title}
                                 score={blind.score}
                                 reward={blind.reward}
+                                description={blind.description}
                                 status={status}
                                 onSelect={() => onSelectBlind(blind)}
                             />

@@ -1,4 +1,4 @@
-﻿.playing-card {
+.playing-card {
     position: relative;
     display: block;
 }
@@ -56,4 +56,46 @@
 
 .playing-card-face {
     z-index: 2;
+}
+
+/* Debuffed State */
+.playing-card.is-debuffed .playing-card-face {
+    filter: grayscale(80%) brightness(0.65) contrast(95%);
+    transition: filter 0.2s ease;
+}
+
+.playing-card-debuff-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.debuff-badge {
+    background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transform: rotate(-10deg);
+    text-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.9);
+    text-transform: uppercase;
+    animation: debuff-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes debuff-pulse {
+    0%, 100% {
+        transform: rotate(-10deg) scale(1);
+    }
+    50% {
+        transform: rotate(-10deg) scale(1.06);
+    }
 }

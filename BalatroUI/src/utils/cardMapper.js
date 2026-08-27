@@ -149,8 +149,8 @@ export function mapBackendBlind(backendBlind) {
   if (type === 'big') {
     blindSpriteKey = 'BigBlind';
   } else if (type === 'boss') {
-    const rawName = backendBlind.name || backendBlind.title || 'TheGoad';
-    const cleaned = rawName.replace(/[^a-zA-Z0-9]/g, '');
+    const rawName = backendBlind.blindId || backendBlind.name || backendBlind.title || 'TheGoad';
+    const cleaned = String(rawName).replace(/[^a-zA-Z0-9]/g, '');
     blindSpriteKey = cleaned || 'TheGoad';
   }
 
@@ -160,6 +160,7 @@ export function mapBackendBlind(backendBlind) {
 
   return {
     id: backendBlind.id,
+    blindId: backendBlind.blindId || '',
     type,
     blind: blindSpriteKey,
     title: backendBlind.name || backendBlind.title || (type === 'small' ? 'Small Blind' : type === 'big' ? 'Big Blind' : 'Boss Blind'),
@@ -168,7 +169,7 @@ export function mapBackendBlind(backendBlind) {
     reward: rewardStr,
     description: backendBlind.description || '',
     isDefeated: Boolean(backendBlind.isDefeated),
-    bossKey: backendBlind.bossKey || ''
+    bossKey: backendBlind.blindId || backendBlind.bossKey || ''
   };
 }
 

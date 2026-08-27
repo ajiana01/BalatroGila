@@ -85,6 +85,7 @@ function PlayerHand({
                                     <PlayingCard
                                         suit={card.suit}
                                         rank={card.rank}
+                                        isDebuffed={card.isDebuffed}
                                         width={92}
                                         height={130}
                                     />
@@ -148,6 +149,7 @@ function PlayerHand({
                                 <PlayingCard
                                     suit={card.suit}
                                     rank={card.rank}
+                                    isDebuffed={card.isDebuffed}
                                     width={92}
                                     height={130}
                                 />

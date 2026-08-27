@@ -387,6 +387,7 @@ function BoosterPackOpening({
                                         <PlayingCard
                                             rank={card.rank}
                                             suit={card.suit}
+                                            isDebuffed={card.isDebuffed}
                                             width={72}
                                             height={100}
                                         />

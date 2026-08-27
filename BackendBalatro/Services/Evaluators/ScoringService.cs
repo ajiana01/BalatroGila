@@ -63,7 +63,8 @@ public class ScoringService : IScoringService
         List<PlayingCard> playedCards,
         List<PlayingCard> handCardsRemaining,
         List<JokerCard> jokers,
-        Dictionary<PokerHandType, int> handLevels)
+        Dictionary<PokerHandType, int> handLevels,
+        BlindId? activeBlindId = null)
     {
         var (handType, scoringCards, unscoredCards) = _pokerHandEvaluator.Evaluate(playedCards);
 
@@ -77,6 +78,13 @@ public class ScoringService : IScoringService
 
         int level = handLevels.TryGetValue(handType, out int lvl) ? lvl : 1;
         var (baseChips, baseMult) = GetBaseChipsAndMult(handType, level);
+
+        // The Flint: Base Chips and Mult halved during round
+        if (activeBlindId == BlindId.TheFlint)
+        {
+            baseChips = Math.Max(1, (int)Math.Floor(baseChips / 2.0));
+            baseMult = Math.Max(1f, (float)Math.Floor(baseMult / 2.0));
+        }
 
         int cardChips = 0;
         float cardMult = 0f;
