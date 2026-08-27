@@ -13,12 +13,31 @@ const RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']
 function DeckHoverPreview({ gameData, handCards = [] }) {
     // Calculate matrix of remaining cards in deck
     const { matrix, suitTotals, rankTotals } = useMemo(() => {
-        // Count how many of each (suit, rank) are in hand
-        const inHandCounts = {};
-        handCards.forEach(c => {
-            const key = `${c.suit}-${c.rank}`;
-            inHandCounts[key] = (inHandCounts[key] || 0) + 1;
-        });
+        let remainingCards = gameData?.remainingCards;
+
+        if (!remainingCards || remainingCards.length === 0) {
+            // Fallback: derive from fullDeck minus handCards
+            const fullDeck = gameData?.fullDeck?.length ? gameData.fullDeck : [];
+            const usedHandKeys = new Map();
+            handCards.forEach(c => {
+                const k = `${c.suit}-${c.rank}`;
+                usedHandKeys.set(k, (usedHandKeys.get(k) || 0) + 1);
+            });
+
+            const rem = [];
+            const remCount = new Map();
+            fullDeck.forEach(c => {
+                const k = `${c.suit}-${c.rank}`;
+                const handCount = usedHandKeys.get(k) || 0;
+                const alreadyExcluded = remCount.get(k) || 0;
+                if (alreadyExcluded < handCount) {
+                    remCount.set(k, alreadyExcluded + 1);
+                } else {
+                    rem.push(c);
+                }
+            });
+            remainingCards = rem;
+        }
 
         const matrix = {};
         const suitTotals = {};
@@ -31,13 +50,10 @@ function DeckHoverPreview({ gameData, handCards = [] }) {
             let sTotal = 0;
 
             RANKS.forEach(r => {
-                const key = `${s.key}-${r}`;
-                const inHand = inHandCounts[key] || 0;
-                // Standard deck has 1 copy per (suit, rank)
-                const remaining = Math.max(0, 1 - inHand);
-                matrix[s.key][r] = remaining;
-                sTotal += remaining;
-                rankTotals[r] += remaining;
+                const count = remainingCards.filter(c => c.suit === s.key && c.rank === r).length;
+                matrix[s.key][r] = count;
+                sTotal += count;
+                rankTotals[r] += count;
             });
 
             suitTotals[s.key] = sTotal;

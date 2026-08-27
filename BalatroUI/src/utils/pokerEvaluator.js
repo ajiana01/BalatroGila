@@ -189,6 +189,14 @@ export function evaluatePokerHand(cards = [], handLevels = {}) {
         scoringCardIds = [sorted[0].id];
     }
 
+    // Add any stone cards to scoringCardIds
+    sorted.forEach(card => {
+        const enh = String(card.enhancement || '').toLowerCase();
+        if (enh.includes('stone') && !scoringCardIds.includes(card.id)) {
+            scoringCardIds.push(card.id);
+        }
+    });
+
     const baseInfo = POKER_HAND_BASE_STATS[handName] || POKER_HAND_BASE_STATS['High Card'];
     const level = handLevels[handName] || 1;
     const chips = baseInfo.chips + (level - 1) * (baseInfo.chipLvl || 15);
@@ -205,10 +213,20 @@ export function evaluatePokerHand(cards = [], handLevels = {}) {
 }
 
 /**
- * Returns chip value for a card rank
+ * Returns chip value for a card rank or card object with enhancements
  */
-export function getCardChipValue(rank) {
-    return RANK_VALUES[rank] || 0;
+export function getCardChipValue(cardOrRank) {
+    if (typeof cardOrRank === 'object' && cardOrRank !== null) {
+        if (cardOrRank.isDebuffed) return 0;
+        const enh = String(cardOrRank.enhancement || '').toLowerCase();
+        if (enh.includes('stone')) return 50;
+        let chips = cardOrRank.baseChips || RANK_VALUES[cardOrRank.rank] || 0;
+        if (enh.includes('bonus')) chips += 30;
+        const ed = String(cardOrRank.edition || '').toLowerCase();
+        if (ed.includes('foil')) chips += 50;
+        return chips;
+    }
+    return RANK_VALUES[cardOrRank] || 0;
 }
 
 /**

@@ -28,6 +28,8 @@ public class GameStateResponseDto
     public int MaxDiscards { get; set; }
 
     public List<PlayingCard> Hand { get; set; } = new();
+    public List<PlayingCard> FullDeck { get; set; } = new();
+    public List<PlayingCard> RemainingCards { get; set; } = new();
     public int DeckRemainingCount { get; set; }
     public int DrawPileCount { get; set; }
     public int DiscardPileCount { get; set; }

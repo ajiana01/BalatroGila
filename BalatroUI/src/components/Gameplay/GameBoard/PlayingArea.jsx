@@ -65,6 +65,9 @@ function PlayingArea({
                             <PlayingCard
                                 suit={card.suit}
                                 rank={card.rank}
+                                enhancement={card.enhancement}
+                                edition={card.edition}
+                                seal={card.seal}
                                 isDebuffed={card.isDebuffed}
                                 width={92}
                                 height={130}

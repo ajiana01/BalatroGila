@@ -248,6 +248,9 @@ function GameBoard({
             // Selected hand cards as targets if any
             const targetIds = selectedIds.slice(0, 3);
             const state = await useConsumable(consumable.id, targetIds);
+            if (state?.hand) {
+                setCards(mapBackendCards(state.hand));
+            }
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
 
@@ -805,7 +808,7 @@ function GameBoard({
                             </div>
 
                             <div className="deck-count-text">
-                                {deckRemaining}/52
+                                {deckRemaining}/{gameData?.totalDeckCount || gameData?.fullDeck?.length || 52}
                             </div>
                         </div>
                     </div>

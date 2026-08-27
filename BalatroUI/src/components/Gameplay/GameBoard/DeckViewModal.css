@@ -314,6 +314,27 @@
     display: flex;
     align-items: center;
     width: 100%;
+    min-height: 78px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+}
+
+.matrix-suit-row::-webkit-scrollbar {
+    height: 4px;
+}
+
+.matrix-suit-row::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.matrix-empty-row-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    padding-left: 8px;
 }
 
 .matrix-card-wrapper {

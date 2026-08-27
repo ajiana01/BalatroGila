@@ -1,6 +1,8 @@
 .playing-card {
     position: relative;
     display: block;
+    border-radius: 8px;
+    transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 /* Effect 3D */
@@ -58,9 +60,60 @@
     z-index: 2;
 }
 
+/* Seal Badge Overlay */
+.playing-card-seal {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 5;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+/* Editions Shimmers */
+.playing-card.edition-foil {
+    filter: drop-shadow(0 0 8px rgba(0, 191, 255, 0.7));
+}
+
+.playing-card.edition-foil::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%, rgba(0,191,255,0.3) 100%);
+    pointer-events: none;
+    z-index: 4;
+    border-radius: inherit;
+    mix-blend-mode: overlay;
+}
+
+.playing-card.edition-holographic {
+    filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.7));
+}
+
+.playing-card.edition-holographic::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, rgba(255,0,128,0.3) 0%, rgba(0,255,255,0.3) 50%, rgba(255,255,0,0.3) 100%);
+    pointer-events: none;
+    z-index: 4;
+    border-radius: inherit;
+    mix-blend-mode: color-dodge;
+}
+
+.playing-card.edition-polychrome {
+    animation: polychrome-shift 4s ease-in-out infinite alternate;
+}
+
+@keyframes polychrome-shift {
+    0% { filter: drop-shadow(0 0 8px #ff0055) hue-rotate(0deg); }
+    100% { filter: drop-shadow(0 0 10px #00e5ff) hue-rotate(360deg); }
+}
+
 /* Debuffed State */
-.playing-card.is-debuffed .playing-card-face {
-    filter: grayscale(80%) brightness(0.65) contrast(95%);
+.playing-card.is-debuffed .playing-card-face,
+.playing-card.is-debuffed .playing-card-back {
+    filter: grayscale(85%) brightness(0.6) contrast(95%);
     transition: filter 0.2s ease;
 }
 

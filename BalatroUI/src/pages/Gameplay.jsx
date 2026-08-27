@@ -185,6 +185,8 @@ function Gameplay() {
         if (!apiState) return;
 
         const mappedHandCards = mapBackendCards(apiState.hand);
+        const mappedFullDeck = mapBackendCards(apiState.fullDeck);
+        const mappedRemainingCards = mapBackendCards(apiState.remainingCards);
         const mappedJokers = mapBackendJokers(apiState.jokers);
         const mappedConsumables = mapBackendConsumables(apiState.consumables);
         const mappedBlind = apiState.currentBlind ? mapBackendBlind(apiState.currentBlind) : null;
@@ -227,7 +229,10 @@ function Gameplay() {
                 maxHands: apiState.maxHands,
                 discards: apiState.discardsRemaining,
                 maxDiscards: apiState.maxDiscards,
-                deckRemaining: totalDeck || 52,
+                deckRemaining: totalDeck || mappedRemainingCards?.length || 52,
+                totalDeckCount: mappedFullDeck?.length || 52,
+                fullDeck: mappedFullDeck?.length ? mappedFullDeck : (prev.fullDeck || []),
+                remainingCards: mappedRemainingCards?.length ? mappedRemainingCards : (prev.remainingCards || []),
                 handCards: mappedHandCards,
                 jokers: mappedJokers,
                 maxJokers: apiState.maxJokers || 5,

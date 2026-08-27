@@ -89,6 +89,8 @@ public class ScoringService : IScoringService
         int cardChips = 0;
         float cardMult = 0f;
         float cardXMult = 1.0f;
+        int luckyMoney = 0;
+        var triggerMessages = new List<string>();
 
         // 1. Scoring Cards Evaluation
         foreach (var card in scoringCards)
@@ -96,6 +98,22 @@ public class ScoringService : IScoringService
             cardChips += card.GetEffectiveChips();
             cardMult += card.GetEffectiveMult();
             cardXMult *= card.GetEffectiveXMult();
+
+            // Lucky Card evaluation (1 in 5 for +20 Mult, 1 in 15 for +$20)
+            if (!card.IsDebuffed && card.Enhancement == EnhancePokerCard.LuckyCards)
+            {
+                var rng = new Random();
+                if (rng.Next(5) == 0) // 1 in 5 (20%)
+                {
+                    cardMult += 20f;
+                    triggerMessages.Add($"{card.Name} (Lucky): +20 Mult!");
+                }
+                if (rng.Next(15) == 0) // 1 in 15 (~6.67%)
+                {
+                    luckyMoney += 20;
+                    triggerMessages.Add($"{card.Name} (Lucky): +$20!");
+                }
+            }
         }
 
         // 2. Held in Hand Cards Evaluation (e.g. Steel cards)
@@ -114,7 +132,6 @@ public class ScoringService : IScoringService
         int jokerChips = 0;
         float jokerMult = 0f;
         float jokerXMult = 1.0f;
-        var triggerMessages = new List<string>();
 
         foreach (var joker in jokers)
         {
@@ -179,7 +196,8 @@ public class ScoringService : IScoringService
             FinalScore = finalScore,
             ScoringCards = scoringCards,
             UnscoredCards = unscoredCards,
-            JokerTriggerMessages = triggerMessages
+            JokerTriggerMessages = triggerMessages,
+            LuckyMoneyWon = luckyMoney
         };
     }
 

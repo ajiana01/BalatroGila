@@ -573,7 +573,7 @@ function BoosterPackOpening({
                 </div>
 
                 <div className="deck-count-text">
-                    {gameData?.deckRemaining || 52}/52
+                    {gameData?.deckRemaining ?? 52}/{gameData?.totalDeckCount || gameData?.fullDeck?.length || 52}
                 </div>
             </div>
 
@@ -582,6 +582,7 @@ function BoosterPackOpening({
                 isOpen={isDeckModalOpen}
                 onClose={() => setIsDeckModalOpen(false)}
                 gameData={gameData}
+                handCards={gameData?.handCards || []}
             />
         </div>
     );

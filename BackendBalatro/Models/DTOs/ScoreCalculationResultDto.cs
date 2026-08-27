@@ -22,4 +22,5 @@ public class ScoreCalculationResultDto
     public List<PlayingCard> ScoringCards { get; set; } = new();
     public List<PlayingCard> UnscoredCards { get; set; } = new();
     public List<string> JokerTriggerMessages { get; set; } = new();
+    public int LuckyMoneyWon { get; set; }
 }

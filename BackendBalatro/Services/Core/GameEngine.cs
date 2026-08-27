@@ -465,12 +465,33 @@ public class GameEngine : IGameEngine
         OnPlayHand?.Invoke(playedCards);
         OnScore?.Invoke(result.FinalScore);
 
-        // Remove played cards from Hand and add to DiscardPile
+        if (result.LuckyMoneyWon > 0)
+        {
+            Money += result.LuckyMoneyWon;
+        }
+
+        // Glass Card: 1 in 4 chance (25%) to destroy after scoring
+        var destroyedGlassCards = new List<PlayingCard>();
+        var glassRng = new Random();
+        foreach (var card in result.ScoringCards)
+        {
+            if (!card.IsDebuffed && card.Enhancement == EnhancePokerCard.GlassCards)
+            {
+                if (glassRng.Next(4) == 0)
+                {
+                    destroyedGlassCards.Add(card);
+                    result.JokerTriggerMessages.Add($"{card.Name} (Glass): Shattered!");
+                }
+            }
+        }
+
+        // Remove played cards from Hand and add surviving cards to DiscardPile
         foreach (var card in playedCards)
         {
             Hand.Remove(card);
         }
-        DiscardPile.DiscardCards(playedCards);
+        var survivingPlayedCards = playedCards.Except(destroyedGlassCards).ToList();
+        DiscardPile.DiscardCards(survivingPlayedCards);
 
         // The Hook: Discard 2 random cards in hand after each hand played
         if (CurrentBlind?.BlindId == BlindId.TheHook && Hand.Count > 0)
@@ -1139,6 +1160,9 @@ public class GameEngine : IGameEngine
             };
         }
 
+        var allDeckCards = Hand.Concat(DrawPile.PlayingCards).Concat(DiscardPile.PlayingCards).ToList();
+        var remainingCards = DrawPile.PlayingCards.Concat(DiscardPile.PlayingCards).ToList();
+
         return new GameStateResponseDto
         {
             SessionId = SessionId,
@@ -1157,6 +1181,8 @@ public class GameEngine : IGameEngine
             DiscardsRemaining = _currentDiscard,
             MaxDiscards = MaxDiscards,
             Hand = Hand.ToList(),
+            FullDeck = allDeckCards,
+            RemainingCards = remainingCards,
             DeckRemainingCount = DrawPile.Count + DiscardPile.Count,
             DrawPileCount = DrawPile.Count,
             DiscardPileCount = DiscardPile.Count,
