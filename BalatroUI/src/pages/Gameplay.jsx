@@ -462,6 +462,7 @@ function Gameplay() {
                         gameData={gameData}
                         onContinue={handleCashout}
                         onOpenSettings={() => setShowSettings(true)}
+                        onSyncState={syncGameData}
                     />
                 )}
 
