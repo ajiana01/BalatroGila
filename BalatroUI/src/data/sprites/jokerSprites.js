@@ -438,6 +438,46 @@ export const jokerSprite = {
         Campfire: {
             column: 5,
             row: 15
+        },
+        TheDuo: {
+            column: 4,
+            row: 8
+        },
+        TheTrio: {
+            column: 5,
+            row: 8
+        },
+        TheFamily: {
+            column: 6,
+            row: 8
+        },
+        TheOrder: {
+            column: 7,
+            row: 8
+        },
+        TheTribe: {
+            column: 8,
+            row: 8
+        },
+        ChaosTheClown: {
+            column: 1,
+            row: 0
+        },
+        RideTheBus: {
+            column: 1,
+            row: 6
+        },
+        ToTheMoon: {
+            column: 8,
+            row: 13
+        },
+        Dna: {
+            column: 5,
+            row: 10
+        },
+        "8Ball": {
+            column: 0,
+            row: 5
         }
     }
 };

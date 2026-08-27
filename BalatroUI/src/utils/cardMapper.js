@@ -29,13 +29,34 @@ export function normalizeJokerSpriteKey(nameOrKey) {
   // Check exact match in jokerSprite
   if (jokerSprite.cards[nameOrKey]) return nameOrKey;
 
-  // Remove spaces and non-alphanumeric
-  const cleaned = nameOrKey.replace(/[^a-zA-Z0-9]/g, '');
+  const str = String(nameOrKey);
+  const cleaned = str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
   for (const key of Object.keys(jokerSprite.cards)) {
-    if (key.toLowerCase() === cleaned.toLowerCase()) {
+    if (key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleaned) {
       return key;
     }
   }
+
+  // Alias dictionary for special names/cases
+  const SPECIAL_MAP = {
+    '8ball': 'EightBall',
+    'eightball': 'EightBall',
+    'chaostheclown': 'ChaosTheClown',
+    'ridethebus': 'RideTheBus',
+    'tothemoon': 'ToTheMoon',
+    'dna': 'DNA',
+    'theduo': 'TheDuo',
+    'thetrio': 'TheTrio',
+    'thefamily': 'TheFamily',
+    'theorder': 'TheOrder',
+    'thetribe': 'TheTribe'
+  };
+
+  if (SPECIAL_MAP[cleaned] && jokerSprite.cards[SPECIAL_MAP[cleaned]]) {
+    return SPECIAL_MAP[cleaned];
+  }
+
   return 'Joker';
 }
 
@@ -67,10 +88,11 @@ export function mapBackendCards(cards) {
 // Map Backend JokerCard -> Frontend Joker item
 export function mapBackendJoker(backendJoker) {
   if (!backendJoker) return null;
-  const spriteKey = normalizeJokerSpriteKey(backendJoker.jokerKey || backendJoker.name);
+  const spriteKey = normalizeJokerSpriteKey(backendJoker.jokerId || backendJoker.jokerKey || backendJoker.name);
 
   return {
     id: backendJoker.id,
+    jokerId: backendJoker.jokerId || spriteKey,
     spriteId: spriteKey,
     title: backendJoker.name || spriteKey,
     name: backendJoker.name || spriteKey,

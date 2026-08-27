@@ -153,7 +153,7 @@ public class ScoringService : IScoringService
             }
 
             // Specific Joker Key Logic
-            ApplySpecificJokerLogic(joker, playedCards, scoringCards, handCardsRemaining, ref jokerChips, ref jokerMult, ref jokerXMult, triggerMessages);
+            ApplySpecificJokerLogic(joker, handType, playedCards, scoringCards, handCardsRemaining, ref jokerChips, ref jokerMult, ref jokerXMult, triggerMessages);
         }
 
         totalChips += jokerChips;
@@ -185,6 +185,7 @@ public class ScoringService : IScoringService
 
     private static void ApplySpecificJokerLogic(
         JokerCard joker,
+        PokerHandType handType,
         List<PlayingCard> playedCards,
         List<PlayingCard> scoringCards,
         List<PlayingCard> handCardsRemaining,
@@ -193,15 +194,9 @@ public class ScoringService : IScoringService
         ref float jokerXMult,
         List<string> triggerMessages)
     {
-        string key = joker.JokerKey.ToLowerInvariant();
-        if (string.IsNullOrEmpty(key))
+        switch (joker.JokerId)
         {
-            key = joker.Name.Replace(" ", "").ToLowerInvariant();
-        }
-
-        switch (key)
-        {
-            case "scaryface":
+            case JokerId.ScaryFace:
                 // Face cards give +30 Chips when scored
                 int faceCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Jack || c.Rank == Rank.Queen || c.Rank == Rank.King));
                 if (faceCount > 0)
@@ -211,7 +206,27 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case "halfjoker":
+            case JokerId.SmileyFace:
+                // Face cards give +5 Mult when scored
+                int smileyFaceCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Jack || c.Rank == Rank.Queen || c.Rank == Rank.King));
+                if (smileyFaceCount > 0)
+                {
+                    jokerMult += smileyFaceCount * 5;
+                    triggerMessages.Add($"Smiley Face: +{smileyFaceCount * 5} Mult for {smileyFaceCount} face cards");
+                }
+                break;
+
+            case JokerId.Photograph:
+                // First played face card gives X2 Mult when scored
+                var firstFace = scoringCards.FirstOrDefault(c => !c.IsDebuffed && (c.Rank == Rank.Jack || c.Rank == Rank.Queen || c.Rank == Rank.King));
+                if (firstFace != null)
+                {
+                    jokerXMult *= 2.0f;
+                    triggerMessages.Add($"Photograph: X2 Mult for first face card ({firstFace.Rank})");
+                }
+                break;
+
+            case JokerId.HalfJoker:
                 // +20 Mult if played hand contains 3 or fewer cards
                 if (playedCards.Count <= 3)
                 {
@@ -220,7 +235,7 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case "raisedfist":
+            case JokerId.RaisedFist:
                 // Adds double the rank of lowest card held in hand to Mult
                 if (handCardsRemaining.Count > 0)
                 {
@@ -230,12 +245,27 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case "abstractjoker":
-                // +3 Mult for each Joker card
-                // Handled in caller if needed or default Mult
+            case JokerId.Baron:
+                // Each King held in hand gives X1.5 Mult
+                int kingHeldCount = handCardsRemaining.Count(c => !c.IsDebuffed && c.Rank == Rank.King);
+                if (kingHeldCount > 0)
+                {
+                    float baronMult = (float)Math.Pow(1.5, kingHeldCount);
+                    jokerXMult *= baronMult;
+                    triggerMessages.Add($"Baron: X{baronMult:0.##} Mult from {kingHeldCount} King(s) in hand");
+                }
                 break;
 
-            case "greedyjoker":
+            case JokerId.Blackboard:
+                // X3 Mult if all cards held in hand are Spades or Clubs
+                if (handCardsRemaining.Count > 0 && handCardsRemaining.All(c => c.Suit == Suit.Spades || c.Suit == Suit.Clubs))
+                {
+                    jokerXMult *= 3.0f;
+                    triggerMessages.Add("Blackboard: X3 Mult for Spades & Clubs only held in hand");
+                }
+                break;
+
+            case JokerId.GreedyJoker:
                 int diamondCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Diamonds || c.Enhancement == EnhancePokerCard.WildCards));
                 if (diamondCount > 0)
                 {
@@ -244,7 +274,7 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case "lustyjoker":
+            case JokerId.LustyJoker:
                 int heartCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Hearts || c.Enhancement == EnhancePokerCard.WildCards));
                 if (heartCount > 0)
                 {
@@ -253,7 +283,7 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case "wrathfuljoker":
+            case JokerId.WrathfulJoker:
                 int spadeCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Spades || c.Enhancement == EnhancePokerCard.WildCards));
                 if (spadeCount > 0)
                 {
@@ -262,7 +292,7 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case "gluttonousjoker":
+            case JokerId.GluttonousJoker:
                 int clubCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Clubs || c.Enhancement == EnhancePokerCard.WildCards));
                 if (clubCount > 0)
                 {
@@ -271,7 +301,7 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case "fibonacci":
+            case JokerId.Fibonacci:
                 // Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored
                 int fibCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Ace || c.Rank == Rank.Two || c.Rank == Rank.Three || c.Rank == Rank.Five || c.Rank == Rank.Eight));
                 if (fibCount > 0)
@@ -279,6 +309,175 @@ public class ScoringService : IScoringService
                     jokerMult += fibCount * 8;
                     triggerMessages.Add($"Fibonacci: +{fibCount * 8} Mult from Fibonacci cards");
                 }
+                break;
+
+            case JokerId.EvenSteven:
+                // Played cards with even rank give +4 Mult when scored (10, 8, 6, 4, 2)
+                int evenCount = scoringCards.Count(c => !c.IsDebuffed && ((int)c.Rank % 2 == 0) && (int)c.Rank <= 10);
+                if (evenCount > 0)
+                {
+                    jokerMult += evenCount * 4;
+                    triggerMessages.Add($"Even Steven: +{evenCount * 4} Mult from Even cards");
+                }
+                break;
+
+            case JokerId.OddTodd:
+                // Played cards with odd rank give +31 Chips when scored (A, 9, 7, 5, 3)
+                int oddCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Ace || ((int)c.Rank % 2 == 1 && (int)c.Rank <= 9)));
+                if (oddCount > 0)
+                {
+                    jokerChips += oddCount * 31;
+                    triggerMessages.Add($"Odd Todd: +{oddCount * 31} Chips from Odd cards");
+                }
+                break;
+
+            case JokerId.Scholar:
+                // Played Aces give +20 Chips and +4 Mult when scored
+                int aceCount = scoringCards.Count(c => !c.IsDebuffed && c.Rank == Rank.Ace);
+                if (aceCount > 0)
+                {
+                    jokerChips += aceCount * 20;
+                    jokerMult += aceCount * 4;
+                    triggerMessages.Add($"Scholar: +{aceCount * 20} Chips and +{aceCount * 4} Mult from Aces");
+                }
+                break;
+
+            case JokerId.WalkieTalkie:
+                // Each played 10 or 4 gives +10 Chips and +4 Mult when scored
+                int wtCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Ten || c.Rank == Rank.Four));
+                if (wtCount > 0)
+                {
+                    jokerChips += wtCount * 10;
+                    jokerMult += wtCount * 4;
+                    triggerMessages.Add($"Walkie Talkie: +{wtCount * 10} Chips and +{wtCount * 4} Mult from 10s and 4s");
+                }
+                break;
+
+            case JokerId.JollyJoker:
+                if (handType == PokerHandType.Pair || handType == PokerHandType.TwoPair || handType == PokerHandType.FullHouse)
+                {
+                    jokerMult += 8;
+                    triggerMessages.Add("Jolly Joker: +8 Mult for Pair");
+                }
+                break;
+
+            case JokerId.ZanyJoker:
+                if (handType == PokerHandType.ThreeOfAKind || handType == PokerHandType.FullHouse)
+                {
+                    jokerMult += 12;
+                    triggerMessages.Add("Zany Joker: +12 Mult for Three of a Kind");
+                }
+                break;
+
+            case JokerId.MadJoker:
+                if (handType == PokerHandType.TwoPair)
+                {
+                    jokerMult += 10;
+                    triggerMessages.Add("Mad Joker: +10 Mult for Two Pair");
+                }
+                break;
+
+            case JokerId.CrazyJoker:
+                if (handType == PokerHandType.Straight || handType == PokerHandType.StraightFlush)
+                {
+                    jokerMult += 12;
+                    triggerMessages.Add("Crazy Joker: +12 Mult for Straight");
+                }
+                break;
+
+            case JokerId.DrollJoker:
+                if (handType == PokerHandType.Flush || handType == PokerHandType.StraightFlush)
+                {
+                    jokerMult += 10;
+                    triggerMessages.Add("Droll Joker: +10 Mult for Flush");
+                }
+                break;
+
+            case JokerId.SlyJoker:
+                if (handType == PokerHandType.Pair || handType == PokerHandType.TwoPair || handType == PokerHandType.FullHouse)
+                {
+                    jokerChips += 50;
+                    triggerMessages.Add("Sly Joker: +50 Chips for Pair");
+                }
+                break;
+
+            case JokerId.WilyJoker:
+                if (handType == PokerHandType.ThreeOfAKind || handType == PokerHandType.FullHouse)
+                {
+                    jokerChips += 100;
+                    triggerMessages.Add("Wily Joker: +100 Chips for Three of a Kind");
+                }
+                break;
+
+            case JokerId.CleverJoker:
+                if (handType == PokerHandType.TwoPair)
+                {
+                    jokerChips += 80;
+                    triggerMessages.Add("Clever Joker: +80 Chips for Two Pair");
+                }
+                break;
+
+            case JokerId.DeviousJoker:
+                if (handType == PokerHandType.Straight || handType == PokerHandType.StraightFlush)
+                {
+                    jokerChips += 100;
+                    triggerMessages.Add("Devious Joker: +100 Chips for Straight");
+                }
+                break;
+
+            case JokerId.CraftyJoker:
+                if (handType == PokerHandType.Flush || handType == PokerHandType.StraightFlush)
+                {
+                    jokerChips += 80;
+                    triggerMessages.Add("Crafty Joker: +80 Chips for Flush");
+                }
+                break;
+
+            case JokerId.TheDuo:
+                if (handType == PokerHandType.Pair || handType == PokerHandType.TwoPair || handType == PokerHandType.FullHouse)
+                {
+                    jokerXMult *= 2.0f;
+                    triggerMessages.Add("The Duo: X2 Mult for Pair");
+                }
+                break;
+
+            case JokerId.TheTrio:
+                if (handType == PokerHandType.ThreeOfAKind || handType == PokerHandType.FullHouse)
+                {
+                    jokerXMult *= 3.0f;
+                    triggerMessages.Add("The Trio: X3 Mult for Three of a Kind");
+                }
+                break;
+
+            case JokerId.TheOrder:
+                if (handType == PokerHandType.Straight || handType == PokerHandType.StraightFlush)
+                {
+                    jokerXMult *= 3.0f;
+                    triggerMessages.Add("The Order: X3 Mult for Straight");
+                }
+                break;
+
+            case JokerId.TheTribe:
+                if (handType == PokerHandType.Flush || handType == PokerHandType.StraightFlush)
+                {
+                    jokerXMult *= 2.0f;
+                    triggerMessages.Add("The Tribe: X2 Mult for Flush");
+                }
+                break;
+
+            case JokerId.TheFamily:
+                if (handType == PokerHandType.FourOfAKind)
+                {
+                    jokerXMult *= 4.0f;
+                    triggerMessages.Add("The Family: X4 Mult for Four of a Kind");
+                }
+                break;
+
+            case JokerId.Misprint:
+                var rnd = new Random();
+                int misprintMult = rnd.Next(0, 24);
+                jokerMult += misprintMult;
+                triggerMessages.Add($"Misprint: +{misprintMult} Mult");
                 break;
         }
     }

@@ -135,6 +135,7 @@ public class ShopService : IShopService
         return new JokerCard
         {
             Id = Guid.NewGuid().ToString(),
+            JokerId = template.JokerId,
             Name = template.Name,
             Edition = edition,
             Rarity = template.Rarity,
@@ -144,8 +145,7 @@ public class ShopService : IShopService
             XMultValue = template.XMultValue,
             MoneyValue = template.MoneyValue,
             Price = template.Price,
-            Description = template.Description,
-            JokerKey = template.JokerKey
+            Description = template.Description
         };
     }
 
@@ -153,101 +153,51 @@ public class ShopService : IShopService
     {
         return new List<JokerCard>
         {
-            new JokerCard("Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 4, 4)
-            {
-                Description = "+4 Mult",
-                JokerKey = "joker"
-            },
-            new JokerCard("Greedy Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5)
-            {
-                Description = "Played cards with Diamond suit give +4 Mult when scored",
-                JokerKey = "greedyjoker"
-            },
-            new JokerCard("Lusty Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5)
-            {
-                Description = "Played cards with Heart suit give +4 Mult when scored",
-                JokerKey = "lustyjoker"
-            },
-            new JokerCard("Wrathful Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5)
-            {
-                Description = "Played cards with Spade suit give +4 Mult when scored",
-                JokerKey = "wrathfuljoker"
-            },
-            new JokerCard("Gluttonous Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5)
-            {
-                Description = "Played cards with Club suit give +4 Mult when scored",
-                JokerKey = "gluttonousjoker"
-            },
-            new JokerCard("Half Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4)
-            {
-                Description = "+20 Mult if played hand contains 3 or fewer cards",
-                JokerKey = "halfjoker"
-            },
-            new JokerCard("Scary Face", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4)
-            {
-                Description = "Played face cards give +30 Chips when scored",
-                JokerKey = "scaryface"
-            },
-            new JokerCard("Raised Fist", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5)
-            {
-                Description = "Adds double the rank of lowest card held in hand to Mult",
-                JokerKey = "raisedfist"
-            },
-            new JokerCard("Abstract Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 6, 5)
-            {
-                Description = "+3 Mult for each Joker card (starts with +6 Mult)",
-                JokerKey = "abstractjoker"
-            },
-            new JokerCard("Banner", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 40, 5)
-            {
-                Description = "+40 Chips for each remaining discard",
-                JokerKey = "banner"
-            },
-            new JokerCard("Mystic Summit", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 15, 5)
-            {
-                Description = "+15 Mult when 0 discards remaining",
-                JokerKey = "mysticsummit"
-            },
-            new JokerCard("Fibonacci", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.AdditionMultiplier, 0, 8)
-            {
-                Description = "Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored",
-                JokerKey = "fibonacci"
-            },
-            new JokerCard("Cavendish", JokerEdition.Base, JokerRarity.Common, JokerModifierType.MultiplierMultiplier, 3.0f, 6)
-            {
-                Description = "X3 Mult (1 in 1000 chance to destroy at end of round)",
-                JokerKey = "cavendish"
-            },
-            new JokerCard("Gros Michel", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 15, 5)
-            {
-                Description = "+15 Mult (1 in 6 chance to destroy at end of round)",
-                JokerKey = "grosmichel"
-            },
-            new JokerCard("Constellation", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.MultiplierMultiplier, 1.5f, 6)
-            {
-                Description = "Gains X0.1 Mult every time a Planet card is used (currently X1.5 Mult)",
-                JokerKey = "constellation"
-            },
-            new JokerCard("The Tribe", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 2.0f, 8)
-            {
-                Description = "X2 Mult if played hand contains a Flush",
-                JokerKey = "thetribe"
-            },
-            new JokerCard("The Duo", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 2.0f, 8)
-            {
-                Description = "X2 Mult if played hand contains a Pair",
-                JokerKey = "theduo"
-            },
-            new JokerCard("The Trio", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 3.0f, 8)
-            {
-                Description = "X3 Mult if played hand contains a Three of a Kind",
-                JokerKey = "thetrio"
-            },
-            new JokerCard("The Order", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 3.0f, 8)
-            {
-                Description = "X3 Mult if played hand contains a Straight",
-                JokerKey = "theorder"
-            }
+            new JokerCard(JokerId.Joker, "Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 4, 2, "+4 Mult"),
+            new JokerCard(JokerId.GreedyJoker, "Greedy Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Diamond suit give +4 Mult when scored"),
+            new JokerCard(JokerId.LustyJoker, "Lusty Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Heart suit give +4 Mult when scored"),
+            new JokerCard(JokerId.WrathfulJoker, "Wrathful Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Spade suit give +4 Mult when scored"),
+            new JokerCard(JokerId.GluttonousJoker, "Gluttonous Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Club suit give +4 Mult when scored"),
+            new JokerCard(JokerId.JollyJoker, "Jolly Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 3, "+8 Mult if played hand contains a Pair"),
+            new JokerCard(JokerId.ZanyJoker, "Zany Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+12 Mult if played hand contains a Three of a Kind"),
+            new JokerCard(JokerId.MadJoker, "Mad Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+10 Mult if played hand contains a Two Pair"),
+            new JokerCard(JokerId.CrazyJoker, "Crazy Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+12 Mult if played hand contains a Straight"),
+            new JokerCard(JokerId.DrollJoker, "Droll Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+10 Mult if played hand contains a Flush"),
+            new JokerCard(JokerId.SlyJoker, "Sly Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 3, "+50 Chips if played hand contains a Pair"),
+            new JokerCard(JokerId.WilyJoker, "Wily Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "+100 Chips if played hand contains a Three of a Kind"),
+            new JokerCard(JokerId.CleverJoker, "Clever Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "+80 Chips if played hand contains a Two Pair"),
+            new JokerCard(JokerId.DeviousJoker, "Devious Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "+100 Chips if played hand contains a Straight"),
+            new JokerCard(JokerId.CraftyJoker, "Crafty Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "+80 Chips if played hand contains a Flush"),
+            new JokerCard(JokerId.HalfJoker, "Half Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "+20 Mult if played hand contains 3 or fewer cards"),
+            new JokerCard(JokerId.Banner, "Banner", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 30, 5, "+30 Chips for each remaining discard"),
+            new JokerCard(JokerId.MysticSummit, "Mystic Summit", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 15, 5, "+15 Mult when 0 discards remaining"),
+            new JokerCard(JokerId.Misprint, "Misprint", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+0-23 Mult"),
+            new JokerCard(JokerId.RaisedFist, "Raised Fist", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Adds double the rank of lowest card held in hand to Mult"),
+            new JokerCard(JokerId.ChaosTheClown, "Chaos the Clown", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "1 free Reroll per shop"),
+            new JokerCard(JokerId.Fibonacci, "Fibonacci", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.AdditionMultiplier, 0, 8, "Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored"),
+            new JokerCard(JokerId.ScaryFace, "Scary Face", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "Played face cards give +30 Chips when scored"),
+            new JokerCard(JokerId.SmileyFace, "Smiley Face", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "Played face cards give +5 Mult when scored"),
+            new JokerCard(JokerId.Photograph, "Photograph", JokerEdition.Base, JokerRarity.Common, JokerModifierType.MultiplierMultiplier, 1.0f, 5, "First played face card gives X2 Mult when scored"),
+            new JokerCard(JokerId.AbstractJoker, "Abstract Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 6, 5, "+3 Mult for each Joker card (starts with +6 Mult)"),
+            new JokerCard(JokerId.GrosMichel, "Gros Michel", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 15, 5, "+15 Mult (1 in 6 chance to destroy at end of round)"),
+            new JokerCard(JokerId.Cavendish, "Cavendish", JokerEdition.Base, JokerRarity.Common, JokerModifierType.MultiplierMultiplier, 3.0f, 4, "X3 Mult (1 in 1000 chance to destroy at end of round)"),
+            new JokerCard(JokerId.EvenSteven, "Even Steven", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "Played cards with even rank give +4 Mult when scored (10, 8, 6, 4, 2)"),
+            new JokerCard(JokerId.OddTodd, "Odd Todd", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "Played cards with odd rank give +31 Chips when scored (A, 9, 7, 5, 3)"),
+            new JokerCard(JokerId.Scholar, "Scholar", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "Played Aces give +20 Chips and +4 Mult when scored"),
+            new JokerCard(JokerId.WalkieTalkie, "Walkie Talkie", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "Each played 10 or 4 gives +10 Chips and +4 Mult when scored"),
+            new JokerCard(JokerId.Baron, "Baron", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 1.0f, 8, "Each King held in hand gives X1.5 Mult"),
+            new JokerCard(JokerId.Blackboard, "Blackboard", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.MultiplierMultiplier, 1.0f, 6, "X3 Mult if all cards held in hand are Spades or Clubs"),
+            new JokerCard(JokerId.Bull, "Bull", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.Chips, 0, 6, "+2 Chips for each $1 you have"),
+            new JokerCard(JokerId.Popcorn, "Popcorn", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 20, 5, "+20 Mult (reduces by 4 each round)"),
+            new JokerCard(JokerId.IceCream, "Ice Cream", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 100, 5, "+100 Chips (-5 Chips for every hand played)"),
+            new JokerCard(JokerId.BlueJoker, "Blue Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 50, 5, "+2 Chips for each remaining card in deck"),
+            new JokerCard(JokerId.Constellation, "Constellation", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.MultiplierMultiplier, 1.5f, 6, "Gains X0.1 Mult every time a Planet card is used (currently X1.5 Mult)"),
+            new JokerCard(JokerId.TheDuo, "The Duo", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 2.0f, 8, "X2 Mult if played hand contains a Pair"),
+            new JokerCard(JokerId.TheTrio, "The Trio", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 3.0f, 8, "X3 Mult if played hand contains a Three of a Kind"),
+            new JokerCard(JokerId.TheOrder, "The Order", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 3.0f, 8, "X3 Mult if played hand contains a Straight"),
+            new JokerCard(JokerId.TheTribe, "The Tribe", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 2.0f, 8, "X2 Mult if played hand contains a Flush"),
+            new JokerCard(JokerId.TheFamily, "The Family", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 4.0f, 8, "X4 Mult if played hand contains a Four of a Kind"),
+            new JokerCard(JokerId.GoldenJoker, "Golden Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Money, 4, 6, "Earn $4 at end of round")
         };
     }
 

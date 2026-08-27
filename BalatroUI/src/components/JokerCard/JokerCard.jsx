@@ -9,6 +9,8 @@ import './JokerCard.css';
 function JokerCard({
     id,
     spriteId,
+    jokerKey,
+    name,
     title,
     description,
     rarity,
@@ -24,11 +26,12 @@ function JokerCard({
     showHoverTooltip = true
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    const resolvedKey = spriteId || (jokerSprite.cards[id] ? id : normalizeJokerSpriteKey(title || id)) || 'Joker';
+    const rawKey = spriteId || jokerKey || name || title || id;
+    const resolvedKey = normalizeJokerSpriteKey(rawKey);
     const card = jokerSprite.cards[resolvedKey] || jokerSprite.cards['Joker'];
     const fallbackInfo = getCardInfo(resolvedKey, 'joker');
     const info = {
-        title: title || fallbackInfo?.title || resolvedKey,
+        title: title || name || fallbackInfo?.title || resolvedKey,
         description: description || fallbackInfo?.description || '',
         rarity: rarity || fallbackInfo?.rarity || 'Common'
     };
