@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 import Balatro from '../components/BalatroBackground/BalatroBackground.jsx';
 import bgm from '../assets/music/1-main-theme.mp3';
@@ -12,6 +12,9 @@ import GameOver from '../components/Gameplay/GameOver/GameOver.jsx';
 import WinOver from '../components/Gameplay/WinOver/WinOver.jsx';
 import OptionsModal from '../components/Gameplay/OptionsModal/OptionsModal.jsx';
 import DebugMenu from '../components/Gameplay/DebugMenu/DebugMenu.jsx';
+
+import { startGame, getGameState, selectBlind, generateSessionId } from '../services/api.js';
+import { mapBackendCards, mapBackendJokers, mapBackendConsumables, mapBackendBlind, mapBackendBlinds } from '../utils/cardMapper.js';
 
 function Gameplay() {
 
@@ -88,7 +91,7 @@ function Gameplay() {
 
 
     // =========================
-    // GAME STATE
+    // GAME STATE & PHASES
     // =========================
 
     const GAME_STATE = {
@@ -104,117 +107,180 @@ function Gameplay() {
         GAME_STATE.BLIND_SELECTION
     );
 
+    const [isLoading, setIsLoading] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+
+    const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => {
+            setToastMessage('');
+        }, 2500);
+    };
 
     // =========================
     // GAME DATA
     // =========================
 
     const DEFAULT_GAME_STATS = {
-        bestHandScore: 33750,
-        bestHandName: 'Flush',
-        mostPlayedHand: 'Flush',
-        mostPlayedCount: 38,
-        cardsPlayed: 350,
-        cardsDiscarded: 128,
-        cardsPurchased: 40,
-        timesRerolled: 5,
-        handsHistory: {
-            'Flush': 38,
-            'High Card': 12,
-            'Pair': 8,
-            'Two Pair': 6,
-            'Three of a Kind': 4,
-            'Straight': 3,
-            'Full House': 2,
-            'Four of a Kind': 1,
-            'Straight Flush': 0
-        }
+        bestHandScore: 0,
+        bestHandName: 'High Card',
+        mostPlayedHand: 'None',
+        mostPlayedCount: 0,
+        cardsPlayed: 0,
+        cardsDiscarded: 0,
+        cardsPurchased: 0,
+        timesRerolled: 0,
+        handsHistory: {}
     };
 
     const [gameData, setGameData] = useState({
         money: 4,
-
         ante: 1,
+        maxAnte: 8,
         round: 1,
-        blindIndex: 0, // 0: Small Blind, 1: Big Blind, 2: Boss Blind
+        blindIndex: 0,
 
         score: 0,
         targetScore: 300,
 
         hands: 4,
+        maxHands: 4,
         discards: 4,
+        maxDiscards: 4,
 
         deckRemaining: 52,
+        handCards: [],
 
         maxJokers: 5,
-        jokers: [
-            { id: 'ScaryFace', title: 'Scary Face' },
-            { id: 'Joker', title: 'Joker' },
-            { id: 'RaisedFist', title: 'Raised Fist' },
-            { id: 'AbstractJoker', title: 'Abstract Joker' }
-        ],
+        jokers: [],
 
         maxConsumables: 2,
-        consumables: [
-            { type: 'tarot', id: 'TheTower', title: 'The Tower' }
-        ],
+        consumables: [],
 
         currentBlind: {
+            id: 1,
             type: 'small',
             blind: 'SmallBlind',
             title: 'Small Blind',
             score: 300,
             reward: '$$$+'
         },
+        availableBlinds: [],
 
         currentHandName: '',
         currentHandLevel: 1,
         currentHandChips: 0,
         currentHandMult: 0,
         redeemedVouchers: [],
+        shop: null,
         stats: { ...DEFAULT_GAME_STATS },
         isEndless: false
     });
 
+    // =========================
+    // SYNC STATE HELPER
+    // =========================
+
+    const syncGameData = useCallback((apiState) => {
+        if (!apiState) return;
+
+        const mappedHandCards = mapBackendCards(apiState.hand);
+        const mappedJokers = mapBackendJokers(apiState.jokers);
+        const mappedConsumables = mapBackendConsumables(apiState.consumables);
+        const mappedBlind = apiState.currentBlind ? mapBackendBlind(apiState.currentBlind) : null;
+        const mappedAvailableBlinds = mapBackendBlinds(apiState.availableBlinds);
+
+        setGameData(prev => {
+            const newStats = { ...(prev.stats || DEFAULT_GAME_STATS) };
+
+            if (apiState.pokerHandPlayed) {
+                newStats.handsHistory = { ...(newStats.handsHistory || {}), ...apiState.pokerHandPlayed };
+                let maxCount = 0;
+                let mostPlayed = 'High Card';
+                for (const [h, count] of Object.entries(apiState.pokerHandPlayed)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        mostPlayed = h;
+                    }
+                }
+                newStats.mostPlayedHand = mostPlayed;
+                newStats.mostPlayedCount = maxCount;
+            }
+
+            if (apiState.lastScoreResult?.finalScore && apiState.lastScoreResult.finalScore > (newStats.bestHandScore || 0)) {
+                newStats.bestHandScore = apiState.lastScoreResult.finalScore;
+                newStats.bestHandName = apiState.lastScoreResult.handName;
+            }
+
+            const totalDeck = apiState.deckRemainingCount ?? (apiState.drawPileCount + apiState.discardPileCount);
+
+            return {
+                ...prev,
+                money: apiState.money,
+                ante: apiState.currentAnte,
+                maxAnte: apiState.maxAnte || 8,
+                round: apiState.currentRound,
+                blindIndex: apiState.currentBlind ? (apiState.currentBlind.id - 1) : prev.blindIndex,
+                score: apiState.currentScore,
+                targetScore: apiState.targetScore || (mappedBlind?.score || prev.targetScore),
+                hands: apiState.handsRemaining,
+                maxHands: apiState.maxHands,
+                discards: apiState.discardsRemaining,
+                maxDiscards: apiState.maxDiscards,
+                deckRemaining: totalDeck || 52,
+                handCards: mappedHandCards,
+                jokers: mappedJokers,
+                maxJokers: apiState.maxJokers || 5,
+                consumables: mappedConsumables,
+                maxConsumables: apiState.maxConsumables || 2,
+                currentBlind: mappedBlind || prev.currentBlind,
+                availableBlinds: mappedAvailableBlinds,
+                redeemedVouchers: (apiState.purchasedVouchers || []).map(v => v.effect || v.name),
+                shop: apiState.shop,
+                handLevels: apiState.pokerHandLevels,
+                stats: newStats
+            };
+        });
+    }, []);
+
+    // Initial game start on mount
+    useEffect(() => {
+        async function initGame() {
+            try {
+                setIsLoading(true);
+                generateSessionId();
+                const state = await startGame('Player 1');
+                syncGameData(state);
+            } catch (err) {
+                console.error('Failed to start game:', err);
+                showToast(`Koneksi API: ${err.message}`);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        initGame();
+    }, [syncGameData]);
 
     // =========================
-    // GAME FLOW
+    // GAME FLOW ACTIONS
     // =========================
 
-    function handleSelectBlind(selectedBlind) {
-        const blind = selectedBlind || {
-            type: 'small',
-            blind: 'SmallBlind',
-            title: 'Small Blind',
-            score: 300,
-            reward: '$$$+'
-        };
-
-        const target = typeof blind.score === 'number' ? blind.score : parseInt(blind.score, 10) || 300;
-
-        setGameData(prev => ({
-            ...prev,
-            score: 0,
-            hands: 4,
-            discards: 4,
-            targetScore: target,
-            currentBlind: blind
-        }));
-
-        setGameState(GAME_STATE.GAMEPLAY);
+    async function handleSelectBlind(selectedBlind) {
+        try {
+            setIsLoading(true);
+            const blindId = selectedBlind?.id || 1;
+            const state = await selectBlind(blindId);
+            syncGameData(state);
+            setGameState(GAME_STATE.GAMEPLAY);
+        } catch (err) {
+            console.error('Failed to select blind:', err);
+            showToast(err.message);
+            // Fallback for visual transition if offline
+            setGameState(GAME_STATE.GAMEPLAY);
+        } finally {
+            setIsLoading(false);
+        }
     }
-
-
-    function handleSkipBlind() {
-
-        setGameData(prev => ({
-            ...prev,
-            money: prev.money + 2
-        }));
-
-        setGameState(GAME_STATE.CASHOUT);
-    }
-
 
     function handleRoundWin() {
         const isFinalBoss = (gameData.ante >= 8 && (gameData.blindIndex >= 2 || gameData.currentBlind?.type === 'boss')) && !gameData.isEndless;
@@ -226,74 +292,17 @@ function Gameplay() {
         setGameState(GAME_STATE.CASHOUT);
     }
 
-
     function handleRoundLose() {
-
         setGameState(GAME_STATE.GAME_OVER);
     }
 
-
     function handleCashout(earnedAmount) {
-        const amount = typeof earnedAmount === 'number' ? earnedAmount : 4;
-
-        setGameData(prev => ({
-            ...prev,
-            money: prev.money + amount
-        }));
-
         setGameState(GAME_STATE.SHOP);
     }
 
-
-    function handleEndlessMode() {
-        setGameData(prev => ({
-            ...prev,
-            isEndless: true,
-            ante: Math.max(9, prev.ante + 1),
-            round: prev.round + 1,
-            blindIndex: 0,
-            score: 0,
-            hands: 4,
-            discards: 4
-        }));
-        setGameState(GAME_STATE.CASHOUT);
-    }
-
-
     function handleLeaveShop() {
-
-        if (gameData.blindIndex >= 2) {
-            // Completed the Boss Blind of current Ante
-            if (gameData.ante >= 8 && !gameData.isEndless) {
-                setGameState(GAME_STATE.WIN_OVER);
-                return;
-            }
-
-            // Move to next Ante
-            setGameData(prev => ({
-                ...prev,
-                ante: prev.ante + 1,
-                round: prev.round + 1,
-                blindIndex: 0,
-                score: 0,
-                hands: 4,
-                discards: 4
-            }));
-        } else {
-            // Move to next Blind in current Ante
-            setGameData(prev => ({
-                ...prev,
-                round: prev.round + 1,
-                blindIndex: prev.blindIndex + 1,
-                score: 0,
-                hands: 4,
-                discards: 4
-            }));
-        }
-
         setGameState(GAME_STATE.BLIND_SELECTION);
     }
-
 
     function handleForceWin() {
         setGameState(GAME_STATE.WIN_OVER);
@@ -314,6 +323,7 @@ function Gameplay() {
             hands: 4,
             discards: 4,
             currentBlind: {
+                id: 3,
                 type: 'boss',
                 blind: 'AmberAcorn',
                 title: 'Amber Acorn (Boss)',
@@ -322,6 +332,22 @@ function Gameplay() {
             }
         }));
         setGameState(GAME_STATE.GAMEPLAY);
+    }
+
+    async function handleRestart() {
+        try {
+            setIsLoading(true);
+            generateSessionId();
+            const state = await startGame('Player 1');
+            syncGameData(state);
+            setGameState(GAME_STATE.BLIND_SELECTION);
+        } catch (err) {
+            console.error('Failed to restart:', err);
+            showToast(err.message);
+            setGameState(GAME_STATE.BLIND_SELECTION);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     // Global keyboard shortcuts for debug & testing
@@ -345,57 +371,6 @@ function Gameplay() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    function handleRestart() {
-
-        setGameData({
-            money: 4,
-
-            ante: 1,
-            round: 1,
-            blindIndex: 0,
-
-            score: 0,
-            targetScore: 300,
-
-            hands: 4,
-            discards: 4,
-
-            deckRemaining: 52,
-
-            maxJokers: 5,
-            jokers: [
-                { id: 'ScaryFace', title: 'Scary Face' },
-                { id: 'Joker', title: 'Joker' },
-                { id: 'RaisedFist', title: 'Raised Fist' },
-                { id: 'AbstractJoker', title: 'Abstract Joker' }
-            ],
-
-            maxConsumables: 2,
-            consumables: [
-                { type: 'tarot', id: 'TheTower', title: 'The Tower' }
-            ],
-
-            currentBlind: {
-                type: 'small',
-                blind: 'SmallBlind',
-                title: 'Small Blind',
-                score: 300,
-                reward: '$$$+'
-            },
-
-            currentHandName: '',
-            currentHandLevel: 1,
-            currentHandChips: 0,
-            currentHandMult: 0,
-            redeemedVouchers: [],
-            stats: { ...DEFAULT_GAME_STATS },
-            isEndless: false
-        });
-
-        setGameState(GAME_STATE.BLIND_SELECTION);
-    }
-
-
     return (
 
         <div
@@ -409,10 +384,29 @@ function Gameplay() {
             }}
         >
 
-            {/* =====================================
-                BALATRO BACKGROUND
-            ====================================== */}
+            {/* TOAST MESSAGE */}
+            {toastMessage && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 9999,
+                        background: 'rgba(20, 20, 20, 0.95)',
+                        border: '2px solid #fe4747',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
+                    }}
+                >
+                    {toastMessage}
+                </div>
+            )}
 
+            {/* BALATRO BACKGROUND */}
             <div
                 style={{
                     position: 'fixed',
@@ -420,7 +414,6 @@ function Gameplay() {
                     zIndex: -1
                 }}
             >
-
                 <Balatro
                     theme="green"
                     spinRotation={-0.5}
@@ -433,14 +426,9 @@ function Gameplay() {
                     isRotate={false}
                     mouseInteraction={false}
                 />
-
             </div>
 
-
-            {/* =====================================
-                GAMEPLAY UI
-            ====================================== */}
-
+            {/* GAMEPLAY UI */}
             <div
                 style={{
                     position: 'relative',
@@ -450,10 +438,6 @@ function Gameplay() {
                 }}
             >
 
-                {/* =================================
-                    CURRENT GAME STATE
-                ================================== */}
-
                 {gameState === GAME_STATE.BLIND_SELECTION && (
                     <BlindSelection
                         gameData={gameData}
@@ -462,40 +446,33 @@ function Gameplay() {
                     />
                 )}
 
-
                 {gameState === GAME_STATE.GAMEPLAY && (
-
                     <GameBoard
                         gameData={gameData}
                         onWin={handleRoundWin}
                         onLose={handleRoundLose}
                         onOpenSettings={() => setShowSettings(true)}
+                        onSyncState={syncGameData}
+                        onShowToast={showToast}
                     />
-
                 )}
 
-
                 {gameState === GAME_STATE.CASHOUT && (
-
                     <Cashout
                         gameData={gameData}
                         onContinue={handleCashout}
                         onOpenSettings={() => setShowSettings(true)}
                     />
-
                 )}
 
-
                 {gameState === GAME_STATE.SHOP && (
-
                     <Shop
                         gameData={gameData}
                         onContinue={handleLeaveShop}
                         onOpenSettings={() => setShowSettings(true)}
+                        onSyncState={syncGameData}
                     />
-
                 )}
-
 
                 {gameState === GAME_STATE.GAME_OVER && (
                     <>
@@ -504,6 +481,8 @@ function Gameplay() {
                             onWin={handleRoundWin}
                             onLose={handleRoundLose}
                             onOpenSettings={() => setShowSettings(true)}
+                            onSyncState={syncGameData}
+                            onShowToast={showToast}
                         />
                         <GameOver
                             gameData={gameData}
@@ -513,7 +492,6 @@ function Gameplay() {
                     </>
                 )}
 
-
                 {gameState === GAME_STATE.WIN_OVER && (
                     <>
                         <GameBoard
@@ -521,6 +499,8 @@ function Gameplay() {
                             onWin={handleRoundWin}
                             onLose={handleRoundLose}
                             onOpenSettings={() => setShowSettings(true)}
+                            onSyncState={syncGameData}
+                            onShowToast={showToast}
                         />
                         <WinOver
                             gameData={gameData}
@@ -532,10 +512,7 @@ function Gameplay() {
 
             </div>
 
-
-            {/* =====================================
-                AUDIO ELEMENT
-            ====================================== */}
+            {/* AUDIO ELEMENT */}
             <audio
                 ref={audioRef}
                 src={bgm}
@@ -543,9 +520,7 @@ function Gameplay() {
                 preload="auto"
             />
 
-            {/* =====================================
-                OPTIONS / SETTINGS MODAL
-            ====================================== */}
+            {/* OPTIONS / SETTINGS MODAL */}
             <OptionsModal
                 isOpen={showSettings}
                 onClose={() => setShowSettings(false)}
@@ -565,9 +540,7 @@ function Gameplay() {
                 onJumpAnte8={handleJumpToAnte8Boss}
             />
 
-            {/* =====================================
-                DEV / DEBUG TESTING MENU
-            ====================================== */}
+            {/* DEV / DEBUG TESTING MENU */}
             <DebugMenu
                 gameState={gameState}
                 setGameState={setGameState}

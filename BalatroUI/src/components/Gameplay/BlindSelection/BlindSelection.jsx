@@ -1,5 +1,6 @@
 import GameSidebar from '../GameSidebar/GameSidebar';
 import BlindCard from './BlindCard';
+import { mapBackendBlinds } from '../../../utils/cardMapper';
 import './BlindSelection.css';
 
 function BlindSelection({
@@ -7,41 +8,44 @@ function BlindSelection({
     onSelectBlind,
     onOpenSettings
 }) {
-    const currentBlindIndex = gameData.blindIndex ?? 0;
+    const rawBlinds = gameData?.availableBlinds?.length ? gameData.availableBlinds : [];
+    const blinds = rawBlinds.length > 0 ? mapBackendBlinds(rawBlinds) : [
+        {
+            id: 1,
+            type: 'small',
+            blind: 'SmallBlind',
+            title: 'Small Blind',
+            score: 300,
+            reward: '$$$+',
+            isDefeated: false
+        },
+        {
+            id: 2,
+            type: 'big',
+            blind: 'BigBlind',
+            title: 'Big Blind',
+            score: 450,
+            reward: '$$$$+',
+            isDefeated: false
+        },
+        {
+            id: 3,
+            type: 'boss',
+            blind: 'TheGoad',
+            title: 'The Goad',
+            score: 600,
+            reward: '$$$$$+',
+            description: 'All Spade cards are debuffed',
+            isDefeated: false
+        }
+    ];
 
-    const baseScore = 300 * Math.pow(1.5, Math.max(0, gameData.ante - 1));
-    const smallScore = Math.round(baseScore);
-    const bigScore = Math.round(baseScore * 1.5);
-    const bossScore = Math.round(baseScore * 2);
+    // Find first undefeated blind index
+    const activeIndex = blinds.findIndex(b => !b.isDefeated);
 
-    const smallBlindData = {
-        type: 'small',
-        blind: 'SmallBlind',
-        title: 'Small Blind',
-        score: smallScore,
-        reward: '$$$+'
-    };
-
-    const bigBlindData = {
-        type: 'big',
-        blind: 'BigBlind',
-        title: 'Big Blind',
-        score: bigScore,
-        reward: '$$$$+'
-    };
-
-    const bossBlindData = {
-        type: 'boss',
-        blind: 'TheGoad',
-        title: 'The Goad',
-        score: bossScore,
-        reward: '$$$$$+',
-        description: 'All Spade cards are debuffed'
-    };
-
-    const getStatus = (index) => {
-        if (index === currentBlindIndex) return 'active';
-        if (index < currentBlindIndex) return 'defeated';
+    const getStatus = (index, blind) => {
+        if (blind.isDefeated) return 'defeated';
+        if (index === activeIndex) return 'active';
         return 'upcoming';
     };
 
@@ -55,36 +59,22 @@ function BlindSelection({
 
             <section className="blind-content">
                 <div className="blind-cards">
-                    <BlindCard
-                        type="small"
-                        blind={smallBlindData.blind}
-                        title={smallBlindData.title}
-                        score={smallBlindData.score}
-                        reward={smallBlindData.reward}
-                        status={getStatus(0)}
-                        onSelect={() => onSelectBlind(smallBlindData)}
-                    />
-
-                    <BlindCard
-                        type="big"
-                        blind={bigBlindData.blind}
-                        title={bigBlindData.title}
-                        score={bigBlindData.score}
-                        reward={bigBlindData.reward}
-                        status={getStatus(1)}
-                        onSelect={() => onSelectBlind(bigBlindData)}
-                    />
-
-                    <BlindCard
-                        type="boss"
-                        blind={bossBlindData.blind}
-                        title={bossBlindData.title}
-                        score={bossBlindData.score}
-                        reward={bossBlindData.reward}
-                        description={bossBlindData.description}
-                        status={getStatus(2)}
-                        onSelect={() => onSelectBlind(bossBlindData)}
-                    />
+                    {blinds.map((blind, idx) => {
+                        const status = getStatus(idx, blind);
+                        return (
+                            <BlindCard
+                                key={blind.id || idx}
+                                type={blind.type}
+                                blind={blind.blind}
+                                title={blind.title}
+                                score={blind.score}
+                                reward={blind.reward}
+                                description={blind.description}
+                                status={status}
+                                onSelect={() => onSelectBlind(blind)}
+                            />
+                        );
+                    })}
                 </div>
             </section>
         </div>

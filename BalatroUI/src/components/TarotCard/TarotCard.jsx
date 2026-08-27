@@ -7,6 +7,9 @@ import './TarotCard.css';
 
 function TarotCard({
     tarot,
+    spriteId,
+    title,
+    description,
     width = 100,
     height = 140,
     animated = false,
@@ -18,11 +21,16 @@ function TarotCard({
     showHoverTooltip = true
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    const tarotData = tarotSprite.tarots[tarot];
-    const info = getCardInfo(tarot, 'tarot');
+    const key = spriteId || tarot || 'TheFool';
+    const cleanedKey = tarotSprite.tarots[key] ? key : (Object.keys(tarotSprite.tarots).find(k => k.toLowerCase() === key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()) || 'TheFool');
+    const tarotData = tarotSprite.tarots[cleanedKey] || tarotSprite.tarots['TheFool'];
+    const fallbackInfo = getCardInfo(cleanedKey, 'tarot');
+    const info = {
+        title: title || fallbackInfo?.title || cleanedKey,
+        description: description || fallbackInfo?.description || ''
+    };
 
     if (!tarotData) {
-        console.error(`Tarot Card tidak ditemukan: ${tarot}`);
         return null;
     }
 

@@ -383,7 +383,7 @@ function BoosterPackOpening({
                                     <div className="booster-card-visual-box">
                                         {card.type === 'spectral' && (
                                             <SpectralCard
-                                                spectral={card.id}
+                                                spectral={card.spriteId || card.id}
                                                 width={90}
                                                 height={126}
                                                 animated={true}
@@ -402,6 +402,9 @@ function BoosterPackOpening({
                                         {card.type === 'planet' && (
                                             <PlanetCard
                                                 planet={card.id}
+                                                spriteId={card.spriteId}
+                                                title={card.title}
+                                                description={card.description}
                                                 width={90}
                                                 height={126}
                                                 animated={true}
@@ -411,6 +414,9 @@ function BoosterPackOpening({
                                         {card.type === 'tarot' && (
                                             <TarotCard
                                                 tarot={card.id}
+                                                spriteId={card.spriteId}
+                                                title={card.title}
+                                                description={card.description}
                                                 width={90}
                                                 height={126}
                                                 animated={true}
@@ -420,6 +426,10 @@ function BoosterPackOpening({
                                         {card.type === 'joker' && (
                                             <JokerCard
                                                 id={card.id}
+                                                spriteId={card.spriteId}
+                                                title={card.title}
+                                                description={card.description}
+                                                rarity={card.rarity}
                                                 width={90}
                                                 height={126}
                                                 animated={true}

@@ -12,89 +12,42 @@ import {
     evaluatePokerHand,
     getCardChipValue,
     evaluateJokerEffects,
-    RANK_VALUES,
     RANK_NUMERICAL
 } from '../../../utils/pokerEvaluator';
+import { mapBackendCards } from '../../../utils/cardMapper';
+import { playHand, discardCards, getScorePreview, useConsumable, sellCard, reorderJokers } from '../../../services/api';
 import { sfx } from '../../../utils/sfx';
 import './GameBoard.css';
-
-const SUITS = ['Spades', 'Hearts', 'Clubs', 'Diamonds'];
-const RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
 
 const SUIT_VALUES = {
     'Spades': 4, 'Hearts': 3, 'Clubs': 2, 'Diamonds': 1
 };
 
-// Initial default hand (Matching Flush demonstration)
-const defaultHandCards = [
-    { id: 'c-1', suit: 'Hearts', rank: 'A' },
-    { id: 'c-2', suit: 'Hearts', rank: 'Q' },
-    { id: 'c-3', suit: 'Diamonds', rank: '10' },
-    { id: 'c-4', suit: 'Clubs', rank: '9' },
-    { id: 'c-5', suit: 'Spades', rank: '7' },
-    { id: 'c-6', suit: 'Spades', rank: '3' },
-    { id: 'c-7', suit: 'Hearts', rank: '3' },
-    { id: 'c-8', suit: 'Spades', rank: '2' }
-];
-
-const defaultJokers = [
-    { id: 'ScaryFace', title: 'Scary Face' },
-    { id: 'Joker', title: 'Joker' },
-    { id: 'RaisedFist', title: 'Raised Fist' },
-    { id: 'AbstractJoker', title: 'Abstract Joker' }
-];
-
-const defaultConsumables = [
-    { type: 'tarot', id: 'TheTower', title: 'The Tower' }
-];
-
-function generateShuffledDeck(excludeCards = []) {
-    const excludeSet = new Set(excludeCards.map(c => `${c.suit}-${c.rank}`));
-    const deck = [];
-    SUITS.forEach(suit => {
-        RANKS.forEach(rank => {
-            if (!excludeSet.has(`${suit}-${rank}`)) {
-                deck.push({
-                    id: `c-${suit}-${rank}-${Math.random().toString(36).substr(2, 6)}`,
-                    suit,
-                    rank
-                });
-            }
-        });
-    });
-    // Fisher-Yates shuffle
-    for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    return deck;
-}
-
 function GameBoard({
     gameData,
     onWin,
     onLose,
-    onOpenSettings
+    onOpenSettings,
+    onSyncState,
+    onShowToast
 }) {
     const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
     const [isDeckHovered, setIsDeckHovered] = useState(false);
 
-    // Cards in hand
-    const [cards, setCards] = useState(() => gameData?.handCards || defaultHandCards);
+    // Cards in hand (synced with gameData.handCards)
+    const [cards, setCards] = useState(() => gameData?.handCards || []);
     const [selectedIds, setSelectedIds] = useState([]);
-
-    // Deck remaining
-    const [deck, setDeck] = useState(() => generateShuffledDeck(gameData?.handCards || defaultHandCards));
 
     // Jokers & Consumables
     const maxJokers = gameData?.maxJokers || 5;
-    const [jokers, setJokers] = useState(gameData?.jokers || defaultJokers);
+    const jokers = gameData?.jokers || [];
 
     const maxConsumables = gameData?.maxConsumables || 2;
-    const [consumables, setConsumables] = useState(gameData?.consumables || defaultConsumables);
+    const consumables = gameData?.consumables || [];
 
     const [activeSlot, setActiveSlot] = useState(null); // { type: 'joker' | 'consumable', index: number } | null
     const maxHandSize = gameData?.maxHandSize || 8;
+    const deckRemaining = gameData?.deckRemaining ?? 52;
 
     // =========================================
     // SCORING & ANIMATION STATE
@@ -113,15 +66,12 @@ function GameBoard({
     const [sidebarHandName, setSidebarHandName] = useState(null);
     const [sidebarHandLevel, setSidebarHandLevel] = useState(null);
 
-    // Keep deck remaining count synced with gameData
+    // Synchronize cards from gameData when not scoring
     useEffect(() => {
-        if (gameData) {
-            gameData.deckRemaining = deck.length;
-            gameData.handCards = cards;
-            gameData.jokers = jokers;
-            gameData.consumables = consumables;
+        if (!isScoring && gameData?.handCards) {
+            setCards(gameData.handCards);
         }
-    }, [deck.length, cards, jokers, consumables, gameData]);
+    }, [gameData?.handCards, isScoring]);
 
     // Live preview evaluated poker hand when cards are selected (when NOT currently scoring)
     const selectedCards = useMemo(() => {
@@ -129,27 +79,47 @@ function GameBoard({
     }, [cards, selectedIds]);
 
     const liveHandPreview = useMemo(() => {
-        if (isScoring) return null;
-        if (selectedCards.length === 0) return null;
+        if (isScoring || selectedCards.length === 0) return null;
         return evaluatePokerHand(selectedCards, gameData?.handLevels);
     }, [selectedCards, isScoring, gameData?.handLevels]);
 
-    // Synchronize live preview with sidebar
+    // Query backend score-preview when card selection changes
     useEffect(() => {
         if (isScoring) return;
 
-        if (liveHandPreview) {
-            setSidebarHandName(liveHandPreview.handName);
-            setSidebarHandLevel(liveHandPreview.level);
-            setSidebarChips(liveHandPreview.chips);
-            setSidebarMult(liveHandPreview.mult);
-        } else {
+        if (selectedIds.length === 0) {
             setSidebarHandName('');
             setSidebarHandLevel(1);
             setSidebarChips(0);
             setSidebarMult(0);
+            return;
         }
-    }, [liveHandPreview, isScoring]);
+
+        let isCurrent = true;
+
+        // Try backend score preview API
+        getScorePreview(selectedIds)
+            .then(preview => {
+                if (!isCurrent || isScoring) return;
+                setSidebarHandName(preview.handName);
+                setSidebarHandLevel(preview.handLevel || 1);
+                setSidebarChips(preview.totalChips || preview.baseChips);
+                setSidebarMult(preview.totalMult || preview.baseMult);
+            })
+            .catch(() => {
+                if (!isCurrent || isScoring) return;
+                if (liveHandPreview) {
+                    setSidebarHandName(liveHandPreview.handName);
+                    setSidebarHandLevel(liveHandPreview.level);
+                    setSidebarChips(liveHandPreview.chips);
+                    setSidebarMult(liveHandPreview.mult);
+                }
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [selectedIds, isScoring, liveHandPreview]);
 
     // Joker & Consumable handlers
     const handleToggleJoker = (index) => {
@@ -172,32 +142,54 @@ function GameBoard({
         });
     };
 
-    const handleSellJoker = (index) => {
+    const handleSellJoker = async (index) => {
         if (isScoring) return;
         const joker = jokers[index];
-        const price = joker?.sellPrice || 2;
-        if (gameData?.money !== undefined) {
-            gameData.money += price;
+        if (!joker) return;
+
+        try {
+            const state = await sellCard(joker.id);
+            if (onSyncState) onSyncState(state);
+            setActiveSlot(null);
+            if (onShowToast) onShowToast(`Sold ${joker.title || 'Joker'}!`);
+        } catch (err) {
+            console.error('Failed to sell joker:', err);
+            if (onShowToast) onShowToast(err.message);
         }
-        setJokers(prev => prev.filter((_, i) => i !== index));
-        setActiveSlot(null);
     };
 
-    const handleSellConsumable = (index) => {
+    const handleSellConsumable = async (index) => {
         if (isScoring) return;
         const consumable = consumables[index];
-        const price = consumable?.sellPrice || 1;
-        if (gameData?.money !== undefined) {
-            gameData.money += price;
+        if (!consumable) return;
+
+        try {
+            const state = await sellCard(consumable.id);
+            if (onSyncState) onSyncState(state);
+            setActiveSlot(null);
+            if (onShowToast) onShowToast(`Sold ${consumable.title || 'Consumable'}!`);
+        } catch (err) {
+            console.error('Failed to sell consumable:', err);
+            if (onShowToast) onShowToast(err.message);
         }
-        setConsumables(prev => prev.filter((_, i) => i !== index));
-        setActiveSlot(null);
     };
 
-    const handleUseConsumable = (index) => {
+    const handleUseConsumable = async (index) => {
         if (isScoring) return;
-        setConsumables(prev => prev.filter((_, i) => i !== index));
-        setActiveSlot(null);
+        const consumable = consumables[index];
+        if (!consumable) return;
+
+        try {
+            // Selected hand cards as targets if any
+            const targetIds = selectedIds.slice(0, 3);
+            const state = await useConsumable(consumable.id, targetIds);
+            if (onSyncState) onSyncState(state);
+            setActiveSlot(null);
+            if (onShowToast) onShowToast(`Used ${consumable.title || 'Consumable'}!`);
+        } catch (err) {
+            console.error('Failed to use consumable:', err);
+            if (onShowToast) onShowToast(err.message);
+        }
     };
 
     const handleToggleSelectCard = (id) => {
@@ -247,7 +239,7 @@ function GameBoard({
 
     const waitDelay = (ms) => {
         const speed = getGameSpeed();
-        return new Promise(resolve => setTimeout(resolve, Math.max(60, ms / speed)));
+        return new Promise(resolve => setTimeout(resolve, Math.max(50, ms / speed)));
     };
 
     // =========================================
@@ -258,197 +250,188 @@ function GameBoard({
             return;
         }
 
-        // 1. Deduct Hand Count
-        if (gameData?.hands !== undefined) {
-            gameData.hands = Math.max(0, gameData.hands - 1);
-        }
-
-        // 2. Separate Played Cards and Remaining Hand Cards
         const currentPlayedCards = cards.filter(c => selectedIds.includes(c.id));
         const currentRemainingCards = cards.filter(c => !selectedIds.includes(c.id));
 
-        // Start Scoring Mode
         setIsScoring(true);
         setPlayedCards(currentPlayedCards);
         setCards(currentRemainingCards);
         setSelectedIds([]);
         setActiveSlot(null);
 
-        // Sound effect
         sfx.playPlayHand();
 
-        // 3. Evaluate Poker Hand
-        const evalResult = evaluatePokerHand(currentPlayedCards, gameData?.handLevels);
-        if (!evalResult) {
-            setIsScoring(false);
-            return;
-        }
+        try {
+            // Panggil API backend untuk play hand
+            const state = await playHand(currentPlayedCards.map(c => c.id));
+            const scoreResult = state.lastScoreResult;
 
-        const { handName, level, chips: baseChips, mult: baseMult, scoringCardIds: activeScoringIds } = evalResult;
-        setScoringCardIds(activeScoringIds);
+            if (scoreResult) {
+                const {
+                    handName,
+                    handLevel,
+                    baseChips,
+                    baseMult,
+                    totalChips,
+                    totalMult,
+                    finalScore,
+                    scoringCards: backendScoringCards,
+                    jokerTriggerMessages
+                } = scoreResult;
 
-        // Set Base Chips & Mult on Sidebar
-        let currentChips = baseChips;
-        let currentMult = baseMult;
-        setSidebarHandName(handName);
-        setSidebarHandLevel(level);
-        setSidebarChips(currentChips);
-        setSidebarMult(currentMult);
+                const activeScoringIds = new Set((backendScoringCards || []).map(c => c.id));
+                setScoringCardIds(activeScoringIds);
 
-        await waitDelay(450);
-
-        // 4. STEP-BY-STEP CARD SCORING
-        for (let i = 0; i < currentPlayedCards.length; i++) {
-            const card = currentPlayedCards[i];
-            setScoringCardIndex(i);
-
-            if (activeScoringIds.has(card.id)) {
-                const chipValue = getCardChipValue(card.rank);
-                currentChips += chipValue;
+                let currentChips = baseChips;
+                let currentMult = baseMult;
+                setSidebarHandName(handName);
+                setSidebarHandLevel(handLevel || 1);
                 setSidebarChips(currentChips);
-
-                // Show floating score badge over this card
-                setFloatingScores(prev => ({
-                    ...prev,
-                    [card.id]: {
-                        key: `${card.id}-${Date.now()}`,
-                        text: `+${chipValue}`,
-                        type: 'chips'
-                    }
-                }));
-
-                // Ascending sound per scoring card
-                sfx.playCardScore(i);
-            }
-
-            await waitDelay(400);
-        }
-
-        // Clear card scoring highlight
-        setScoringCardIndex(-1);
-        await waitDelay(300);
-
-        // 5. JOKERS TRIGGER PHASE
-        const jokerEffects = evaluateJokerEffects(jokers, currentPlayedCards, currentRemainingCards);
-        for (const effect of jokerEffects) {
-            setActiveJokerTrigger({
-                index: effect.index,
-                text: effect.text
-            });
-            sfx.playJokerTrigger();
-
-            if (effect.type === 'mult') {
-                currentMult += effect.amount;
                 setSidebarMult(currentMult);
-            } else if (effect.type === 'chips') {
-                currentChips += effect.amount;
-                setSidebarChips(currentChips);
-            }
 
-            await waitDelay(550);
-            setActiveJokerTrigger(null);
-            await waitDelay(150);
-        }
+                await waitDelay(450);
 
-        // 6. MULTIPLICATION CALCULATION
-        sfx.playMultiply();
-        const handScore = currentChips * currentMult;
-        await waitDelay(450);
+                // 4. STEP-BY-STEP CARD SCORING
+                for (let i = 0; i < currentPlayedCards.length; i++) {
+                    const card = currentPlayedCards[i];
+                    setScoringCardIndex(i);
 
-        // 7. ADD TO ROUND SCORE
-        sfx.playScoreSlam();
-        const targetScore = gameData?.targetScore || gameData?.currentBlind?.score || 300;
-        const currentRoundScore = gameData?.score || 0;
-        const newRoundScore = currentRoundScore + handScore;
+                    const isCardScoring = activeScoringIds.has(card.id) || activeScoringIds.size === 0;
+                    if (isCardScoring) {
+                        const chipValue = card.baseChips || getCardChipValue(card.rank);
+                        currentChips += chipValue;
+                        setSidebarChips(currentChips);
 
-        if (gameData) {
-            gameData.score = newRoundScore;
+                        setFloatingScores(prev => ({
+                            ...prev,
+                            [card.id]: {
+                                key: `${card.id}-${Date.now()}`,
+                                text: `+${chipValue}`,
+                                type: 'chips'
+                            }
+                        }));
 
-            // Update stats
-            if (gameData.stats) {
-                gameData.stats.cardsPlayed = (gameData.stats.cardsPlayed || 0) + currentPlayedCards.length;
-                if (!gameData.stats.handsHistory) gameData.stats.handsHistory = {};
-                gameData.stats.handsHistory[handName] = (gameData.stats.handsHistory[handName] || 0) + 1;
+                        sfx.playCardScore(i);
+                    }
 
-                if (handScore > (gameData.stats.bestHandScore || 0)) {
-                    gameData.stats.bestHandScore = handScore;
-                    gameData.stats.bestHandName = handName;
+                    await waitDelay(400);
                 }
+
+                setScoringCardIndex(-1);
+                await waitDelay(300);
+
+                // 5. JOKERS TRIGGER PHASE
+                if (jokerTriggerMessages && jokerTriggerMessages.length > 0) {
+                    for (let i = 0; i < jokerTriggerMessages.length; i++) {
+                        setActiveJokerTrigger({
+                            index: i % jokers.length,
+                            text: jokerTriggerMessages[i]
+                        });
+                        sfx.playJokerTrigger();
+                        await waitDelay(500);
+                        setActiveJokerTrigger(null);
+                        await waitDelay(150);
+                    }
+                } else {
+                    const jokerEffects = evaluateJokerEffects(jokers, currentPlayedCards, currentRemainingCards);
+                    for (const effect of jokerEffects) {
+                        setActiveJokerTrigger({
+                            index: effect.index,
+                            text: effect.text
+                        });
+                        sfx.playJokerTrigger();
+
+                        if (effect.type === 'mult') {
+                            currentMult += effect.amount;
+                        } else if (effect.type === 'chips') {
+                            currentChips += effect.amount;
+                        }
+
+                        await waitDelay(500);
+                        setActiveJokerTrigger(null);
+                        await waitDelay(150);
+                    }
+                }
+
+                setSidebarChips(totalChips);
+                setSidebarMult(totalMult);
+
+                // 6. MULTIPLICATION
+                sfx.playMultiply();
+                await waitDelay(450);
+
+                // 7. ADD TO ROUND SCORE
+                sfx.playScoreSlam();
+                setSidebarScore(state.currentScore);
+                await waitDelay(600);
             }
+
+            // Sync full state to Gameplay
+            if (onSyncState) {
+                onSyncState(state);
+            }
+
+            const phase = state.phaseName || state.phase;
+            if (phase === 'InShop' || state.currentScore >= state.targetScore) {
+                await waitDelay(500);
+                if (onWin) onWin();
+                return;
+            } else if (phase === 'GameOver') {
+                await waitDelay(500);
+                if (onLose) onLose();
+                return;
+            } else if (phase === 'Victory' || phase === 'Won') {
+                await waitDelay(500);
+                if (onWin) onWin();
+                return;
+            }
+
+            // Refill hand from backend
+            const mappedCards = mapBackendCards(state.hand);
+            setCards(mappedCards);
+            setPlayedCards([]);
+            setFloatingScores({});
+            setScoringCardIds(new Set());
+            setIsScoring(false);
+
+            setSidebarHandName('');
+            setSidebarHandLevel(1);
+            setSidebarChips(0);
+            setSidebarMult(0);
+
+            sfx.playCardDeal();
+
+        } catch (err) {
+            console.error('Play hand error:', err);
+            setIsScoring(false);
+            setCards([...currentPlayedCards, ...currentRemainingCards]);
+            setPlayedCards([]);
+            if (onShowToast) onShowToast(err.message);
         }
-        setSidebarScore(newRoundScore);
-        await waitDelay(600);
-
-        // 8. CHECK OUTCOME OR REFILL HAND
-        if (newRoundScore >= targetScore) {
-            // ROUND WON!
-            await waitDelay(500);
-            if (onWin) onWin();
-            return;
-        } else if (gameData?.hands !== undefined && gameData.hands <= 0) {
-            // ROUND LOST!
-            await waitDelay(500);
-            if (onLose) onLose();
-            return;
-        }
-
-        // 9. CLEANUP & DRAW REPLACEMENT CARDS
-        const neededCards = Math.max(0, maxHandSize - currentRemainingCards.length);
-        let currentDeck = [...deck];
-        const drawnCards = [];
-
-        for (let i = 0; i < neededCards && currentDeck.length > 0; i++) {
-            drawnCards.push(currentDeck.shift());
-        }
-
-        setDeck(currentDeck);
-        setCards([...currentRemainingCards, ...drawnCards]);
-        setPlayedCards([]);
-        setFloatingScores({});
-        setScoringCardIds(new Set());
-        setIsScoring(false);
-
-        // Reset sidebar preview
-        setSidebarHandName('');
-        setSidebarHandLevel(1);
-        setSidebarChips(0);
-        setSidebarMult(0);
-
-        sfx.playCardDeal();
     };
 
     // =========================================
     // DISCARD HAND
     // =========================================
-    const handleDiscard = () => {
+    const handleDiscard = async () => {
         if (selectedIds.length === 0 || isScoring || (gameData?.discards !== undefined && gameData.discards <= 0)) {
             return;
         }
 
-        if (gameData?.discards !== undefined) {
-            gameData.discards = Math.max(0, gameData.discards - 1);
+        try {
+            const state = await discardCards(selectedIds);
+            if (onSyncState) onSyncState(state);
+
+            const mappedCards = mapBackendCards(state.hand);
+            setCards(mappedCards);
+            setSelectedIds([]);
+            setActiveSlot(null);
+
+            sfx.playCardSelect(0.8);
+        } catch (err) {
+            console.error('Discard error:', err);
+            if (onShowToast) onShowToast(err.message);
         }
-
-        if (gameData?.stats) {
-            gameData.stats.cardsDiscarded = (gameData.stats.cardsDiscarded || 0) + selectedIds.length;
-        }
-
-        const remainingCards = cards.filter(c => !selectedIds.includes(c.id));
-        const neededCards = Math.max(0, maxHandSize - remainingCards.length);
-
-        let currentDeck = [...deck];
-        const drawnCards = [];
-
-        for (let i = 0; i < neededCards && currentDeck.length > 0; i++) {
-            drawnCards.push(currentDeck.shift());
-        }
-
-        setDeck(currentDeck);
-        setCards([...remainingCards, ...drawnCards]);
-        setSelectedIds([]);
-        setActiveSlot(null);
-
-        sfx.playCardSelect(0.8);
     };
 
     // Construct sidebar data object with live previews
@@ -460,9 +443,9 @@ function GameBoard({
             currentHandLevel: sidebarHandLevel !== null ? sidebarHandLevel : (gameData?.currentHandLevel || 1),
             currentHandChips: sidebarChips !== null ? sidebarChips : (gameData?.currentHandChips || 0),
             currentHandMult: sidebarMult !== null ? sidebarMult : (gameData?.currentHandMult || 0),
-            deckRemaining: deck.length
+            deckRemaining
         };
-    }, [gameData, sidebarScore, sidebarHandName, sidebarHandLevel, sidebarChips, sidebarMult, deck.length]);
+    }, [gameData, sidebarScore, sidebarHandName, sidebarHandLevel, sidebarChips, sidebarMult, deckRemaining]);
 
     return (
         <div className="game-board" onClick={() => setActiveSlot(null)}>
@@ -486,12 +469,16 @@ function GameBoard({
 
                                 return (
                                     <div
-                                        key={index}
+                                        key={joker?.id || index}
                                         className={`joker-slot ${joker ? 'occupied' : 'empty'}`}
                                     >
                                         {joker ? (
                                             <JokerCard
                                                 id={joker.id}
+                                                spriteId={joker.spriteId}
+                                                title={joker.title}
+                                                description={joker.description}
+                                                rarity={joker.rarity}
                                                 width={78}
                                                 height={108}
                                                 animated={true}
@@ -524,13 +511,16 @@ function GameBoard({
                                 const isSelected = activeSlot?.type === 'consumable' && activeSlot.index === index;
                                 return (
                                     <div
-                                        key={index}
+                                        key={consumable?.id || index}
                                         className={`consumable-slot ${consumable ? 'occupied' : 'empty'}`}
                                     >
                                         {consumable ? (
                                             consumable.type === 'planet' ? (
                                                 <PlanetCard
                                                     planet={consumable.id}
+                                                    spriteId={consumable.spriteId}
+                                                    title={consumable.title}
+                                                    description={consumable.description}
                                                     width={78}
                                                     height={108}
                                                     animated={true}
@@ -546,6 +536,9 @@ function GameBoard({
                                             ) : (
                                                 <TarotCard
                                                     tarot={consumable.id}
+                                                    spriteId={consumable.spriteId}
+                                                    title={consumable.title}
+                                                    description={consumable.description}
                                                     width={78}
                                                     height={108}
                                                     animated={true}
@@ -586,7 +579,7 @@ function GameBoard({
                             </div>
                         )}
 
-                        {/* LOWER CENTER: PLAYER HAND (EITHER NORMAL INTERACTIVE OR LOWERED DURING SCORING) */}
+                        {/* LOWER CENTER: PLAYER HAND */}
                         <div className={`game-hand-area ${isScoring ? 'lowered-area' : ''}`}>
                             <PlayerHand
                                 cards={cards}
@@ -649,7 +642,6 @@ function GameBoard({
 
                     {/* DECK COUNTER AREA (FAR RIGHT COLUMN) */}
                     <div className="game-deck-column">
-                        {/* DECK HOVER REMAINING CARDS BREAKDOWN */}
                         {isDeckHovered && (
                             <DeckHoverPreview
                                 gameData={dynamicSidebarGameData}
@@ -681,7 +673,7 @@ function GameBoard({
                             </div>
 
                             <div className="deck-count-text">
-                                {deck.length}/52
+                                {deckRemaining}/52
                             </div>
                         </div>
                     </div>

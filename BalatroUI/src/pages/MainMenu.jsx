@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import GameTransition from '../components/transition/GameTransition.jsx';
@@ -9,8 +9,7 @@ import bgm from '../assets/music/1-main-theme.mp3';
 
 import PlayingCard from '../components/PlayingCard/PlayingCard';
 
-const useMock = true;
-const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5264/api';
 
 function MainMenu() {
 
@@ -48,18 +47,9 @@ function MainMenu() {
                 .catch(() => setIsMusicPlaying(false));
         }
 
-        if (useMock) {
-            setData({
-                message: 'Mock Server',
-                timestamp: new Date().toISOString(),
-                server: 'Development'
-            });
+        const baseStatusUrl = apiUrl.endsWith('/api') ? `${apiUrl}/status` : `${apiUrl}/api/status`;
 
-            setLoading(false);
-            return;
-        }
-
-        fetch(`${apiUrl}/api/status`)
+        fetch(baseStatusUrl)
             .then(res => {
                 if (!res.ok) {
                     throw new Error('Server error');
@@ -71,10 +61,18 @@ function MainMenu() {
                 setData(result);
                 setLoading(false);
             })
-            .catch(error => {
-                console.error(error);
-                setData(null);
-                setLoading(false);
+            .catch(() => {
+                // If direct status fails, also try root status
+                fetch('http://localhost:5264/api/status')
+                    .then(res => res.json())
+                    .then(result => {
+                        setData(result);
+                        setLoading(false);
+                    })
+                    .catch(() => {
+                        setData(null);
+                        setLoading(false);
+                    });
             });
 
     }, []);

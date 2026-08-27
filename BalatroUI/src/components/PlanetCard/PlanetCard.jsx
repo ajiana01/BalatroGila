@@ -7,6 +7,9 @@ import './PlanetCard.css';
 
 function PlanetCard({
     planet,
+    spriteId,
+    title,
+    description,
     width = 100,
     height = 140,
     animated = false,
@@ -18,11 +21,16 @@ function PlanetCard({
     showHoverTooltip = true
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    const planetData = planetSprite.planets[planet];
-    const info = getCardInfo(planet, 'planet');
+    const key = spriteId || planet || 'Mercury';
+    const cleanedKey = planetSprite.planets[key] ? key : (Object.keys(planetSprite.planets).find(k => k.toLowerCase() === key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()) || 'Mercury');
+    const planetData = planetSprite.planets[cleanedKey] || planetSprite.planets['Mercury'];
+    const fallbackInfo = getCardInfo(cleanedKey, 'planet');
+    const info = {
+        title: title || fallbackInfo?.title || cleanedKey,
+        description: description || fallbackInfo?.description || ''
+    };
 
     if (!planetData) {
-        console.error(`Planet Card tidak ditemukan: ${planet}`);
         return null;
     }
 

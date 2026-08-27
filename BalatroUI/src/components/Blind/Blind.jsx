@@ -1,4 +1,4 @@
-﻿import Sprite from '../Sprite/Sprite';
+import Sprite from '../Sprite/Sprite';
 import { blindSprite } from '../../data/sprites/blindSprites';
 
 function Blind({
@@ -7,10 +7,12 @@ function Blind({
                    height = 100,
                    animated = false
                }) {
-    const blindData = blindSprite.blinds[blind];
+    const rawKey = blind || 'SmallBlind';
+    const cleanedKey = blindSprite.blinds[rawKey] ? rawKey :
+        (Object.keys(blindSprite.blinds).find(k => k.toLowerCase() === rawKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()) || 'SmallBlind');
+    const blindData = blindSprite.blinds[cleanedKey] || blindSprite.blinds['SmallBlind'];
 
     if (!blindData) {
-        console.error(`Blind tidak ditemukan: ${blind}`);
         return null;
     }
 

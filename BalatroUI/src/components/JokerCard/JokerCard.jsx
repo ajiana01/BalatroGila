@@ -3,10 +3,15 @@ import Sprite from '../Sprite/Sprite';
 import CardActionTabs from '../CardActionTabs/CardActionTabs';
 import { jokerSprite } from '../../data/sprites/jokerSprites';
 import { getCardInfo } from '../../data/shopData';
+import { normalizeJokerSpriteKey } from '../../utils/cardMapper';
 import './JokerCard.css';
 
 function JokerCard({
     id,
+    spriteId,
+    title,
+    description,
+    rarity,
     width = 100,
     height = 140,
     animated = false,
@@ -19,11 +24,16 @@ function JokerCard({
     showHoverTooltip = true
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    const card = jokerSprite.cards[id];
-    const info = getCardInfo(id, 'joker');
+    const resolvedKey = spriteId || (jokerSprite.cards[id] ? id : normalizeJokerSpriteKey(title || id)) || 'Joker';
+    const card = jokerSprite.cards[resolvedKey] || jokerSprite.cards['Joker'];
+    const fallbackInfo = getCardInfo(resolvedKey, 'joker');
+    const info = {
+        title: title || fallbackInfo?.title || resolvedKey,
+        description: description || fallbackInfo?.description || '',
+        rarity: rarity || fallbackInfo?.rarity || 'Common'
+    };
 
     if (!card) {
-        console.error(`Joker tidak ditemukan: ${id}`);
         return null;
     }
 

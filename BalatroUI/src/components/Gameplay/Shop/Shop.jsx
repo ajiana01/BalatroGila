@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import GameSidebar from '../GameSidebar/GameSidebar';
 import JokerCard from '../../JokerCard/JokerCard';
 import TarotCard from '../../TarotCard/TarotCard';
@@ -9,17 +9,25 @@ import BoosterPack from '../../BoosterPacks/BoosterPacks';
 import CardBack from '../../CardBack/CardBack';
 import DeckViewModal from '../GameBoard/DeckViewModal';
 import DeckHoverPreview from '../GameBoard/DeckHoverPreview';
-import { generateShopCards, getAnteVoucher, generateBoosterPacks, generateBoosterCards, SHOP_JOKERS } from '../../../data/shopData';
 import BoosterPackOpening from './BoosterPackOpening';
+import {
+    mapBackendJoker,
+    mapBackendConsumable,
+    mapBackendCard,
+    mapBackendJokers,
+    mapBackendConsumables
+} from '../../../utils/cardMapper';
+import {
+    buyCard,
+    rerollShop,
+    buyBooster,
+    selectBoosterCard,
+    buyVoucher,
+    leaveShop,
+    sellCard,
+    useConsumable
+} from '../../../services/api';
 import './Shop.css';
-
-const defaultJokers = [
-    { id: 'ScaryFace', title: 'Scary Face', sellPrice: 2 }
-];
-
-const defaultConsumables = [
-    { type: 'tarot', id: 'TheSun', title: 'The Sun', sellPrice: 1 }
-];
 
 function ShopItemTooltip({ item, side = 'left' }) {
     if (!item) return null;
@@ -42,63 +50,266 @@ function ShopItemTooltip({ item, side = 'left' }) {
     );
 }
 
+// Convert Backend ShopDto to Shop Card items
+function mapShopCardsFromDto(shopDto) {
+    if (!shopDto) return [];
+    const items = [];
+
+    (shopDto.jokerCards || []).forEach((j, idx) => {
+        const mapped = mapBackendJoker(j);
+        items.push({
+            slotId: `shop-joker-${j.id || idx}`,
+            type: 'joker',
+            id: j.id,
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            rarity: mapped.rarity,
+            price: mapped.price,
+            description: mapped.description,
+            isSold: false
+        });
+    });
+
+    (shopDto.tarotCards || []).forEach((t, idx) => {
+        const mapped = mapBackendConsumable(t);
+        items.push({
+            slotId: `shop-tarot-${t.id || idx}`,
+            type: 'tarot',
+            id: t.id,
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            rarity: 'Tarot',
+            price: mapped.price,
+            description: mapped.description,
+            isSold: false
+        });
+    });
+
+    (shopDto.planetCards || []).forEach((p, idx) => {
+        const mapped = mapBackendConsumable(p);
+        items.push({
+            slotId: `shop-planet-${p.id || idx}`,
+            type: 'planet',
+            id: p.id,
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            rarity: 'Planet',
+            price: mapped.price,
+            description: mapped.description,
+            isSold: false
+        });
+    });
+
+    (shopDto.spectralCards || []).forEach((s, idx) => {
+        const mapped = mapBackendConsumable(s);
+        items.push({
+            slotId: `shop-spectral-${s.id || idx}`,
+            type: 'spectral',
+            id: s.id,
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            rarity: 'Spectral',
+            price: mapped.price,
+            description: mapped.description,
+            isSold: false
+        });
+    });
+
+    (shopDto.playingCards || []).forEach((pc, idx) => {
+        const mapped = mapBackendCard(pc);
+        items.push({
+            slotId: `shop-card-${pc.id || idx}`,
+            type: 'playingCard',
+            id: pc.id,
+            rank: mapped.rank,
+            suit: mapped.suit,
+            title: mapped.title,
+            rarity: 'Playing Card',
+            price: mapped.price,
+            description: `${mapped.rank} of ${mapped.suit}`,
+            isSold: false
+        });
+    });
+
+    return items;
+}
+
+function mapBoosterPacksFromDto(shopDto) {
+    if (!shopDto?.boosterPacks) return [];
+    return shopDto.boosterPacks.map((pack, idx) => {
+        const rawType = String(pack.boosterPackType || 'Arcana');
+        let packKind = 'Arcana';
+        if (rawType.includes('Celestial')) packKind = 'Celestial';
+        else if (rawType.includes('Standard')) packKind = 'Standard';
+        else if (rawType.includes('Buffoon')) packKind = 'Buffoon';
+        else if (rawType.includes('Spectral')) packKind = 'Spectral';
+
+        return {
+            slotId: `booster-${pack.id || idx}`,
+            id: pack.id,
+            title: pack.name || `${packKind} Pack`,
+            description: `Contains ${pack.totalCard} cards. Choose ${pack.maxPick}.`,
+            price: pack.price || 4,
+            packKind,
+            type: packKind,
+            number: pack.packSize === 'Jumbo' ? 2 : pack.packSize === 'Mega' ? 3 : 1,
+            picks_allowed: pack.maxPick || 1,
+            totalCards: pack.totalCard || 3,
+            rawPack: pack
+        };
+    });
+}
+
+function mapOpenedBoosterCards(packDto) {
+    if (!packDto) return [];
+    const cards = [];
+
+    (packDto.tarotCards || []).forEach((t, i) => {
+        const mapped = mapBackendConsumable(t);
+        cards.push({
+            cardInstanceId: `opened-tarot-${t.id || i}`,
+            id: t.id,
+            type: 'tarot',
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            description: mapped.description
+        });
+    });
+
+    (packDto.planetCards || []).forEach((p, i) => {
+        const mapped = mapBackendConsumable(p);
+        cards.push({
+            cardInstanceId: `opened-planet-${p.id || i}`,
+            id: p.id,
+            type: 'planet',
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            description: mapped.description
+        });
+    });
+
+    (packDto.spectralCards || []).forEach((s, i) => {
+        const mapped = mapBackendConsumable(s);
+        cards.push({
+            cardInstanceId: `opened-spectral-${s.id || i}`,
+            id: s.id,
+            type: 'spectral',
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            description: mapped.description
+        });
+    });
+
+    (packDto.jokerCards || []).forEach((j, i) => {
+        const mapped = mapBackendJoker(j);
+        cards.push({
+            cardInstanceId: `opened-joker-${j.id || i}`,
+            id: j.id,
+            type: 'joker',
+            spriteId: mapped.spriteId,
+            title: mapped.title,
+            rarity: mapped.rarity,
+            description: mapped.description,
+            price: mapped.price
+        });
+    });
+
+    (packDto.playingCards || []).forEach((pc, i) => {
+        const mapped = mapBackendCard(pc);
+        cards.push({
+            cardInstanceId: `opened-card-${pc.id || i}`,
+            id: pc.id,
+            type: 'playingCard',
+            rank: mapped.rank,
+            suit: mapped.suit,
+            title: mapped.title,
+            chipsBonus: `+${mapped.baseChips} chips`
+        });
+    });
+
+    return cards;
+}
+
 function Shop({
     gameData,
     onContinue,
-    onOpenSettings
+    onOpenSettings,
+    onSyncState
 }) {
-    // Money state synchronized with gameData
-    const [money, setMoney] = useState(gameData?.money ?? 10);
+    const money = gameData?.money ?? 10;
+    const currentAnte = gameData?.ante || 1;
 
     // Deck view modal & hover preview
     const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
     const [isDeckHovered, setIsDeckHovered] = useState(false);
 
-    // Jokers & Consumables inventory
+    // Inventory
     const maxJokers = gameData?.maxJokers || 5;
-    const [jokers, setJokers] = useState(gameData?.jokers || defaultJokers);
+    const jokers = gameData?.jokers || [];
 
     const maxConsumables = gameData?.maxConsumables || 2;
-    const [consumables, setConsumables] = useState(gameData?.consumables || defaultConsumables);
+    const consumables = gameData?.consumables || [];
 
-    // Active selected slot in top container (for selling/using)
     const [activeSlot, setActiveSlot] = useState(null);
 
-    // Reroll cost state (starts at $5)
-    const [rerollCost, setRerollCost] = useState(5);
-
-    // Shop Cards (default 2 cards, starting with Ancient Joker and another item)
-    const [shopCards, setShopCards] = useState(() => {
-        const initial = generateShopCards(2);
-        // Ensure first card is Ancient Joker like screenshot if available
-        const ancientJoker = SHOP_JOKERS.find(j => j.id === 'AncientJoker') || SHOP_JOKERS[0];
-        initial[0] = {
-            slotId: `shop-joker-init-0`,
-            type: 'joker',
-            id: ancientJoker.id,
-            title: ancientJoker.title,
-            rarity: ancientJoker.rarity,
-            price: ancientJoker.price,
-            description: ancientJoker.description
-        };
-        return initial;
-    });
-
-    // Active tooltip item shown in the description box (null when not hovering)
+    // Shop state from gameData.shop
+    const [shopCards, setShopCards] = useState(() => mapShopCardsFromDto(gameData?.shop));
+    const [boosterPacks, setBoosterPacks] = useState(() => mapBoosterPacksFromDto(gameData?.shop));
+    const [rerollCost, setRerollCost] = useState(() => gameData?.shop?.rerollCost || 5);
     const [activeTooltipItem, setActiveTooltipItem] = useState(null);
-
-    // Selected item in shop (for BUY, REDEEM, OPEN action button toggle)
     const [selectedShopItem, setSelectedShopItem] = useState(null);
 
-    // Ante Voucher
-    const currentAnte = gameData?.ante || 2;
-    const [voucher] = useState(() => getAnteVoucher(currentAnte));
+    // Voucher from backend shop
+    const voucher = gameData?.shop?.voucher ? {
+        id: gameData.shop.voucher.id,
+        effect: gameData.shop.voucher.effect || gameData.shop.voucher.name,
+        title: gameData.shop.voucher.name || 'Voucher',
+        price: gameData.shop.voucher.price || 10,
+        description: gameData.shop.voucher.description || 'Ante Voucher'
+    } : null;
+
     const [isVoucherPurchased, setIsVoucherPurchased] = useState(false);
 
-    // Booster packs
-    const [boosterPacks] = useState(() => generateBoosterPacks());
+    // Booster packs & opened booster pack modal
     const [purchasedBoosters, setPurchasedBoosters] = useState([]);
     const [activeBoosterPack, setActiveBoosterPack] = useState(null);
+
+    // Sync shop items when gameData.shop changes
+    useEffect(() => {
+        if (gameData?.shop) {
+            setShopCards(mapShopCardsFromDto(gameData.shop));
+            setBoosterPacks(mapBoosterPacksFromDto(gameData.shop));
+            setRerollCost(gameData.shop.rerollCost || 5);
+            if (!gameData.shop.voucher) {
+                setIsVoucherPurchased(true);
+            } else {
+                setIsVoucherPurchased(false);
+            }
+
+            if (gameData.shop.openedBoosterPack) {
+                const rawPack = gameData.shop.openedBoosterPack;
+                const rawType = String(rawPack.boosterPackType || 'Arcana');
+                let packKind = 'Arcana';
+                if (rawType.includes('Celestial')) packKind = 'Celestial';
+                else if (rawType.includes('Standard')) packKind = 'Standard';
+                else if (rawType.includes('Buffoon')) packKind = 'Buffoon';
+                else if (rawType.includes('Spectral')) packKind = 'Spectral';
+
+                const mappedCards = mapOpenedBoosterCards(rawPack);
+                setActiveBoosterPack({
+                    pack: {
+                        id: rawPack.id,
+                        title: rawPack.name || `${packKind} Pack`,
+                        packKind,
+                        picks_allowed: rawPack.maxPick || 1,
+                        totalCards: rawPack.totalCard || 3
+                    },
+                    cards: mappedCards,
+                    picksRemaining: rawPack.maxPick || 1
+                });
+            }
+        }
+    }, [gameData?.shop]);
 
     // Toast message for feedback
     const [toastMessage, setToastMessage] = useState('');
@@ -107,7 +318,7 @@ function Shop({
         setToastMessage(msg);
         setTimeout(() => {
             setToastMessage('');
-        }, 2000);
+        }, 2500);
     };
 
     // Toggle Selection Handlers
@@ -121,7 +332,7 @@ function Shop({
     };
 
     const handleVoucherClick = () => {
-        if (isVoucherPurchased) return;
+        if (isVoucherPurchased || !voucher) return;
         if (selectedShopItem?.type === 'voucher') {
             setSelectedShopItem(null);
         } else {
@@ -150,17 +361,7 @@ function Shop({
         }
     };
 
-    // Update player money
-    const updateMoney = (newAmount) => {
-        setMoney(newAmount);
-        if (gameData) {
-            gameData.money = newAmount;
-        }
-    };
-
-    // =========================================
-    // TOP BAR INTERACTIONS (SELL / USE)
-    // =========================================
+    // Top bar interactions (Sell / Use)
     const handleToggleJoker = (index) => {
         setActiveSlot(prev => {
             if (prev?.type === 'joker' && prev.index === index) {
@@ -179,71 +380,67 @@ function Shop({
         });
     };
 
-    const handleSellJoker = (index) => {
+    const handleSellJoker = async (index) => {
         const joker = jokers[index];
-        const sellPrice = joker?.sellPrice || 2;
-        const newMoney = money + sellPrice;
-        updateMoney(newMoney);
+        if (!joker) return;
 
-        const updated = jokers.filter((_, i) => i !== index);
-        setJokers(updated);
-        if (gameData) {
-            gameData.jokers = updated;
+        try {
+            const state = await sellCard(joker.id);
+            if (onSyncState) onSyncState(state);
+            setActiveSlot(null);
+            showToast(`Sold ${joker.title || 'Joker'}!`);
+        } catch (err) {
+            showToast(err.message);
         }
-        setActiveSlot(null);
-        showToast(`Sold ${joker.title || 'Joker'} for +$${sellPrice}`);
     };
 
-    const handleSellConsumable = (index) => {
+    const handleSellConsumable = async (index) => {
         const consumable = consumables[index];
-        const sellPrice = consumable?.sellPrice || 1;
-        const newMoney = money + sellPrice;
-        updateMoney(newMoney);
+        if (!consumable) return;
 
-        const updated = consumables.filter((_, i) => i !== index);
-        setConsumables(updated);
-        if (gameData) {
-            gameData.consumables = updated;
+        try {
+            const state = await sellCard(consumable.id);
+            if (onSyncState) onSyncState(state);
+            setActiveSlot(null);
+            showToast(`Sold ${consumable.title || 'Consumable'}!`);
+        } catch (err) {
+            showToast(err.message);
         }
-        setActiveSlot(null);
-        showToast(`Sold ${consumable.title || 'Consumable'} for +$${sellPrice}`);
     };
 
-    const handleUseConsumable = (index) => {
+    const handleUseConsumable = async (index) => {
         const consumable = consumables[index];
-        const updated = consumables.filter((_, i) => i !== index);
-        setConsumables(updated);
-        if (gameData) {
-            gameData.consumables = updated;
+        if (!consumable) return;
+
+        try {
+            const state = await useConsumable(consumable.id, []);
+            if (onSyncState) onSyncState(state);
+            setActiveSlot(null);
+            showToast(`Used ${consumable.title || 'Consumable'}!`);
+        } catch (err) {
+            showToast(err.message);
         }
-        setActiveSlot(null);
-        showToast(`Used ${consumable.title || 'Consumable'}`);
     };
 
-    // =========================================
-    // SHOP ACTIONS (REROLL / BUY)
-    // =========================================
-    const handleReroll = () => {
+    // Shop Actions (Reroll / Buy)
+    const handleReroll = async () => {
         if (money < rerollCost) {
             showToast("Not enough money to reroll!");
             return;
         }
 
-        const newMoney = money - rerollCost;
-        updateMoney(newMoney);
-        setRerollCost(prev => prev + 1);
-
-        if (gameData?.stats) {
-            gameData.stats.timesRerolled = (gameData.stats.timesRerolled || 0) + 1;
+        try {
+            const state = await rerollShop();
+            if (onSyncState) onSyncState(state);
+            setActiveTooltipItem(null);
+            setSelectedShopItem(null);
+            showToast(`Shop rerolled!`);
+        } catch (err) {
+            showToast(err.message);
         }
-
-        const newCards = generateShopCards(2);
-        setShopCards(newCards);
-        setActiveTooltipItem(null);
-        showToast(`Rerolled shop cards (-$${rerollCost})`);
     };
 
-    const handleBuyCard = (item, index) => {
+    const handleBuyCard = async (item, index) => {
         if (item.isSold) return;
 
         if (money < item.price) {
@@ -251,179 +448,112 @@ function Shop({
             return;
         }
 
-        if (item.type === 'joker') {
-            if (jokers.length >= maxJokers) {
-                showToast("No space for Jokers (Max 5)!");
-                return;
-            }
-            const newJoker = {
-                id: item.id,
-                title: item.title,
-                sellPrice: Math.max(1, Math.floor(item.price / 2))
-            };
-            const updated = [...jokers, newJoker];
-            setJokers(updated);
-            if (gameData) {
-                gameData.jokers = updated;
-            }
-        } else if (item.type === 'tarot' || item.type === 'planet') {
-            if (consumables.length >= maxConsumables) {
-                showToast("No space for Consumables (Max 2)!");
-                return;
-            }
-            const newConsumable = {
-                type: item.type,
-                id: item.id,
-                title: item.title,
-                sellPrice: Math.max(1, Math.floor(item.price / 2))
-            };
-            const updated = [...consumables, newConsumable];
-            setConsumables(updated);
-            if (gameData) {
-                gameData.consumables = updated;
-            }
-        } else if (item.type === 'playingCard') {
-            if (gameData) {
-                gameData.deckRemaining = (gameData.deckRemaining || 52) + 1;
-            }
+        try {
+            const state = await buyCard(item.id);
+            if (onSyncState) onSyncState(state);
+
+            setShopCards(prev => prev.map((c, i) => i === index ? { ...c, isSold: true } : c));
+            setActiveTooltipItem(null);
+            setSelectedShopItem(null);
+            showToast(`Bought ${item.title} for $${item.price}!`);
+        } catch (err) {
+            showToast(err.message);
         }
-
-        if (gameData?.stats) {
-            gameData.stats.cardsPurchased = (gameData.stats.cardsPurchased || 0) + 1;
-        }
-
-        const newMoney = money - item.price;
-        updateMoney(newMoney);
-
-        // Mark item as sold and clear active tooltip
-        setShopCards(prev => prev.map((c, i) => i === index ? { ...c, isSold: true } : c));
-        setActiveTooltipItem(null);
-        showToast(`Bought ${item.title} for $${item.price}`);
     };
 
-    const handleBuyVoucher = () => {
-        if (isVoucherPurchased) return;
+    const handleBuyVoucher = async () => {
+        if (isVoucherPurchased || !voucher) return;
         if (money < voucher.price) {
             showToast("Not enough money for Voucher!");
             return;
         }
 
-        const newMoney = money - voucher.price;
-        updateMoney(newMoney);
-        setIsVoucherPurchased(true);
-        setActiveTooltipItem(null);
+        try {
+            const state = await buyVoucher(voucher.id);
+            if (onSyncState) onSyncState(state);
 
-        // Apply voucher effects
-        if (gameData) {
-            gameData.redeemedVouchers = [...(gameData.redeemedVouchers || []), voucher.id];
-            if (gameData.stats) {
-                gameData.stats.cardsPurchased = (gameData.stats.cardsPurchased || 0) + 1;
-            }
+            setIsVoucherPurchased(true);
+            setActiveTooltipItem(null);
+            setSelectedShopItem(null);
+            showToast(`Redeemed Voucher: ${voucher.title}!`);
+        } catch (err) {
+            showToast(err.message);
         }
-        if (voucher.id === 'Wasteful' && gameData) {
-            gameData.discards = (gameData.discards || 4) + 1;
-        } else if (voucher.id === 'Grabber' && gameData) {
-            gameData.hands = (gameData.hands || 4) + 1;
-        }
-
-        showToast(`Redeemed Voucher: ${voucher.title}!`);
     };
 
-    const handleBuyBooster = (pack, index) => {
+    const handleBuyBooster = async (pack, index) => {
         if (purchasedBoosters.includes(pack.slotId)) return;
         if (money < pack.price) {
             showToast("Not enough money for Booster Pack!");
             return;
         }
 
-        const newMoney = money - pack.price;
-        updateMoney(newMoney);
-        setPurchasedBoosters(prev => [...prev, pack.slotId]);
-        setActiveTooltipItem(null);
-        setSelectedShopItem(null);
+        try {
+            const state = await buyBooster(pack.id);
+            if (onSyncState) onSyncState(state);
 
-        if (gameData?.stats) {
-            gameData.stats.cardsPurchased = (gameData.stats.cardsPurchased || 0) + 1;
+            setPurchasedBoosters(prev => [...prev, pack.slotId]);
+            setActiveTooltipItem(null);
+            setSelectedShopItem(null);
+
+            if (state.shop?.openedBoosterPack) {
+                const opened = state.shop.openedBoosterPack;
+                const mappedCards = mapOpenedBoosterCards(opened);
+                setActiveBoosterPack({
+                    pack,
+                    cards: mappedCards,
+                    picksRemaining: pack.picks_allowed || 1
+                });
+            }
+
+            showToast(`Opened ${pack.title}!`);
+        } catch (err) {
+            showToast(err.message);
         }
-
-        const generatedCards = generateBoosterCards(pack, gameData);
-        const picks = pack.picks_allowed || 1;
-
-        setActiveBoosterPack({
-            pack,
-            cards: generatedCards,
-            picksRemaining: picks
-        });
-
-        showToast(`Opened ${pack.title}!`);
     };
 
-    const handlePickBoosterCard = (card, cardIndex) => {
+    const handlePickBoosterCard = async (card, cardIndex) => {
         if (!activeBoosterPack) return;
 
-        const { pack, cards, picksRemaining } = activeBoosterPack;
+        try {
+            const state = await selectBoosterCard(card.id);
+            if (onSyncState) onSyncState(state);
 
-        // Process card effect
-        if (card.type === 'planet') {
-            const planetHandMap = {
-                Pluto: 'High Card', Mercury: 'Pair', Venus: 'Three of a Kind',
-                Earth: 'Full House', Mars: 'Four of a Kind', Jupiter: 'Flush',
-                Saturn: 'Straight', Uranus: 'Two Pair', Neptune: 'Straight Flush'
-            };
-            const handName = planetHandMap[card.id] || 'Hand';
-            showToast(`Level up ${handName}!`);
-            if (gameData) {
-                gameData.currentHandLevel = (gameData.currentHandLevel || 1) + 1;
-            }
-        } else if (card.type === 'playingCard') {
-            if (gameData) {
-                gameData.deckRemaining = (gameData.deckRemaining || 52) + 1;
-                if (gameData.handCards) {
-                    gameData.handCards.push({ rank: card.rank, suit: card.suit });
-                }
-            }
-            showToast(`Added ${card.title} to deck!`);
-        } else if (card.type === 'joker') {
-            if (jokers.length < maxJokers) {
-                const newJoker = {
-                    id: card.id,
-                    title: card.title,
-                    sellPrice: Math.max(1, Math.floor((card.price || 4) / 2))
-                };
-                const updated = [...jokers, newJoker];
-                setJokers(updated);
-                if (gameData) {
-                    gameData.jokers = updated;
-                }
-                showToast(`Added ${card.title} to Jokers!`);
+            showToast(`Selected ${card.title}!`);
+
+            const nextPicks = (activeBoosterPack.picksRemaining || 1) - 1;
+            const remainingCards = activeBoosterPack.cards.filter((_, idx) => idx !== cardIndex);
+
+            if (nextPicks <= 0 || remainingCards.length === 0) {
+                setTimeout(() => {
+                    setActiveBoosterPack(null);
+                }, 300);
             } else {
-                showToast("Joker slots full!");
+                setActiveBoosterPack({
+                    ...activeBoosterPack,
+                    cards: remainingCards,
+                    picksRemaining: nextPicks
+                });
             }
-        } else if (card.type === 'tarot') {
-            showToast(`Used Tarot: ${card.title}!`);
-        } else if (card.type === 'spectral') {
-            showToast(`Used Spectral: ${card.title}!`);
-        }
-
-        const nextPicks = picksRemaining - 1;
-        const remainingCards = cards.filter((_, idx) => idx !== cardIndex);
-
-        if (nextPicks <= 0 || remainingCards.length === 0) {
-            setTimeout(() => {
-                setActiveBoosterPack(null);
-            }, 300);
-        } else {
-            setActiveBoosterPack({
-                ...activeBoosterPack,
-                cards: remainingCards,
-                picksRemaining: nextPicks
-            });
+        } catch (err) {
+            showToast(err.message);
         }
     };
 
     const handleSkipBooster = () => {
         showToast("Skipped Booster Pack");
         setActiveBoosterPack(null);
+    };
+
+    const handleAdvanceRound = async () => {
+        try {
+            const state = await leaveShop();
+            if (onSyncState) onSyncState(state);
+            if (onContinue) onContinue();
+        } catch (err) {
+            console.error('Failed to leave shop:', err);
+            if (onContinue) onContinue();
+        }
     };
 
     return (
@@ -474,12 +604,16 @@ function Shop({
                                     const isSelected = activeSlot?.type === 'joker' && activeSlot.index === index;
                                     return (
                                         <div
-                                            key={index}
+                                            key={joker?.id || index}
                                             className={`joker-slot ${joker ? 'occupied' : 'empty'}`}
                                         >
                                             {joker ? (
                                                 <JokerCard
                                                     id={joker.id}
+                                                    spriteId={joker.spriteId}
+                                                    title={joker.title}
+                                                    description={joker.description}
+                                                    rarity={joker.rarity}
                                                     width={78}
                                                     height={108}
                                                     animated={true}
@@ -510,13 +644,16 @@ function Shop({
                                     const isSelected = activeSlot?.type === 'consumable' && activeSlot.index === index;
                                     return (
                                         <div
-                                            key={index}
+                                            key={consumable?.id || index}
                                             className={`consumable-slot ${consumable ? 'occupied' : 'empty'}`}
                                         >
                                             {consumable ? (
                                                 consumable.type === 'planet' ? (
                                                     <PlanetCard
                                                         planet={consumable.id}
+                                                        spriteId={consumable.spriteId}
+                                                        title={consumable.title}
+                                                        description={consumable.description}
                                                         width={78}
                                                         height={108}
                                                         animated={true}
@@ -532,6 +669,9 @@ function Shop({
                                                 ) : (
                                                     <TarotCard
                                                         tarot={consumable.id}
+                                                        spriteId={consumable.spriteId}
+                                                        title={consumable.title}
+                                                        description={consumable.description}
                                                         width={78}
                                                         height={108}
                                                         animated={true}
@@ -557,7 +697,7 @@ function Shop({
                         </div>
                     </div>
 
-                    {/* CENTER AREA: THE AUTHENTIC BALATRO SHOP CONSOLE */}
+                    {/* CENTER AREA: BALATRO SHOP CONSOLE */}
                     <div className="shop-center-container" onClick={(e) => e.stopPropagation()}>
                         <div className="shop-console-frame">
                             {/* TOP ROW: ACTIONS & SHOP CARDS */}
@@ -566,7 +706,7 @@ function Shop({
                                 <div className="shop-actions-column">
                                     <button
                                         className="shop-action-btn next-round-btn"
-                                        onClick={onContinue}
+                                        onClick={handleAdvanceRound}
                                         title="Advance to Next Round"
                                     >
                                         <span>Next</span>
@@ -629,6 +769,10 @@ function Shop({
                                                         {item.type === 'joker' && (
                                                             <JokerCard
                                                                 id={item.id}
+                                                                spriteId={item.spriteId}
+                                                                title={item.title}
+                                                                description={item.description}
+                                                                rarity={item.rarity}
                                                                 width={82}
                                                                 height={114}
                                                                 animated={true}
@@ -638,6 +782,9 @@ function Shop({
                                                         {item.type === 'tarot' && (
                                                             <TarotCard
                                                                 tarot={item.id}
+                                                                spriteId={item.spriteId}
+                                                                title={item.title}
+                                                                description={item.description}
                                                                 width={82}
                                                                 height={114}
                                                                 animated={true}
@@ -647,6 +794,9 @@ function Shop({
                                                         {item.type === 'planet' && (
                                                             <PlanetCard
                                                                 planet={item.id}
+                                                                spriteId={item.spriteId}
+                                                                title={item.title}
+                                                                description={item.description}
                                                                 width={82}
                                                                 height={114}
                                                                 animated={true}
@@ -694,7 +844,7 @@ function Shop({
                                         ANTE {currentAnte} VOUCHER
                                     </div>
 
-                                    {isVoucherPurchased ? (
+                                    {!voucher || isVoucherPurchased ? (
                                         <div className="voucher-card-slot sold-out-slot">
                                             <div className="sold-out-stamp">SOLD OUT</div>
                                         </div>
@@ -738,7 +888,7 @@ function Shop({
 
                                                 <div className="voucher-visual">
                                                     <Voucher
-                                                        voucher={voucher.id}
+                                                        voucher={voucher.effect || voucher.id}
                                                         width={82}
                                                         height={114}
                                                         animated={true}
