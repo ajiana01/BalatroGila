@@ -3,14 +3,12 @@
 ========================================= */
 
 .booster-opening-screen {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    position: relative;
+    flex: 1;
+    height: 100vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    z-index: 80;
     user-select: none;
     font-family: 'Balatro', sans-serif;
     color: white;

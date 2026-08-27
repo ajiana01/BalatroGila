@@ -134,7 +134,13 @@ export function mapBackendConsumables(consumables) {
 // Map Blind from Backend
 export function mapBackendBlind(backendBlind) {
   if (!backendBlind) return null;
-  const rawType = String(backendBlind.blindType || 'Small');
+
+  // If already properly mapped
+  if (backendBlind.type && backendBlind.blind && backendBlind.title) {
+    return backendBlind;
+  }
+
+  const rawType = String(backendBlind.blindType || backendBlind.type || 'Small');
   const type = rawType.toLowerCase().includes('boss') ? 'boss' :
                rawType.toLowerCase().includes('big') ? 'big' : 'small';
 
@@ -143,18 +149,23 @@ export function mapBackendBlind(backendBlind) {
   if (type === 'big') {
     blindSpriteKey = 'BigBlind';
   } else if (type === 'boss') {
-    const cleaned = (backendBlind.name || 'TheGoad').replace(/[^a-zA-Z0-9]/g, '');
+    const rawName = backendBlind.name || backendBlind.title || 'TheGoad';
+    const cleaned = rawName.replace(/[^a-zA-Z0-9]/g, '');
     blindSpriteKey = cleaned || 'TheGoad';
   }
+
+  const score = backendBlind.scoreToDefeat || backendBlind.score || 300;
+  const rewardMoney = backendBlind.rewardMoney || (type === 'boss' ? 5 : type === 'big' ? 4 : 3);
+  const rewardStr = backendBlind.reward || ('$'.repeat(rewardMoney) + '+');
 
   return {
     id: backendBlind.id,
     type,
     blind: blindSpriteKey,
-    title: backendBlind.name || (type === 'small' ? 'Small Blind' : type === 'big' ? 'Big Blind' : 'Boss Blind'),
-    score: backendBlind.scoreToDefeat || 300,
-    rewardMoney: backendBlind.rewardMoney || (type === 'boss' ? 5 : type === 'big' ? 4 : 3),
-    reward: '$'.repeat(backendBlind.rewardMoney || (type === 'boss' ? 5 : type === 'big' ? 4 : 3)) + '+',
+    title: backendBlind.name || backendBlind.title || (type === 'small' ? 'Small Blind' : type === 'big' ? 'Big Blind' : 'Boss Blind'),
+    score,
+    rewardMoney,
+    reward: rewardStr,
     description: backendBlind.description || '',
     isDefeated: Boolean(backendBlind.isDefeated),
     bossKey: backendBlind.bossKey || ''
@@ -163,4 +174,48 @@ export function mapBackendBlind(backendBlind) {
 
 export function mapBackendBlinds(blinds) {
   return (blinds || []).map(mapBackendBlind).filter(Boolean);
+}
+
+// Map Booster Pack from Backend
+export function mapBackendBoosterPack(pack, idx = 0) {
+  if (!pack) return null;
+
+  const rawType = String(pack.boosterPackType || pack.type || 'Arcana');
+  let packKind = 'Arcana';
+  if (/Celestial/i.test(rawType)) packKind = 'Celestial';
+  else if (/Standard/i.test(rawType)) packKind = 'Standard';
+  else if (/Buff/i.test(rawType)) packKind = 'Buffoon';
+  else if (/Spectral/i.test(rawType)) packKind = 'Spectral';
+
+  const rawSize = String(pack.packSize || pack.size || 'Normal');
+  let size = 'Normal';
+  if (/Jumbo/i.test(rawSize)) size = 'Jumbo';
+  else if (/Mega/i.test(rawSize)) size = 'Mega';
+
+  const spriteType = `${packKind}_${size}`;
+  const number = 1;
+
+  const maxPick = pack.maxPick || (size === 'Mega' ? 2 : 1);
+  const totalCards = pack.totalCard || (size === 'Normal' ? 3 : 5);
+  const price = pack.price || (size === 'Mega' ? 8 : size === 'Jumbo' ? 6 : 4);
+  const title = pack.name || `${size !== 'Normal' ? size + ' ' : ''}${packKind} Pack`;
+  const description = `Contains ${totalCards} cards. Choose ${maxPick}.`;
+
+  return {
+    slotId: `booster-${pack.id || idx}`,
+    id: pack.id,
+    title,
+    description,
+    price,
+    packKind,
+    type: spriteType,
+    number,
+    picks_allowed: maxPick,
+    totalCards,
+    rawPack: pack
+  };
+}
+
+export function mapBackendBoosterPacks(packs) {
+  return (packs || []).map(mapBackendBoosterPack).filter(Boolean);
 }

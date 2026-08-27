@@ -76,6 +76,19 @@ export const boosterPackSprite = {
         1: { column: 3, row: 8 },
     },
 
+    Buffoon_Normal: {
+        1: { column: 0, row: 8 },
+        2: { column: 1, row: 8 },
+    },
+
+    Buffoon_Jumbo: {
+        1: { column: 2, row: 8 },
+    },
+
+    Buffoon_Mega: {
+        1: { column: 3, row: 8 },
+    },
+
     Spectral_Normal: {
         1: { column: 0, row: 4 },
         2: { column: 1, row: 4 },

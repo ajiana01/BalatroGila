@@ -288,13 +288,17 @@ function RunInfoModal({ isOpen, onClose, gameData }) {
     const pokerHands = gameData?.pokerHands || DEFAULT_POKER_HANDS;
     const ante = gameData?.ante || 1;
     const blindIndex = gameData?.blindIndex || 0;
+    const availableBlinds = gameData?.availableBlinds || [];
 
     const baseScore = 300 * Math.pow(1.5, Math.max(0, ante - 1));
     const smallScore = Math.round(baseScore);
     const bigScore = Math.round(baseScore * 1.5);
     const bossScore = Math.round(baseScore * 2);
 
-    const smallBlindData = {
+    const smallBlindData = availableBlinds[0] ? {
+        ...availableBlinds[0],
+        status: availableBlinds[0].isDefeated ? 'Defeated' : blindIndex === 0 ? 'Current' : 'Upcoming'
+    } : {
         type: 'small',
         blind: 'SmallBlind',
         title: 'Small Blind',
@@ -303,7 +307,10 @@ function RunInfoModal({ isOpen, onClose, gameData }) {
         status: blindIndex === 0 ? 'Current' : blindIndex > 0 ? 'Defeated' : 'Upcoming'
     };
 
-    const bigBlindData = {
+    const bigBlindData = availableBlinds[1] ? {
+        ...availableBlinds[1],
+        status: availableBlinds[1].isDefeated ? 'Defeated' : blindIndex === 1 ? 'Current' : 'Upcoming'
+    } : {
         type: 'big',
         blind: 'BigBlind',
         title: 'Big Blind',
@@ -312,13 +319,16 @@ function RunInfoModal({ isOpen, onClose, gameData }) {
         status: blindIndex === 1 ? 'Current' : blindIndex > 1 ? 'Defeated' : 'Upcoming'
     };
 
-    const bossBlindData = {
+    const bossBlindData = availableBlinds[2] ? {
+        ...availableBlinds[2],
+        status: availableBlinds[2].isDefeated ? 'Defeated' : blindIndex === 2 ? 'Current' : 'Upcoming'
+    } : {
         type: 'boss',
         blind: gameData?.currentBlind?.blind || 'TheGoad',
         title: gameData?.currentBlind?.title || 'The Goad',
         score: bossScore,
         reward: '$$$$$+',
-        description: gameData?.currentBlind?.description || 'All Spade cards are debuffed',
+        description: gameData?.currentBlind?.description || '',
         status: blindIndex === 2 ? 'Current' : 'Upcoming'
     };
 
@@ -495,9 +505,11 @@ function RunInfoModal({ isOpen, onClose, gameData }) {
                                 <div className="blind-col-token">
                                     <Blind blind={bossBlindData.blind} width={68} height={68} animated={bossBlindData.status === 'Current'} />
                                 </div>
-                                <div className="blind-col-ability">
-                                    {bossBlindData.description}
-                                </div>
+                                {bossBlindData.description ? (
+                                    <div className="blind-col-ability">
+                                        {bossBlindData.description}
+                                    </div>
+                                ) : null}
                                 <div className="blind-col-score-box">
                                     <span className="blind-score-lbl">Score at least</span>
                                     <div className="blind-score-target">

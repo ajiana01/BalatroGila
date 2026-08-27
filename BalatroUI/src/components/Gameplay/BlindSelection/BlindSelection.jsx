@@ -35,7 +35,6 @@ function BlindSelection({
             title: 'The Goad',
             score: 600,
             reward: '$$$$$+',
-            description: 'All Spade cards are debuffed',
             isDefeated: false
         }
     ];
@@ -45,7 +44,7 @@ function BlindSelection({
 
     const getStatus = (index, blind) => {
         if (blind.isDefeated) return 'defeated';
-        if (index === activeIndex) return 'active';
+        if (index === (activeIndex !== -1 ? activeIndex : 0)) return 'active';
         return 'upcoming';
     };
 
@@ -69,7 +68,6 @@ function BlindSelection({
                                 title={blind.title}
                                 score={blind.score}
                                 reward={blind.reward}
-                                description={blind.description}
                                 status={status}
                                 onSelect={() => onSelectBlind(blind)}
                             />

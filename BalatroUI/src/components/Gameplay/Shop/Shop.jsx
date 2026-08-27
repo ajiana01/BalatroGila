@@ -15,7 +15,9 @@ import {
     mapBackendConsumable,
     mapBackendCard,
     mapBackendJokers,
-    mapBackendConsumables
+    mapBackendConsumables,
+    mapBackendBoosterPack,
+    mapBackendBoosterPacks
 } from '../../../utils/cardMapper';
 import {
     buyCard,
@@ -136,28 +138,7 @@ function mapShopCardsFromDto(shopDto) {
 
 function mapBoosterPacksFromDto(shopDto) {
     if (!shopDto?.boosterPacks) return [];
-    return shopDto.boosterPacks.map((pack, idx) => {
-        const rawType = String(pack.boosterPackType || 'Arcana');
-        let packKind = 'Arcana';
-        if (rawType.includes('Celestial')) packKind = 'Celestial';
-        else if (rawType.includes('Standard')) packKind = 'Standard';
-        else if (rawType.includes('Buffoon')) packKind = 'Buffoon';
-        else if (rawType.includes('Spectral')) packKind = 'Spectral';
-
-        return {
-            slotId: `booster-${pack.id || idx}`,
-            id: pack.id,
-            title: pack.name || `${packKind} Pack`,
-            description: `Contains ${pack.totalCard} cards. Choose ${pack.maxPick}.`,
-            price: pack.price || 4,
-            packKind,
-            type: packKind,
-            number: pack.packSize === 'Jumbo' ? 2 : pack.packSize === 'Mega' ? 3 : 1,
-            picks_allowed: pack.maxPick || 1,
-            totalCards: pack.totalCard || 3,
-            rawPack: pack
-        };
-    });
+    return mapBackendBoosterPacks(shopDto.boosterPacks);
 }
 
 function mapOpenedBoosterCards(packDto) {
@@ -276,9 +257,24 @@ function Shop({
 
     // Sync shop items when gameData.shop changes
     useEffect(() => {
+        console.log('[Balatro Shop] Shop loaded / updated with gameData:', {
+            money: gameData?.money,
+            shop: gameData?.shop,
+            jokers: gameData?.jokers,
+            consumables: gameData?.consumables,
+            currentAnte
+        });
+
         if (gameData?.shop) {
-            setShopCards(mapShopCardsFromDto(gameData.shop));
-            setBoosterPacks(mapBoosterPacksFromDto(gameData.shop));
+            const mappedCards = mapShopCardsFromDto(gameData.shop);
+            const mappedBoosters = mapBoosterPacksFromDto(gameData.shop);
+
+            console.log('[Balatro Shop] Mapped Shop Cards:', mappedCards);
+            console.log('[Balatro Shop] Mapped Booster Packs:', mappedBoosters);
+            console.log('[Balatro Shop] Available Voucher:', gameData.shop.voucher);
+
+            setShopCards(mappedCards);
+            setBoosterPacks(mappedBoosters);
             setRerollCost(gameData.shop.rerollCost || 5);
             if (!gameData.shop.voucher) {
                 setIsVoucherPurchased(true);
@@ -288,24 +284,19 @@ function Shop({
 
             if (gameData.shop.openedBoosterPack) {
                 const rawPack = gameData.shop.openedBoosterPack;
-                const rawType = String(rawPack.boosterPackType || 'Arcana');
-                let packKind = 'Arcana';
-                if (rawType.includes('Celestial')) packKind = 'Celestial';
-                else if (rawType.includes('Standard')) packKind = 'Standard';
-                else if (rawType.includes('Buffoon')) packKind = 'Buffoon';
-                else if (rawType.includes('Spectral')) packKind = 'Spectral';
-
+                const mappedPack = mapBackendBoosterPack(rawPack);
                 const mappedCards = mapOpenedBoosterCards(rawPack);
+
+                console.log('[Balatro Shop] Opened Booster Pack state active:', {
+                    rawPack,
+                    mappedPack,
+                    mappedCards
+                });
+
                 setActiveBoosterPack({
-                    pack: {
-                        id: rawPack.id,
-                        title: rawPack.name || `${packKind} Pack`,
-                        packKind,
-                        picks_allowed: rawPack.maxPick || 1,
-                        totalCards: rawPack.totalCard || 3
-                    },
+                    pack: mappedPack,
                     cards: mappedCards,
-                    picksRemaining: rawPack.maxPick || 1
+                    picksRemaining: mappedPack.picks_allowed || 1
                 });
             }
         }
@@ -323,6 +314,7 @@ function Shop({
 
     // Toggle Selection Handlers
     const handleCardClick = (item, idx) => {
+        console.log('[Balatro Shop] Card clicked:', { item, index: idx });
         if (selectedShopItem?.type === 'card' && selectedShopItem.index === idx) {
             setSelectedShopItem(null);
         } else {
@@ -332,6 +324,7 @@ function Shop({
     };
 
     const handleVoucherClick = () => {
+        console.log('[Balatro Shop] Voucher clicked:', voucher);
         if (isVoucherPurchased || !voucher) return;
         if (selectedShopItem?.type === 'voucher') {
             setSelectedShopItem(null);
@@ -347,6 +340,7 @@ function Shop({
     };
 
     const handleBoosterClick = (pack, idx) => {
+        console.log('[Balatro Shop] Booster Pack clicked:', { pack, index: idx });
         if (purchasedBoosters.includes(pack.slotId)) return;
         if (selectedShopItem?.type === 'booster' && selectedShopItem.index === idx) {
             setSelectedShopItem(null);
@@ -383,13 +377,16 @@ function Shop({
     const handleSellJoker = async (index) => {
         const joker = jokers[index];
         if (!joker) return;
+        console.log('[Balatro Shop] Selling Joker:', joker);
 
         try {
             const state = await sellCard(joker.id);
+            console.log('[Balatro Shop] sellCard response:', state);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
             showToast(`Sold ${joker.title || 'Joker'}!`);
         } catch (err) {
+            console.error('[Balatro Shop] Error selling Joker:', err);
             showToast(err.message);
         }
     };
@@ -397,13 +394,16 @@ function Shop({
     const handleSellConsumable = async (index) => {
         const consumable = consumables[index];
         if (!consumable) return;
+        console.log('[Balatro Shop] Selling Consumable:', consumable);
 
         try {
             const state = await sellCard(consumable.id);
+            console.log('[Balatro Shop] sellCard consumable response:', state);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
             showToast(`Sold ${consumable.title || 'Consumable'}!`);
         } catch (err) {
+            console.error('[Balatro Shop] Error selling consumable:', err);
             showToast(err.message);
         }
     };
@@ -411,19 +411,23 @@ function Shop({
     const handleUseConsumable = async (index) => {
         const consumable = consumables[index];
         if (!consumable) return;
+        console.log('[Balatro Shop] Using Consumable:', consumable);
 
         try {
             const state = await useConsumable(consumable.id, []);
+            console.log('[Balatro Shop] useConsumable response:', state);
             if (onSyncState) onSyncState(state);
             setActiveSlot(null);
             showToast(`Used ${consumable.title || 'Consumable'}!`);
         } catch (err) {
+            console.error('[Balatro Shop] Error using consumable:', err);
             showToast(err.message);
         }
     };
 
     // Shop Actions (Reroll / Buy)
     const handleReroll = async () => {
+        console.log('[Balatro Shop] Reroll clicked, cost:', rerollCost, 'current money:', money);
         if (money < rerollCost) {
             showToast("Not enough money to reroll!");
             return;
@@ -431,17 +435,20 @@ function Shop({
 
         try {
             const state = await rerollShop();
+            console.log('[Balatro Shop] rerollShop response:', state);
             if (onSyncState) onSyncState(state);
             setActiveTooltipItem(null);
             setSelectedShopItem(null);
             showToast(`Shop rerolled!`);
         } catch (err) {
+            console.error('[Balatro Shop] Error rerolling shop:', err);
             showToast(err.message);
         }
     };
 
     const handleBuyCard = async (item, index) => {
         if (item.isSold) return;
+        console.log('[Balatro Shop] Buying card:', { item, index, money });
 
         if (money < item.price) {
             showToast("Not enough money!");
@@ -450,6 +457,7 @@ function Shop({
 
         try {
             const state = await buyCard(item.id);
+            console.log('[Balatro Shop] buyCard response:', state);
             if (onSyncState) onSyncState(state);
 
             setShopCards(prev => prev.map((c, i) => i === index ? { ...c, isSold: true } : c));
@@ -457,12 +465,15 @@ function Shop({
             setSelectedShopItem(null);
             showToast(`Bought ${item.title} for $${item.price}!`);
         } catch (err) {
+            console.error('[Balatro Shop] Error buying card:', err);
             showToast(err.message);
         }
     };
 
     const handleBuyVoucher = async () => {
         if (isVoucherPurchased || !voucher) return;
+        console.log('[Balatro Shop] Buying voucher:', voucher);
+
         if (money < voucher.price) {
             showToast("Not enough money for Voucher!");
             return;
@@ -470,6 +481,7 @@ function Shop({
 
         try {
             const state = await buyVoucher(voucher.id);
+            console.log('[Balatro Shop] buyVoucher response:', state);
             if (onSyncState) onSyncState(state);
 
             setIsVoucherPurchased(true);
@@ -477,11 +489,13 @@ function Shop({
             setSelectedShopItem(null);
             showToast(`Redeemed Voucher: ${voucher.title}!`);
         } catch (err) {
+            console.error('[Balatro Shop] Error buying voucher:', err);
             showToast(err.message);
         }
     };
 
     const handleBuyBooster = async (pack, index) => {
+        console.log('[Balatro Shop] Buying booster pack:', { pack, index, money });
         if (purchasedBoosters.includes(pack.slotId)) return;
         if (money < pack.price) {
             showToast("Not enough money for Booster Pack!");
@@ -490,6 +504,7 @@ function Shop({
 
         try {
             const state = await buyBooster(pack.id);
+            console.log('[Balatro Shop] buyBooster response state:', state);
             if (onSyncState) onSyncState(state);
 
             setPurchasedBoosters(prev => [...prev, pack.slotId]);
@@ -498,25 +513,33 @@ function Shop({
 
             if (state.shop?.openedBoosterPack) {
                 const opened = state.shop.openedBoosterPack;
+                const mappedPack = mapBackendBoosterPack(opened);
                 const mappedCards = mapOpenedBoosterCards(opened);
+                console.log('[Balatro Shop] Opened booster pack successfully mapped:', {
+                    mappedPack,
+                    mappedCards
+                });
                 setActiveBoosterPack({
-                    pack,
+                    pack: mappedPack,
                     cards: mappedCards,
-                    picksRemaining: pack.picks_allowed || 1
+                    picksRemaining: mappedPack.picks_allowed || 1
                 });
             }
 
             showToast(`Opened ${pack.title}!`);
         } catch (err) {
+            console.error('[Balatro Shop] Error buying booster pack:', err);
             showToast(err.message);
         }
     };
 
     const handlePickBoosterCard = async (card, cardIndex) => {
         if (!activeBoosterPack) return;
+        console.log('[Balatro Shop] Picking booster card:', { card, cardIndex });
 
         try {
             const state = await selectBoosterCard(card.id);
+            console.log('[Balatro Shop] selectBoosterCard response:', state);
             if (onSyncState) onSyncState(state);
 
             showToast(`Selected ${card.title}!`);
@@ -536,22 +559,26 @@ function Shop({
                 });
             }
         } catch (err) {
+            console.error('[Balatro Shop] Error selecting booster card:', err);
             showToast(err.message);
         }
     };
 
     const handleSkipBooster = () => {
+        console.log('[Balatro Shop] Skipping booster pack');
         showToast("Skipped Booster Pack");
         setActiveBoosterPack(null);
     };
 
     const handleAdvanceRound = async () => {
+        console.log('[Balatro Shop] Next Round clicked');
         try {
             const state = await leaveShop();
+            console.log('[Balatro Shop] leaveShop response:', state);
             if (onSyncState) onSyncState(state);
             if (onContinue) onContinue();
         } catch (err) {
-            console.error('Failed to leave shop:', err);
+            console.error('[Balatro Shop] Failed to leave shop:', err);
             if (onContinue) onContinue();
         }
     };
