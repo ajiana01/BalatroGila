@@ -140,6 +140,10 @@ export async function reorderJokers(jokerIds) {
   return apiRequest('/action/reorder-jokers', 'POST', { jokerIds });
 }
 
+export async function reorderConsumables(consumableIds) {
+  return apiRequest('/action/reorder-consumables', 'POST', { consumableIds });
+}
+
 // =========================
 // SHOP CONTROLLER APIS
 // =========================

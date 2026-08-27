@@ -148,4 +148,30 @@ public class ShopAndEconomyTests
         Assert.True(skipSuccess);
         Assert.Null(_engine.Shop.OpenedBoosterPack);
     }
+
+    [Fact]
+    public void JokersAndConsumables_Arrange_ReordersSuccessfully()
+    {
+        _engine.StartGame();
+
+        var j1 = new JokerCard("Joker A", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 10, 0);
+        var j2 = new JokerCard("Joker B", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 4, 0);
+        _engine.Deck.JokerCards.Add(j1);
+        _engine.Deck.JokerCards.Add(j2);
+
+        var (jokerArrangeSuccess, _) = _engine.ArrangeJokers(new List<string> { j2.Id, j1.Id });
+        Assert.True(jokerArrangeSuccess);
+        Assert.Equal(j2.Id, _engine.Deck.JokerCards[0].Id);
+        Assert.Equal(j1.Id, _engine.Deck.JokerCards[1].Id);
+
+        var c1 = new TarotCard("Tarot 1", 0, TarotType.TheFool);
+        var c2 = PlanetCard.CreateForHand(PokerHandType.Pair);
+        _engine.Deck.UsableCards.Add(c1);
+        _engine.Deck.UsableCards.Add(c2);
+
+        var (consumableArrangeSuccess, _) = _engine.ArrangeConsumables(new List<string> { c2.Id, c1.Id });
+        Assert.True(consumableArrangeSuccess);
+        Assert.Equal(c2.Id, _engine.Deck.UsableCards[0].Id);
+        Assert.Equal(c1.Id, _engine.Deck.UsableCards[1].Id);
+    }
 }

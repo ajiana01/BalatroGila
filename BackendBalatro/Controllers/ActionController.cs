@@ -133,4 +133,20 @@ public class ActionController : ControllerBase
         var state = engine.GetGameState(message);
         return Ok(ApiResponse<GameStateResponseDto>.Ok(state, message));
     }
+
+    [HttpPost("reorder-consumables")]
+    public ActionResult<ApiResponse<GameStateResponseDto>> ReorderConsumables([FromBody] ReorderConsumablesRequestDto request)
+    {
+        string sessionId = GetSessionId();
+        var engine = _sessionService.GetOrCreateSession(sessionId);
+
+        var (success, message) = engine.ArrangeConsumables(request.ConsumableIds);
+        if (!success)
+        {
+            return BadRequest(ApiResponse<GameStateResponseDto>.Fail(message));
+        }
+
+        var state = engine.GetGameState(message);
+        return Ok(ApiResponse<GameStateResponseDto>.Ok(state, message));
+    }
 }

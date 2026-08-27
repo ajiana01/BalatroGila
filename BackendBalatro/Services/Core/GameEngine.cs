@@ -610,6 +610,26 @@ public class GameEngine : IGameEngine
         return (true, "Jokers reordered successfully.");
     }
 
+    public (bool Success, string Message) ArrangeConsumables(List<string> consumableIds)
+    {
+        if (consumableIds == null || consumableIds.Count != Deck.UsableCards.Count)
+        {
+            return (false, "Must provide all existing Consumable IDs in the desired order.");
+        }
+
+        var reordered = new List<IUsableCard>();
+        foreach (var id in consumableIds)
+        {
+            var c = Deck.UsableCards.FirstOrDefault(x => x.Id == id);
+            if (c == null) return (false, $"Consumable with ID {id} not found.");
+            reordered.Add(c);
+        }
+
+        Deck.UsableCards.Clear();
+        Deck.UsableCards.AddRange(reordered);
+        return (true, "Consumables reordered successfully.");
+    }
+
     // Shop Actions
     public (bool Success, string Message) BuyCardFromShop(string cardId)
     {

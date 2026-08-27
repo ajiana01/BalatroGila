@@ -27,7 +27,7 @@
 
 .joker-triggered-badge {
     position: absolute;
-    top: -24px;
+    bottom: -22px;
     left: 50%;
     transform: translateX(-50%);
     background: #fe4747;
@@ -45,7 +45,7 @@
 }
 
 @keyframes jokerBadgePop {
-    0% { opacity: 0; transform: translate(-50%, 8px) scale(0.6); }
+    0% { opacity: 0; transform: translate(-50%, -6px) scale(0.6); }
     100% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
 }
 

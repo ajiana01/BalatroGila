@@ -15,7 +15,8 @@ import {
     RANK_NUMERICAL
 } from '../../../utils/pokerEvaluator';
 import { mapBackendCards } from '../../../utils/cardMapper';
-import { playHand, discardCards, getScorePreview, useConsumable, sellCard, reorderJokers } from '../../../services/api';
+import { Reorder } from 'framer-motion';
+import { playHand, discardCards, getScorePreview, useConsumable, sellCard, reorderJokers, reorderConsumables } from '../../../services/api';
 import { sfx } from '../../../utils/sfx';
 import './GameBoard.css';
 
@@ -40,10 +41,26 @@ function GameBoard({
 
     // Jokers & Consumables
     const maxJokers = gameData?.maxJokers || 5;
-    const jokers = gameData?.jokers || [];
+    const [localJokers, setLocalJokers] = useState(() => gameData?.jokers || []);
+    const latestJokersRef = useRef(localJokers);
 
     const maxConsumables = gameData?.maxConsumables || 2;
-    const consumables = gameData?.consumables || [];
+    const [localConsumables, setLocalConsumables] = useState(() => gameData?.consumables || []);
+    const latestConsumablesRef = useRef(localConsumables);
+
+    useEffect(() => {
+        if (gameData?.jokers) {
+            setLocalJokers(gameData.jokers);
+            latestJokersRef.current = gameData.jokers;
+        }
+    }, [gameData?.jokers]);
+
+    useEffect(() => {
+        if (gameData?.consumables) {
+            setLocalConsumables(gameData.consumables);
+            latestConsumablesRef.current = gameData.consumables;
+        }
+    }, [gameData?.consumables]);
 
     const [activeSlot, setActiveSlot] = useState(null); // { type: 'joker' | 'consumable', index: number } | null
     const maxHandSize = gameData?.maxHandSize || 8;
@@ -142,9 +159,45 @@ function GameBoard({
         });
     };
 
+    const handleJokerReorder = (newJokers) => {
+        if (isScoring) return;
+        setLocalJokers(newJokers);
+        latestJokersRef.current = newJokers;
+        setActiveSlot(null);
+    };
+
+    const handleJokerDragEnd = async () => {
+        if (isScoring) return;
+        try {
+            const jokerIds = latestJokersRef.current.map(j => j.id);
+            const state = await reorderJokers(jokerIds);
+            if (onSyncState) onSyncState(state);
+        } catch (err) {
+            console.error('Failed to reorder jokers:', err);
+        }
+    };
+
+    const handleConsumableReorder = (newConsumables) => {
+        if (isScoring) return;
+        setLocalConsumables(newConsumables);
+        latestConsumablesRef.current = newConsumables;
+        setActiveSlot(null);
+    };
+
+    const handleConsumableDragEnd = async () => {
+        if (isScoring) return;
+        try {
+            const consumableIds = latestConsumablesRef.current.map(c => c.id);
+            const state = await reorderConsumables(consumableIds);
+            if (onSyncState) onSyncState(state);
+        } catch (err) {
+            console.error('Failed to reorder consumables:', err);
+        }
+    };
+
     const handleSellJoker = async (index) => {
         if (isScoring) return;
-        const joker = jokers[index];
+        const joker = localJokers[index];
         if (!joker) return;
 
         try {
@@ -160,7 +213,7 @@ function GameBoard({
 
     const handleSellConsumable = async (index) => {
         if (isScoring) return;
-        const consumable = consumables[index];
+        const consumable = localConsumables[index];
         if (!consumable) return;
 
         try {
@@ -176,7 +229,7 @@ function GameBoard({
 
     const handleUseConsumable = async (index) => {
         if (isScoring) return;
-        const consumable = consumables[index];
+        const consumable = localConsumables[index];
         if (!consumable) return;
 
         try {
@@ -324,7 +377,7 @@ function GameBoard({
                 if (jokerTriggerMessages && jokerTriggerMessages.length > 0) {
                     for (let i = 0; i < jokerTriggerMessages.length; i++) {
                         setActiveJokerTrigger({
-                            index: i % jokers.length,
+                            index: i % (localJokers.length || 1),
                             text: jokerTriggerMessages[i]
                         });
                         sfx.playJokerTrigger();
@@ -333,7 +386,7 @@ function GameBoard({
                         await waitDelay(150);
                     }
                 } else {
-                    const jokerEffects = evaluateJokerEffects(jokers, currentPlayedCards, currentRemainingCards);
+                    const jokerEffects = evaluateJokerEffects(localJokers, currentPlayedCards, currentRemainingCards);
                     for (const effect of jokerEffects) {
                         setActiveJokerTrigger({
                             index: effect.index,
@@ -460,106 +513,144 @@ function GameBoard({
                 <div className="game-top-area" onClick={(e) => e.stopPropagation()}>
                     {/* JOKERS CONTAINER */}
                     <div className="jokers-container-wrapper">
-                        <div className="jokers-slots-box">
-                            {Array.from({ length: maxJokers }).map((_, index) => {
-                                const joker = jokers[index];
+                        <Reorder.Group
+                            axis="x"
+                            values={localJokers}
+                            onReorder={handleJokerReorder}
+                            className="jokers-slots-box"
+                            as="div"
+                        >
+                            {localJokers.map((joker, index) => {
                                 const isSelected = activeSlot?.type === 'joker' && activeSlot.index === index;
                                 const isTriggered = activeJokerTrigger?.index === index;
                                 const triggeredText = isTriggered ? activeJokerTrigger.text : '';
 
                                 return (
-                                    <div
-                                        key={joker?.id || index}
-                                        className={`joker-slot ${joker ? 'occupied' : 'empty'}`}
+                                    <Reorder.Item
+                                        key={joker.id || index}
+                                        value={joker}
+                                        as="div"
+                                        className="joker-slot occupied"
+                                        onDragEnd={handleJokerDragEnd}
+                                        whileDrag={{
+                                            scale: 1.12,
+                                            zIndex: 100,
+                                            cursor: 'grabbing',
+                                            filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))'
+                                        }}
                                     >
-                                        {joker ? (
-                                            <JokerCard
-                                                id={joker.id}
-                                                spriteId={joker.spriteId}
-                                                title={joker.title}
-                                                description={joker.description}
-                                                rarity={joker.rarity}
-                                                width={78}
-                                                height={108}
-                                                animated={true}
-                                                isSelected={isSelected}
-                                                isTriggered={isTriggered}
-                                                triggeredText={triggeredText}
-                                                onSelect={(e) => {
-                                                    e.stopPropagation();
-                                                    handleToggleJoker(index);
-                                                }}
-                                                onSell={() => handleSellJoker(index)}
-                                                sellPrice={joker.sellPrice || 2}
-                                            />
-                                        ) : null}
-                                    </div>
+                                        <JokerCard
+                                            id={joker.id}
+                                            spriteId={joker.spriteId}
+                                            title={joker.title}
+                                            description={joker.description}
+                                            rarity={joker.rarity}
+                                            width={78}
+                                            height={108}
+                                            animated={true}
+                                            isSelected={isSelected}
+                                            isTriggered={isTriggered}
+                                            triggeredText={triggeredText}
+                                            onSelect={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleJoker(index);
+                                            }}
+                                            onSell={() => handleSellJoker(index)}
+                                            sellPrice={joker.sellPrice || 2}
+                                        />
+                                    </Reorder.Item>
                                 );
                             })}
-                        </div>
+
+                            {Array.from({ length: Math.max(0, maxJokers - localJokers.length) }).map((_, i) => (
+                                <div
+                                    key={`empty-joker-${i}`}
+                                    className="joker-slot empty"
+                                />
+                            ))}
+                        </Reorder.Group>
 
                         <div className="slot-counter-text">
-                            {jokers.length}/{maxJokers}
+                            {localJokers.length}/{maxJokers}
                         </div>
                     </div>
 
                     {/* CONSUMABLES CONTAINER */}
                     <div className="consumables-container-wrapper">
-                        <div className="consumables-slots-box">
-                            {Array.from({ length: maxConsumables }).map((_, index) => {
-                                const consumable = consumables[index];
+                        <Reorder.Group
+                            axis="x"
+                            values={localConsumables}
+                            onReorder={handleConsumableReorder}
+                            className="consumables-slots-box"
+                            as="div"
+                        >
+                            {localConsumables.map((consumable, index) => {
                                 const isSelected = activeSlot?.type === 'consumable' && activeSlot.index === index;
                                 return (
-                                    <div
-                                        key={consumable?.id || index}
-                                        className={`consumable-slot ${consumable ? 'occupied' : 'empty'}`}
+                                    <Reorder.Item
+                                        key={consumable.id || index}
+                                        value={consumable}
+                                        as="div"
+                                        className="consumable-slot occupied"
+                                        onDragEnd={handleConsumableDragEnd}
+                                        whileDrag={{
+                                            scale: 1.12,
+                                            zIndex: 100,
+                                            cursor: 'grabbing',
+                                            filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))'
+                                        }}
                                     >
-                                        {consumable ? (
-                                            consumable.type === 'planet' ? (
-                                                <PlanetCard
-                                                    planet={consumable.id}
-                                                    spriteId={consumable.spriteId}
-                                                    title={consumable.title}
-                                                    description={consumable.description}
-                                                    width={78}
-                                                    height={108}
-                                                    animated={true}
-                                                    isSelected={isSelected}
-                                                    onSelect={(e) => {
-                                                        e.stopPropagation();
-                                                        handleToggleConsumable(index);
-                                                    }}
-                                                    onSell={() => handleSellConsumable(index)}
-                                                    onUse={() => handleUseConsumable(index)}
-                                                    sellPrice={consumable.sellPrice || 1}
-                                                />
-                                            ) : (
-                                                <TarotCard
-                                                    tarot={consumable.id}
-                                                    spriteId={consumable.spriteId}
-                                                    title={consumable.title}
-                                                    description={consumable.description}
-                                                    width={78}
-                                                    height={108}
-                                                    animated={true}
-                                                    isSelected={isSelected}
-                                                    onSelect={(e) => {
-                                                        e.stopPropagation();
-                                                        handleToggleConsumable(index);
-                                                    }}
-                                                    onSell={() => handleSellConsumable(index)}
-                                                    onUse={() => handleUseConsumable(index)}
-                                                    sellPrice={consumable.sellPrice || 1}
-                                                />
-                                            )
-                                        ) : null}
-                                    </div>
+                                        {consumable.type === 'planet' ? (
+                                            <PlanetCard
+                                                planet={consumable.id}
+                                                spriteId={consumable.spriteId}
+                                                title={consumable.title}
+                                                description={consumable.description}
+                                                width={78}
+                                                height={108}
+                                                animated={true}
+                                                isSelected={isSelected}
+                                                onSelect={(e) => {
+                                                    e.stopPropagation();
+                                                    handleToggleConsumable(index);
+                                                }}
+                                                onSell={() => handleSellConsumable(index)}
+                                                onUse={() => handleUseConsumable(index)}
+                                                sellPrice={consumable.sellPrice || 1}
+                                            />
+                                        ) : (
+                                            <TarotCard
+                                                tarot={consumable.id}
+                                                spriteId={consumable.spriteId}
+                                                title={consumable.title}
+                                                description={consumable.description}
+                                                width={78}
+                                                height={108}
+                                                animated={true}
+                                                isSelected={isSelected}
+                                                onSelect={(e) => {
+                                                    e.stopPropagation();
+                                                    handleToggleConsumable(index);
+                                                }}
+                                                onSell={() => handleSellConsumable(index)}
+                                                onUse={() => handleUseConsumable(index)}
+                                                sellPrice={consumable.sellPrice || 1}
+                                            />
+                                        )}
+                                    </Reorder.Item>
                                 );
                             })}
-                        </div>
+
+                            {Array.from({ length: Math.max(0, maxConsumables - localConsumables.length) }).map((_, i) => (
+                                <div
+                                    key={`empty-consumable-${i}`}
+                                    className="consumable-slot empty"
+                                />
+                            ))}
+                        </Reorder.Group>
 
                         <div className="slot-counter-text align-right">
-                            {consumables.length}/{maxConsumables}
+                            {localConsumables.length}/{maxConsumables}
                         </div>
                     </div>
                 </div>

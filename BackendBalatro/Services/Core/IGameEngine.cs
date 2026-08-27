@@ -71,12 +71,11 @@ public interface IGameEngine
     (bool Success, string Message) DiscardCards(List<string> cardIds);
     (bool Success, string Message, ScoreCalculationResultDto? Result) GetScorePreview(List<string> cardIds);
 
-    // Consumables
+    // Consumables & Jokers
     (bool Success, string Message) UseConsumable(string consumableId, List<string> targetCardIds);
     (bool Success, string Message) SellCard(string cardId);
-
-    // Jokers
     (bool Success, string Message) ArrangeJokers(List<string> jokerIds);
+    (bool Success, string Message) ArrangeConsumables(List<string> consumableIds);
 
     // Shop
     (bool Success, string Message) BuyCardFromShop(string cardId);

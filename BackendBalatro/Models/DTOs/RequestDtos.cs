@@ -45,6 +45,11 @@ public class ReorderJokersRequestDto
     public List<string> JokerIds { get; set; } = new();
 }
 
+public class ReorderConsumablesRequestDto
+{
+    public List<string> ConsumableIds { get; set; } = new();
+}
+
 public class BuyCardRequestDto
 {
     public string CardId { get; set; } = string.Empty;
