@@ -29,12 +29,10 @@ public class OperationResultTests
         var okResult = OperationResult.Ok("Action succeeded");
         Assert.True(okResult.Success);
         Assert.Equal("Action succeeded", okResult.Message);
-        Assert.True((bool)okResult);
 
         var failResult = OperationResult.Fail("Action failed");
         Assert.False(failResult.Success);
         Assert.Equal("Action failed", failResult.Message);
-        Assert.False((bool)failResult);
     }
 
     [Fact]
@@ -71,28 +69,6 @@ public class OperationResultTests
         Assert.True(gSuccess);
         Assert.Equal("Payload message", gMsg);
         Assert.Equal("Payload", gData);
-    }
-
-    [Fact]
-    public void OperationResult_ImplicitConversions_WorkBidirectionally()
-    {
-        // Tuple to OperationResult
-        (bool, string) tuple = (true, "From tuple");
-        OperationResult res = tuple;
-        Assert.True(res.Success);
-        Assert.Equal("From tuple", res.Message);
-
-        // OperationResult to Tuple
-        (bool convertedSuccess, string convertedMessage) = res;
-        Assert.True(convertedSuccess);
-        Assert.Equal("From tuple", convertedMessage);
-
-        // Tuple to Generic OperationResult
-        (bool, string, int) genericTuple = (true, "Int result", 42);
-        OperationResult<int> genericRes = genericTuple;
-        Assert.True(genericRes.Success);
-        Assert.Equal("Int result", genericRes.Message);
-        Assert.Equal(42, genericRes.Data);
     }
 
     [Fact]

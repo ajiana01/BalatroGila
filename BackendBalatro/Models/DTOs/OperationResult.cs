@@ -21,10 +21,6 @@ public class OperationResult
         success = Success;
         message = Message;
     }
-
-    public static implicit operator bool(OperationResult result) => result.Success;
-    public static implicit operator OperationResult((bool Success, string Message) tuple) => new(tuple.Success, tuple.Message);
-    public static implicit operator (bool Success, string Message)(OperationResult result) => (result.Success, result.Message);
 }
 
 public class OperationResult<T> : OperationResult
@@ -49,7 +45,4 @@ public class OperationResult<T> : OperationResult
         message = Message;
         data = Data;
     }
-
-    public static implicit operator OperationResult<T>((bool Success, string Message, T? Data) tuple) => new(tuple.Success, tuple.Message, tuple.Data);
-    public static implicit operator (bool Success, string Message, T? Data)(OperationResult<T> result) => (result.Success, result.Message, result.Data);
 }
