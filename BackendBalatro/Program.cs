@@ -6,7 +6,6 @@ using BackendBalatro.Services.Shop;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. DAFTARKAN CONTROLLERS DENGAN JSON OPTIONS
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -14,14 +13,12 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// 2. DAFTARKAN DEPENDENCY INJECTION SERVICES
 builder.Services.AddSingleton<IPokerHandEvaluator, PokerHandEvaluator>();
 builder.Services.AddSingleton<IScoringService, ScoringService>();
 builder.Services.AddSingleton<IShopService, ShopService>();
 builder.Services.AddSingleton<IConsumableEffectHandler, ConsumableEffectHandler>();
 builder.Services.AddSingleton<IGameSessionService, GameSessionService>();
 
-// 3. DAFTARKAN SWAGGER
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -33,7 +30,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// 4. DAFTARKAN CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
@@ -47,7 +43,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// 5. MIDDLEWARE PIPELINE
 app.UseCors("AllowReactApp");
 
 if (app.Environment.IsDevelopment())

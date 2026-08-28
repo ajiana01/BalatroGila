@@ -92,7 +92,6 @@ public class ScoringService : IScoringService
         int luckyMoney = 0;
         var triggerMessages = new List<string>();
 
-        // 1. Scoring Cards Evaluation
         foreach (var card in scoringCards)
         {
             cardChips += card.GetEffectiveChips();
@@ -116,7 +115,6 @@ public class ScoringService : IScoringService
             }
         }
 
-        // 2. Held in Hand Cards Evaluation (e.g. Steel cards)
         foreach (var card in handCardsRemaining)
         {
             if (!card.IsDebuffed && card.Enhancement == EnhancePokerCard.SteelCards)
@@ -128,7 +126,6 @@ public class ScoringService : IScoringService
         int totalChips = baseChips + cardChips;
         float totalMult = (baseMult + cardMult) * cardXMult;
 
-        // 3. Jokers Evaluation
         int jokerChips = 0;
         float jokerMult = 0f;
         float jokerXMult = 1.0f;

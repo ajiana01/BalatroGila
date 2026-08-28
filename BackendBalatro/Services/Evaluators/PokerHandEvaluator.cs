@@ -22,7 +22,6 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.HighCard, playedCards, new List<PlayingCard>());
         }
 
-        // Check Straight Flush (requires 5 cards)
         if (playedCards.Count >= 5 && standardCards.Count >= 5)
         {
             if (IsFlush(standardCards) && TryGetStraight(standardCards, out var straightCards))
@@ -31,14 +30,12 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             }
         }
 
-        // Group cards by rank
         var rankGroups = standardCards
             .GroupBy(c => c.Rank)
             .OrderByDescending(g => g.Count())
             .ThenByDescending(g => (int)g.Key)
             .ToList();
 
-        // Check Four of a Kind
         if (rankGroups.Any(g => g.Count() >= 4))
         {
             var fourGroup = rankGroups.First(g => g.Count() >= 4).Take(4).ToList();
@@ -46,7 +43,6 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.FourOfAKind, fourGroup, unscored);
         }
 
-        // Check Full House (3 of one rank + 2 of another)
         if (rankGroups.Count >= 2 && rankGroups[0].Count() >= 3 && rankGroups[1].Count() >= 2)
         {
             var fullHouseCards = rankGroups[0].Take(3).Concat(rankGroups[1].Take(2)).ToList();
@@ -54,7 +50,6 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.FullHouse, fullHouseCards, unscored);
         }
 
-        // Check Flush (5 cards of same suit)
         if (playedCards.Count >= 5 && standardCards.Count >= 5 && IsFlush(standardCards))
         {
             var flushCards = standardCards.Take(5).ToList();
@@ -62,14 +57,12 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.Flush, flushCards, unscored);
         }
 
-        // Check Straight (5 sequential ranks)
         if (playedCards.Count >= 5 && standardCards.Count >= 5 && TryGetStraight(standardCards, out var straightCardsResult))
         {
             var unscored = playedCards.Except(straightCardsResult).ToList();
             return (PokerHandType.Straight, straightCardsResult, unscored);
         }
 
-        // Check Three of a Kind
         if (rankGroups.Any(g => g.Count() >= 3))
         {
             var threeGroup = rankGroups.First(g => g.Count() >= 3).Take(3).ToList();
@@ -77,7 +70,6 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.ThreeOfAKind, threeGroup, unscored);
         }
 
-        // Check Two Pair
         if (rankGroups.Count >= 2 && rankGroups[0].Count() >= 2 && rankGroups[1].Count() >= 2)
         {
             var twoPairCards = rankGroups[0].Take(2).Concat(rankGroups[1].Take(2)).ToList();
@@ -85,7 +77,6 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.TwoPair, twoPairCards, unscored);
         }
 
-        // Check Pair
         if (rankGroups.Any(g => g.Count() >= 2))
         {
             var pairGroup = rankGroups.First(g => g.Count() >= 2).Take(2).ToList();
@@ -93,7 +84,6 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.Pair, pairGroup, unscored);
         }
 
-        // High Card (Single highest card)
         var highestCard = standardCards.OrderByDescending(c => (int)c.Rank).First();
         var highCardList = new List<PlayingCard> { highestCard };
         var unscoredList = playedCards.Except(highCardList).ToList();

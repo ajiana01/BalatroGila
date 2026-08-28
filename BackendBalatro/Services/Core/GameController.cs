@@ -165,7 +165,6 @@ public class GameController : IGameController
 
         InitializePokerHandLevels();
 
-        // 1. Inisialisasi 52 kartu standar secara hardcoded (4 suits x 13 ranks)
         var standardCards = new List<PlayingCard>();
         foreach (Suit suit in Enum.GetValues<Suit>())
         {
@@ -177,10 +176,7 @@ public class GameController : IGameController
         DrawPile.AddCards(standardCards);
         DrawPile.Shuffle();
 
-        // 2. Generate Blinds for Ante 1
         GenerateBlindsForAnte(CurrentAnte);
-
-        // 3. Generate Voucher for Ante 1
         CurrentAnteVoucher = _shopService.GenerateVoucherForAnte(CurrentAnte, PurchasedVouchers);
 
         return true;
@@ -262,19 +258,15 @@ public class GameController : IGameController
 
         CurrentBlind = selected;
 
-        // Reset Deck & Hand for the round
         RecycleAllCardsToDrawPile();
 
-        // Reset round constraints
         _playedHandTypesThisRound.Clear();
         _allowedHandTypeThisRound = null;
 
-        // Apply boss debuffs
         ApplyBossBlindEffects(selected);
 
         RoundScore = 0;
 
-        // Apply hands & discards
         if (selected.BlindId == BlindId.TheNeedle)
         {
             _currentHand = 1;
@@ -293,7 +285,7 @@ public class GameController : IGameController
             _currentDiscard = MaxDiscards;
         }
 
-        // Draw initial hand (taking The Manacle -1 hand size into account)
+        // The Manacle: -1 Hand Size
         int initialDraw = (selected.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
         DrawCards(initialDraw);
 
@@ -396,7 +388,6 @@ public class GameController : IGameController
 
         var remainingInHand = Hand.Except(playedCards).ToList();
 
-        // Calculate score & evaluate hand
         var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels, CurrentBlind?.BlindId);
 
         // The Eye: No repeat hand types this round
@@ -418,7 +409,6 @@ public class GameController : IGameController
             }
         }
 
-        // Deduct 1 hand
         _currentHand--;
 
         // The Arm: Decrease level of played poker hand by 1 (min level 1)
@@ -443,7 +433,6 @@ public class GameController : IGameController
             }
         }
 
-        // Record stats and constraints
         _playedHandTypesThisRound.Add(result.HandType);
         foreach (var card in playedCards)
         {
@@ -485,7 +474,6 @@ public class GameController : IGameController
             }
         }
 
-        // Remove played cards from Hand and add surviving cards to DiscardPile
         foreach (var card in playedCards)
         {
             Hand.Remove(card);
@@ -506,21 +494,18 @@ public class GameController : IGameController
             DiscardPile.DiscardCards(hookDiscarded);
         }
 
-        // Check if Blind is defeated
         if (CurrentBlind != null && RoundScore >= CurrentBlind.ScoreToDefeat)
         {
             DefeatBlind();
             return OperationResult<ScoreCalculationResultDto>.Ok(result, $"Blind Defeated! Scored {result.FinalScore} with {result.HandName}.");
         }
 
-        // Check for Game Over
         if (_currentHand <= 0)
         {
             GameOver();
             return OperationResult<ScoreCalculationResultDto>.Ok(result, $"Game Over! Hands exhausted before reaching target score.");
         }
 
-        // Round continues: draw replacement cards
         int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
         DrawCards(effectiveMaxHand - Hand.Count);
 
@@ -587,14 +572,13 @@ public class GameController : IGameController
 
         Cashout();
 
-        // Check for Gold cards held in hand at end of round (+$3 each)
+        // Gold Card: +$3 each if held in hand at end of round
         int goldCardCount = Hand.Count(c => !c.IsDebuffed && c.Enhancement == EnhancePokerCard.GoldCards);
         if (goldCardCount > 0)
         {
             Money += goldCardCount * 3;
         }
 
-        // Open shop
         _shopService.PopulateShop(Shop, CurrentAnte, PurchasedVouchers, CurrentAnteVoucher, IsAnteVoucherPurchased);
         Phase = GameStatePhase.InShop;
         OnShopOpen?.Invoke();
@@ -635,21 +619,18 @@ public class GameController : IGameController
 
         if (CurrentBlind.BlindType == BlindType.Boss)
         {
-            // WIN CONDITION STATIS: Boss Blind on Ante 8 defeated!
             if (CurrentAnte >= 8)
             {
                 Win();
                 return OperationResult.Ok("Victory! You have defeated the Ante 8 Boss Blind!");
             }
 
-            // Advance to next Ante
             AdvanceAnte();
             NextRound();
             Phase = GameStatePhase.SelectingBlind;
             return OperationResult.Ok($"Advancing to Ante {CurrentAnte}!");
         }
 
-        // Previous blind was Small or Big -> Next Blind in current Ante
         NextRound();
         Phase = GameStatePhase.SelectingBlind;
         return OperationResult.Ok("Proceeding to next blind selection.");
@@ -948,7 +929,6 @@ public class GameController : IGameController
         bool picked = false;
         string resultMessage = string.Empty;
 
-        // Check in each category of opened pack
         var joker = pack.JokerCards.FirstOrDefault(j => j.Id == cardId);
         if (joker != null)
         {
@@ -1061,7 +1041,6 @@ public class GameController : IGameController
         CurrentAnteVoucher = null;
         Shop.Voucher = null;
 
-        // Apply permanent voucher effects
         if (voucher.Effect == VoucherEffect.Overstock)
         {
             Shop.MaxItemCardOffers = 3;

@@ -16,23 +16,19 @@ public class ShopService : IShopService
     {
         shop.ResetForNewShop();
 
-        // Check vouchers for slots
         bool hasOverstock = purchasedVouchers.Any(v => v.Effect == VoucherEffect.Overstock);
         shop.MaxItemCardOffers = hasOverstock ? 3 : 2;
 
-        // Generate Card Offers
         for (int i = 0; i < shop.MaxItemCardOffers; i++)
         {
             GenerateRandomShopCard(shop, ante, purchasedVouchers);
         }
 
-        // Generate 2 Booster Packs
         for (int i = 0; i < shop.MaxItemBoosterPacks; i++)
         {
             shop.BoosterPacks.Add(GenerateRandomBoosterPack(purchasedVouchers));
         }
 
-        // Voucher retention per Ante
         if (!isAnteVoucherPurchased && currentAnteVoucher != null)
         {
             shop.Voucher = currentAnteVoucher;
@@ -65,7 +61,7 @@ public class ShopService : IShopService
         bool hasPlanetMerchant = vouchers.Any(v => v.Effect == VoucherEffect.PlanetMerchant);
         bool hasMagicTrick = vouchers.Any(v => v.Effect == VoucherEffect.MagicTrick);
 
-        // Calculate dynamic weighted chances based on merchant vouchers
+        // Dynamic weighted chances based on merchant vouchers
         // Default weights: Joker: 60, Tarot: 20, Planet: 15, PlayingCard: 5 (or 15 with Magic Trick)
         int weightJoker = 60;
         int weightTarot = hasTarotMerchant ? 40 : 20;
@@ -77,7 +73,6 @@ public class ShopService : IShopService
 
         if (roll < weightJoker)
         {
-            // Joker
             var joker = GenerateRandomJoker(hasHone);
             if (hasClearance)
             {
@@ -87,14 +82,12 @@ public class ShopService : IShopService
         }
         else if (roll < weightJoker + weightTarot)
         {
-            // Tarot
             var tarotType = (TarotType)_random.Next(Enum.GetValues<TarotType>().Length);
             int price = hasClearance ? Math.Max(1, (int)Math.Floor(3 * 0.75)) : 3;
             shop.TarotCardOffers.Add(new TarotCard(tarotType.ToString(), price, tarotType));
         }
         else if (roll < weightJoker + weightTarot + weightPlanet)
         {
-            // Planet
             var handType = (PokerHandType)_random.Next(Enum.GetValues<PokerHandType>().Length);
             var planet = PlanetCard.CreateForHand(handType);
             if (hasClearance)
@@ -105,7 +98,6 @@ public class ShopService : IShopService
         }
         else
         {
-            // Playing Card
             var suit = (Suit)_random.Next(4);
             var rank = (Rank)_random.Next(2, 15);
             var enhancement = _random.Next(100) < 50 ? (EnhancePokerCard)_random.Next(1, Enum.GetValues<EnhancePokerCard>().Length) : EnhancePokerCard.None;
