@@ -53,7 +53,6 @@ public class GameSessionService : IGameSessionService
     {
         if (_sessions.TryRemove(sessionId, out _))
         {
-            // Unsubscribe all event listeners to prevent memory leaks
             if (_sessionCleanups.TryRemove(sessionId, out var cleanup))
             {
                 cleanup.Invoke();
@@ -80,7 +79,6 @@ public class GameSessionService : IGameSessionService
             Player = new Player(1, playerName ?? "Player 1")
         };
 
-        // Subscribe to engine lifecycle events (Observer Pattern)
         SubscribeToEngineEvents(engine, sessionId);
 
         engine.StartGame();
@@ -122,7 +120,6 @@ public class GameSessionService : IGameSessionService
         Action onGameOver = () =>
             _logger?.LogInformation("[EVENT][Session: {SessionId}] 💀 GAME OVER! Failed to defeat the blind.", sessionId);
 
-        // Attach listeners (+=)
         controller.OnBlindSelected += onBlindSelected;
         controller.OnPlayHand += onPlayHand;
         controller.OnScore += onScore;
@@ -135,7 +132,6 @@ public class GameSessionService : IGameSessionService
         controller.OnWinGame += onWinGame;
         controller.OnGameOver += onGameOver;
 
-        // Register cleanup callback for Unsubscribe (-=)
         _sessionCleanups[sessionId] = () =>
         {
             controller.OnBlindSelected -= onBlindSelected;
