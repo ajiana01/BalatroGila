@@ -4,8 +4,8 @@ namespace BackendBalatro.Services.Sessions;
 
 public interface IGameSessionService
 {
-    IGameEngine GetOrCreateSession(string? sessionId, string? playerName = null);
-    IGameEngine? GetSession(string sessionId);
+    IGameController GetOrCreateSession(string? sessionId, string? playerName = null);
+    IGameController? GetSession(string sessionId);
     bool RemoveSession(string sessionId);
     string CreateNewSession(string? playerName = null);
 }

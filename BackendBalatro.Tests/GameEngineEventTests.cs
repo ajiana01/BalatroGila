@@ -18,7 +18,7 @@ public class GameEngineEventTests
         var shopService = new ShopService();
         var consumableHandler = new ConsumableEffectHandler();
 
-        var engine = new GameEngine(scoring, shopService, consumableHandler);
+        var engine = new GameController(scoring, shopService, consumableHandler);
         engine.StartGame();
 
         bool blindSelectedFired = false;

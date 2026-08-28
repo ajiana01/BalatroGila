@@ -10,7 +10,7 @@ namespace BackendBalatro.Tests;
 
 public class BossBlindTests
 {
-    private readonly GameEngine _engine;
+    private readonly GameController _controller;
     private readonly ScoringService _scoringService;
 
     public BossBlindTests()
@@ -19,23 +19,23 @@ public class BossBlindTests
         _scoringService = new ScoringService(evaluator);
         var shopService = new ShopService();
         var consumableHandler = new ConsumableEffectHandler();
-        _engine = new GameEngine(_scoringService, shopService, consumableHandler);
+        _controller = new GameController(_scoringService, shopService, consumableHandler);
     }
 
     private void SetCustomBlind(BlindId blindId, int scoreToDefeat = 600, int reward = 5)
     {
-        _engine.StartGame();
+        _controller.StartGame();
         var boss = new Blind(blindId, blindId.ToString(), BlindType.Boss, scoreToDefeat, reward, "Test Boss")
         {
             Id = 3
         };
-        _engine.BlindEnemies[_engine.CurrentAnte] = new List<Blind>
+        _controller.BlindEnemies[_controller.CurrentAnte] = new List<Blind>
         {
             new("Small Blind", BlindType.Small, 300, 3) { Id = 1 },
             new("Big Blind", BlindType.Big, 450, 4) { Id = 2 },
             boss
         };
-        _engine.SelectBlind(3);
+        _controller.SelectBlind(3);
     }
 
     [Fact]
@@ -43,8 +43,8 @@ public class BossBlindTests
     {
         SetCustomBlind(BlindId.TheClub);
 
-        var clubCards = _engine.Hand.Where(c => c.Suit == Suit.Clubs).ToList();
-        var nonClubCards = _engine.Hand.Where(c => c.Suit != Suit.Clubs).ToList();
+        var clubCards = _controller.Hand.Where(c => c.Suit == Suit.Clubs).ToList();
+        var nonClubCards = _controller.Hand.Where(c => c.Suit != Suit.Clubs).ToList();
 
         Assert.All(clubCards, c => Assert.True(c.IsDebuffed));
         Assert.All(nonClubCards, c => Assert.False(c.IsDebuffed));
@@ -55,8 +55,8 @@ public class BossBlindTests
     {
         SetCustomBlind(BlindId.TheGoad);
 
-        var spadeCards = _engine.Hand.Where(c => c.Suit == Suit.Spades).ToList();
-        var nonSpadeCards = _engine.Hand.Where(c => c.Suit != Suit.Spades).ToList();
+        var spadeCards = _controller.Hand.Where(c => c.Suit == Suit.Spades).ToList();
+        var nonSpadeCards = _controller.Hand.Where(c => c.Suit != Suit.Spades).ToList();
 
         Assert.All(spadeCards, c => Assert.True(c.IsDebuffed));
         Assert.All(nonSpadeCards, c => Assert.False(c.IsDebuffed));
@@ -67,8 +67,8 @@ public class BossBlindTests
     {
         SetCustomBlind(BlindId.TheWindow);
 
-        var diamondCards = _engine.Hand.Where(c => c.Suit == Suit.Diamonds).ToList();
-        var nonDiamondCards = _engine.Hand.Where(c => c.Suit != Suit.Diamonds).ToList();
+        var diamondCards = _controller.Hand.Where(c => c.Suit == Suit.Diamonds).ToList();
+        var nonDiamondCards = _controller.Hand.Where(c => c.Suit != Suit.Diamonds).ToList();
 
         Assert.All(diamondCards, c => Assert.True(c.IsDebuffed));
         Assert.All(nonDiamondCards, c => Assert.False(c.IsDebuffed));
@@ -79,8 +79,8 @@ public class BossBlindTests
     {
         SetCustomBlind(BlindId.TheHead);
 
-        var heartCards = _engine.Hand.Where(c => c.Suit == Suit.Hearts).ToList();
-        var nonHeartCards = _engine.Hand.Where(c => c.Suit != Suit.Hearts).ToList();
+        var heartCards = _controller.Hand.Where(c => c.Suit == Suit.Hearts).ToList();
+        var nonHeartCards = _controller.Hand.Where(c => c.Suit != Suit.Hearts).ToList();
 
         Assert.All(heartCards, c => Assert.True(c.IsDebuffed));
         Assert.All(nonHeartCards, c => Assert.False(c.IsDebuffed));
@@ -91,8 +91,8 @@ public class BossBlindTests
     {
         SetCustomBlind(BlindId.ThePlant);
 
-        var faceCards = _engine.Hand.Where(c => c.Rank is Rank.Jack or Rank.Queen or Rank.King).ToList();
-        var nonFaceCards = _engine.Hand.Where(c => c.Rank is not (Rank.Jack or Rank.Queen or Rank.King)).ToList();
+        var faceCards = _controller.Hand.Where(c => c.Rank is Rank.Jack or Rank.Queen or Rank.King).ToList();
+        var nonFaceCards = _controller.Hand.Where(c => c.Rank is not (Rank.Jack or Rank.Queen or Rank.King)).ToList();
 
         Assert.All(faceCards, c => Assert.True(c.IsDebuffed));
         Assert.All(nonFaceCards, c => Assert.False(c.IsDebuffed));
@@ -104,12 +104,12 @@ public class BossBlindTests
         SetCustomBlind(BlindId.ThePsychic);
 
         // Try playing 3 cards -> should fail
-        var (success3, message3, _) = _engine.PlayHand(_engine.Hand.Take(3).Select(c => c.Id).ToList());
+        var (success3, message3, _) = _controller.PlayHand(_controller.Hand.Take(3).Select(c => c.Id).ToList());
         Assert.False(success3);
         Assert.Contains("Psychic", message3);
 
         // Playing 5 cards -> should succeed
-        var (success5, _, _) = _engine.PlayHand(_engine.Hand.Take(5).Select(c => c.Id).ToList());
+        var (success5, _, _) = _controller.PlayHand(_controller.Hand.Take(5).Select(c => c.Id).ToList());
         Assert.True(success5);
     }
 
@@ -117,49 +117,49 @@ public class BossBlindTests
     public void TheNeedle_SetsHandsToOne()
     {
         SetCustomBlind(BlindId.TheNeedle);
-        Assert.Equal(1, _engine.HandsRemaining);
+        Assert.Equal(1, _controller.HandsRemaining);
     }
 
     [Fact]
     public void TheWater_SetsDiscardsToZero()
     {
         SetCustomBlind(BlindId.TheWater);
-        Assert.Equal(0, _engine.DiscardsRemaining);
+        Assert.Equal(0, _controller.DiscardsRemaining);
     }
 
     [Fact]
     public void TheManacle_ReducesHandSizeByOne()
     {
         SetCustomBlind(BlindId.TheManacle);
-        Assert.Equal(_engine.MaxHand - 1, _engine.Hand.Count);
+        Assert.Equal(_controller.MaxHand - 1, _controller.Hand.Count);
     }
 
     [Fact]
     public void TheArm_DecreasesLevelOfPlayedPokerHand()
     {
-        _engine.StartGame();
-        _engine.PokerHandLevels[PokerHandType.HighCard] = 3;
+        _controller.StartGame();
+        _controller.PokerHandLevels[PokerHandType.HighCard] = 3;
 
         SetCustomBlind(BlindId.TheArm);
-        _engine.PokerHandLevels[PokerHandType.HighCard] = 3;
+        _controller.PokerHandLevels[PokerHandType.HighCard] = 3;
 
         // Force a High Card play
-        var singleCard = _engine.Hand.Take(1).Select(c => c.Id).ToList();
-        _engine.PlayHand(singleCard);
+        var singleCard = _controller.Hand.Take(1).Select(c => c.Id).ToList();
+        _controller.PlayHand(singleCard);
 
-        Assert.Equal(2, _engine.PokerHandLevels[PokerHandType.HighCard]);
+        Assert.Equal(2, _controller.PokerHandLevels[PokerHandType.HighCard]);
     }
 
     [Fact]
     public void TheTooth_DeductsMoneyPerCardPlayed()
     {
         SetCustomBlind(BlindId.TheTooth);
-        _engine.Money = 10;
+        _controller.Money = 10;
 
-        var cards = _engine.Hand.Take(4).Select(c => c.Id).ToList();
-        _engine.PlayHand(cards);
+        var cards = _controller.Hand.Take(4).Select(c => c.Id).ToList();
+        _controller.PlayHand(cards);
 
-        Assert.Equal(6, _engine.Money); // 10 - 4 = 6
+        Assert.Equal(6, _controller.Money); // 10 - 4 = 6
     }
 
     [Fact]
@@ -191,13 +191,13 @@ public class BossBlindTests
         SetCustomBlind(BlindId.TheEye, 100000); // High score so round doesn't end
 
         // First play: 1 card (High Card)
-        var card1 = _engine.Hand.Take(1).Select(c => c.Id).ToList();
-        var (s1, _, _) = _engine.PlayHand(card1);
+        var card1 = _controller.Hand.Take(1).Select(c => c.Id).ToList();
+        var (s1, _, _) = _controller.PlayHand(card1);
         Assert.True(s1);
 
         // Second play: 1 card (High Card again) -> rejected
-        var card2 = _engine.Hand.Take(1).Select(c => c.Id).ToList();
-        var (s2, msg2, _) = _engine.PlayHand(card2);
+        var card2 = _controller.Hand.Take(1).Select(c => c.Id).ToList();
+        var (s2, msg2, _) = _controller.PlayHand(card2);
         Assert.False(s2);
         Assert.Contains("The Eye", msg2);
     }
@@ -208,19 +208,19 @@ public class BossBlindTests
         SetCustomBlind(BlindId.TheMouth, 100000);
 
         // Setup hand cards so we can test easily
-        _engine.Hand.Clear();
+        _controller.Hand.Clear();
         var c1 = new PlayingCard(Suit.Hearts, Rank.Two);
         var c2 = new PlayingCard(Suit.Diamonds, Rank.Two);
         var c3 = new PlayingCard(Suit.Clubs, Rank.Three);
         var c4 = new PlayingCard(Suit.Spades, Rank.Four);
-        _engine.Hand.AddRange(new[] { c1, c2, c3, c4 });
+        _controller.Hand.AddRange(new[] { c1, c2, c3, c4 });
 
         // Play Pair (c1 + c2)
-        var (s1, _, _) = _engine.PlayHand(new List<string> { c1.Id, c2.Id });
+        var (s1, _, _) = _controller.PlayHand(new List<string> { c1.Id, c2.Id });
         Assert.True(s1);
 
         // Now playing High Card (c3) should be rejected
-        var (s2, msg2, _) = _engine.PlayHand(new List<string> { c3.Id });
+        var (s2, msg2, _) = _controller.PlayHand(new List<string> { c3.Id });
         Assert.False(s2);
         Assert.Contains("The Mouth", msg2);
     }
@@ -229,29 +229,29 @@ public class BossBlindTests
     public void TheOx_SetsMoneyToZeroWhenPlayingMostPlayedHand()
     {
         SetCustomBlind(BlindId.TheOx, 100000);
-        _engine.PokerHandPlayed[PokerHandType.HighCard] = 10;
-        _engine.PokerHandPlayed[PokerHandType.Pair] = 2;
-        _engine.Money = 50;
+        _controller.PokerHandPlayed[PokerHandType.HighCard] = 10;
+        _controller.PokerHandPlayed[PokerHandType.Pair] = 2;
+        _controller.Money = 50;
 
         // Play High Card
-        _engine.PlayHand(_engine.Hand.Take(1).Select(c => c.Id).ToList());
+        _controller.PlayHand(_controller.Hand.Take(1).Select(c => c.Id).ToList());
 
-        Assert.Equal(0, _engine.Money);
+        Assert.Equal(0, _controller.Money);
     }
 
     [Fact]
     public void TheHook_DiscardsTwoRandomCardsAfterPlay()
     {
         SetCustomBlind(BlindId.TheHook, 100000);
-        int initialHandCount = _engine.Hand.Count;
+        int initialHandCount = _controller.Hand.Count;
 
         // Play 2 cards. With 8 cards, 2 played -> 6 left -> Hook discards 2 -> 4 left -> draw 4 back to 8
         // We can test by checking discard pile count
-        int initialDiscardCount = _engine.DiscardPile.Count;
-        _engine.PlayHand(_engine.Hand.Take(2).Select(c => c.Id).ToList());
+        int initialDiscardCount = _controller.DiscardPile.Count;
+        _controller.PlayHand(_controller.Hand.Take(2).Select(c => c.Id).ToList());
 
         // 2 played + 2 discarded by hook = 4 cards in discard pile
-        Assert.Equal(initialDiscardCount + 4, _engine.DiscardPile.Count);
+        Assert.Equal(initialDiscardCount + 4, _controller.DiscardPile.Count);
     }
 
     [Fact]
@@ -261,42 +261,42 @@ public class BossBlindTests
 
         // Add a Joker to be sold
         var testJoker = new JokerCard("Test Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 10, 2);
-        _engine.Deck.JokerCards.Add(testJoker);
+        _controller.Deck.JokerCards.Add(testJoker);
 
         // All cards should be debuffed
-        Assert.All(_engine.Hand, c => Assert.True(c.IsDebuffed));
+        Assert.All(_controller.Hand, c => Assert.True(c.IsDebuffed));
 
         // Sell the Joker
-        var (sold, _) = _engine.SellCard(testJoker.Id);
+        var (sold, _) = _controller.SellCard(testJoker.Id);
         Assert.True(sold);
 
         // Cards in hand should no longer be debuffed
-        Assert.All(_engine.Hand, c => Assert.False(c.IsDebuffed));
+        Assert.All(_controller.Hand, c => Assert.False(c.IsDebuffed));
     }
 
     [Fact]
     public void ThePillar_DebuffsCardsPlayedPreviouslyInAnte()
     {
-        _engine.StartGame();
+        _controller.StartGame();
 
         // Ante 1 - Select Small Blind (1)
-        _engine.SelectBlind(1);
-        var playedCard = _engine.Hand.First();
+        _controller.SelectBlind(1);
+        var playedCard = _controller.Hand.First();
         var playedCardId = playedCard.Id;
 
         // Play the card to register it into this Ante's history
-        _engine.PlayHand(new List<string> { playedCardId });
+        _controller.PlayHand(new List<string> { playedCardId });
 
         // Now select The Pillar Boss Blind
         var pillar = new Blind(BlindId.ThePillar, "The Pillar", BlindType.Boss, 600, 5, "Debuffs previously played cards");
-        _engine.BlindEnemies[_engine.CurrentAnte][2] = pillar;
-        _engine.DefeatBlind();
-        _engine.LeaveShop();
-        _engine.SelectBlind(3);
+        _controller.BlindEnemies[_controller.CurrentAnte][2] = pillar;
+        _controller.DefeatBlind();
+        _controller.LeaveShop();
+        _controller.SelectBlind(3);
 
         // Check if the played card (now recycled into draw/hand) is debuffed
-        var matchingCardInHand = _engine.Hand.FirstOrDefault(c => c.Id == playedCardId);
-        var matchingCardInDraw = _engine.DrawPile.PlayingCards.FirstOrDefault(c => c.Id == playedCardId);
+        var matchingCardInHand = _controller.Hand.FirstOrDefault(c => c.Id == playedCardId);
+        var matchingCardInDraw = _controller.DrawPile.PlayingCards.FirstOrDefault(c => c.Id == playedCardId);
 
         if (matchingCardInHand != null) Assert.True(matchingCardInHand.IsDebuffed);
         if (matchingCardInDraw != null) Assert.True(matchingCardInDraw.IsDebuffed);
@@ -305,13 +305,13 @@ public class BossBlindTests
     [Fact]
     public void BlindsGeneration_AnteEight_GeneratesShowdownBoss()
     {
-        _engine.StartGame();
-        while (_engine.CurrentAnte < 8)
+        _controller.StartGame();
+        while (_controller.CurrentAnte < 8)
         {
-            _engine.AdvanceAnte();
+            _controller.AdvanceAnte();
         }
 
-        var blinds = _engine.GetAvailableBlinds();
+        var blinds = _controller.GetAvailableBlinds();
         var boss = blinds.First(b => b.BlindType == BlindType.Boss);
 
         Assert.Contains(boss.BlindId, new[] { BlindId.VioletVessel, BlindId.VerdantLeaf });

@@ -8,7 +8,7 @@ using BackendBalatro.Services.Shop;
 
 namespace BackendBalatro.Services.Core;
 
-public class GameEngine : IGameEngine
+public class GameController : IGameController
 {
     private readonly IScoringService _scoringService;
     private readonly IShopService _shopService;
@@ -110,7 +110,7 @@ public class GameEngine : IGameEngine
     public event Action? OnWinGame;
     public event Action? OnGameOver;
 
-    public GameEngine(
+    public GameController(
         IScoringService scoringService,
         IShopService shopService,
         IConsumableEffectHandler consumableHandler)

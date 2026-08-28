@@ -9,36 +9,36 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
 {
     private static readonly Random _random = new();
 
-    public bool UseTarot(GameEngine engine, TarotCard tarot, List<string> targetCardIds, out string message)
+    public bool UseTarot(GameController controller, TarotCard tarot, List<string> targetCardIds, out string message)
     {
         message = string.Empty;
 
-        var targetCards = engine.Hand.Where(c => targetCardIds.Contains(c.Id)).ToList();
+        var targetCards = controller.Hand.Where(c => targetCardIds.Contains(c.Id)).ToList();
 
         switch (tarot.Type)
         {
             case TarotType.TheFool:
-                if (engine.LastTarotUsed != null && engine.LastTarotUsed.Type != TarotType.TheFool)
+                if (controller.LastTarotUsed != null && controller.LastTarotUsed.Type != TarotType.TheFool)
                 {
-                    if (engine.Deck.IsConsumableContainerFull())
+                    if (controller.Deck.IsConsumableContainerFull())
                     {
                         message = "Consumable inventory is full!";
                         return false;
                     }
-                    var clone = new TarotCard(engine.LastTarotUsed.Name, engine.LastTarotUsed.Price, engine.LastTarotUsed.Type);
-                    engine.Deck.UsableCards.Add(clone);
+                    var clone = new TarotCard(controller.LastTarotUsed.Name, controller.LastTarotUsed.Price, controller.LastTarotUsed.Type);
+                    controller.Deck.UsableCards.Add(clone);
                     message = $"The Fool created {clone.Name}!";
                     return true;
                 }
-                if (engine.LastPlanetUsed != null)
+                if (controller.LastPlanetUsed != null)
                 {
-                    if (engine.Deck.IsConsumableContainerFull())
+                    if (controller.Deck.IsConsumableContainerFull())
                     {
                         message = "Consumable inventory is full!";
                         return false;
                     }
-                    var clone = new PlanetCard(engine.LastPlanetUsed.Name, engine.LastPlanetUsed.PokerHandType);
-                    engine.Deck.UsableCards.Add(clone);
+                    var clone = new PlanetCard(controller.LastPlanetUsed.Name, controller.LastPlanetUsed.PokerHandType);
+                    controller.Deck.UsableCards.Add(clone);
                     message = $"The Fool created {clone.Name}!";
                     return true;
                 }
@@ -59,16 +59,16 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return true;
 
             case TarotType.TheHighPriestess:
-                if (engine.Deck.IsConsumableContainerFull())
+                if (controller.Deck.IsConsumableContainerFull())
                 {
                     message = "Consumable slots are full!";
                     return false;
                 }
-                int countP = Math.Min(2, engine.Deck.MaxConsumableContainer - engine.Deck.UsableCards.Count + 1); // +1 because current tarot is being consumed
+                int countP = Math.Min(2, controller.Deck.MaxConsumableContainer - controller.Deck.UsableCards.Count + 1); // +1 because current tarot is being consumed
                 for (int i = 0; i < countP; i++)
                 {
                     var hand = (PokerHandType)_random.Next(Enum.GetValues<PokerHandType>().Length);
-                    engine.Deck.UsableCards.Add(PlanetCard.CreateForHand(hand));
+                    controller.Deck.UsableCards.Add(PlanetCard.CreateForHand(hand));
                 }
                 message = "Created Planet cards!";
                 return true;
@@ -87,16 +87,16 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return true;
 
             case TarotType.TheEmperor:
-                if (engine.Deck.IsConsumableContainerFull())
+                if (controller.Deck.IsConsumableContainerFull())
                 {
                     message = "Consumable slots are full!";
                     return false;
                 }
-                int countT = Math.Min(2, engine.Deck.MaxConsumableContainer - engine.Deck.UsableCards.Count + 1);
+                int countT = Math.Min(2, controller.Deck.MaxConsumableContainer - controller.Deck.UsableCards.Count + 1);
                 for (int i = 0; i < countT; i++)
                 {
                     var t = (TarotType)_random.Next(Enum.GetValues<TarotType>().Length);
-                    engine.Deck.UsableCards.Add(new TarotCard(t.ToString(), 3, t));
+                    controller.Deck.UsableCards.Add(new TarotCard(t.ToString(), 3, t));
                 }
                 message = "Created Tarot cards!";
                 return true;
@@ -145,13 +145,13 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return true;
 
             case TarotType.TheHermit:
-                int gained = Math.Min(20, engine.Money);
-                engine.Money += gained;
+                int gained = Math.Min(20, controller.Money);
+                controller.Money += gained;
                 message = $"The Hermit doubled your money! (Gained ${gained})";
                 return true;
 
             case TarotType.TheWheelFortune:
-                if (engine.Deck.JokerCards.Count == 0)
+                if (controller.Deck.JokerCards.Count == 0)
                 {
                     message = "No Jokers available to upgrade!";
                     return false;
@@ -159,7 +159,7 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 bool wheelHit = _random.Next(4) == 0; // 1 in 4 chance
                 if (wheelHit)
                 {
-                    var eligibleJokers = engine.Deck.JokerCards.Where(j => j.Edition == JokerEdition.Base).ToList();
+                    var eligibleJokers = controller.Deck.JokerCards.Where(j => j.Edition == JokerEdition.Base).ToList();
                     if (eligibleJokers.Count > 0)
                     {
                         var targetJoker = eligibleJokers[_random.Next(eligibleJokers.Count)];
@@ -207,7 +207,7 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 }
                 foreach (var card in targetCards)
                 {
-                    engine.Hand.Remove(card);
+                    controller.Hand.Remove(card);
                 }
                 message = $"Destroyed {targetCards.Count} card(s).";
                 return true;
@@ -231,9 +231,9 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return true;
 
             case TarotType.TheTemperance:
-                int sellSum = engine.Deck.JokerCards.Sum(j => j.SellValue);
+                int sellSum = controller.Deck.JokerCards.Sum(j => j.SellValue);
                 int payout = Math.Min(50, sellSum);
-                engine.Money += payout;
+                controller.Money += payout;
                 message = $"Temperance gave ${payout} from Joker sell values!";
                 return true;
 
@@ -310,13 +310,13 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return true;
 
             case TarotType.Judgement:
-                if (engine.Deck.IsJokerContainerFull())
+                if (controller.Deck.IsJokerContainerFull())
                 {
                     message = "Joker slots are full!";
                     return false;
                 }
                 var newJoker = ShopService.GenerateRandomJoker(false);
-                engine.Deck.JokerCards.Add(newJoker);
+                controller.Deck.JokerCards.Add(newJoker);
                 message = $"Judgement spawned {newJoker.Name}!";
                 return true;
 
@@ -326,47 +326,47 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
         }
     }
 
-    public bool UsePlanet(GameEngine engine, PlanetCard planet, out string message)
+    public bool UsePlanet(GameController controller, PlanetCard planet, out string message)
     {
-        if (engine.PokerHandLevels.ContainsKey(planet.PokerHandType))
+        if (controller.PokerHandLevels.ContainsKey(planet.PokerHandType))
         {
-            engine.PokerHandLevels[planet.PokerHandType]++;
+            controller.PokerHandLevels[planet.PokerHandType]++;
         }
         else
         {
-            engine.PokerHandLevels[planet.PokerHandType] = 2;
+            controller.PokerHandLevels[planet.PokerHandType] = 2;
         }
 
         // Check if player has Constellation joker (+X0.1 Mult on planet use)
-        var constellation = engine.Deck.JokerCards.FirstOrDefault(j => j.JokerKey == "constellation");
+        var constellation = controller.Deck.JokerCards.FirstOrDefault(j => j.JokerKey == "constellation");
         if (constellation != null)
         {
             constellation.XMultValue += 0.1f;
         }
 
-        int newLevel = engine.PokerHandLevels[planet.PokerHandType];
+        int newLevel = controller.PokerHandLevels[planet.PokerHandType];
         message = $"Upgraded {planet.PokerHandType} to Level {newLevel}!";
         return true;
     }
 
-    public bool UseSpectral(GameEngine engine, SpectralCard spectral, out string message)
+    public bool UseSpectral(GameController controller, SpectralCard spectral, out string message)
     {
         message = string.Empty;
 
         switch (spectral.Type)
         {
             case SpectralType.Familiar:
-                if (engine.Hand.Count > 0)
+                if (controller.Hand.Count > 0)
                 {
-                    var toDestroy = engine.Hand[_random.Next(engine.Hand.Count)];
-                    engine.Hand.Remove(toDestroy);
+                    var toDestroy = controller.Hand[_random.Next(controller.Hand.Count)];
+                    controller.Hand.Remove(toDestroy);
                     for (int i = 0; i < 3; i++)
                     {
                         var faceRanks = new[] { Rank.Jack, Rank.Queen, Rank.King };
                         var r = faceRanks[_random.Next(faceRanks.Length)];
                         var s = (Suit)_random.Next(4);
                         var enh = (EnhancePokerCard)_random.Next(1, Enum.GetValues<EnhancePokerCard>().Length);
-                        engine.Hand.Add(new PlayingCard(s, r, enh));
+                        controller.Hand.Add(new PlayingCard(s, r, enh));
                     }
                     message = $"Familiar destroyed {toDestroy.Name} and added 3 Enhanced face cards!";
                     return true;
@@ -375,15 +375,15 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return false;
 
             case SpectralType.Grim:
-                if (engine.Hand.Count > 0)
+                if (controller.Hand.Count > 0)
                 {
-                    var toDestroy = engine.Hand[_random.Next(engine.Hand.Count)];
-                    engine.Hand.Remove(toDestroy);
+                    var toDestroy = controller.Hand[_random.Next(controller.Hand.Count)];
+                    controller.Hand.Remove(toDestroy);
                     for (int i = 0; i < 2; i++)
                     {
                         var s = (Suit)_random.Next(4);
                         var enh = (EnhancePokerCard)_random.Next(1, Enum.GetValues<EnhancePokerCard>().Length);
-                        engine.Hand.Add(new PlayingCard(s, Rank.Ace, enh));
+                        controller.Hand.Add(new PlayingCard(s, Rank.Ace, enh));
                     }
                     message = $"Grim destroyed {toDestroy.Name} and added 2 Enhanced Aces!";
                     return true;
@@ -392,16 +392,16 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return false;
 
             case SpectralType.Incantation:
-                if (engine.Hand.Count > 0)
+                if (controller.Hand.Count > 0)
                 {
-                    var toDestroy = engine.Hand[_random.Next(engine.Hand.Count)];
-                    engine.Hand.Remove(toDestroy);
+                    var toDestroy = controller.Hand[_random.Next(controller.Hand.Count)];
+                    controller.Hand.Remove(toDestroy);
                     for (int i = 0; i < 4; i++)
                     {
                         var r = (Rank)_random.Next(2, 11);
                         var s = (Suit)_random.Next(4);
                         var enh = (EnhancePokerCard)_random.Next(1, Enum.GetValues<EnhancePokerCard>().Length);
-                        engine.Hand.Add(new PlayingCard(s, r, enh));
+                        controller.Hand.Add(new PlayingCard(s, r, enh));
                     }
                     message = $"Incantation destroyed {toDestroy.Name} and added 4 Enhanced numbered cards!";
                     return true;
@@ -410,23 +410,23 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                 return false;
 
             case SpectralType.Wraith:
-                if (engine.Deck.IsJokerContainerFull())
+                if (controller.Deck.IsJokerContainerFull())
                 {
                     message = "Joker slots are full!";
                     return false;
                 }
                 var wraithJoker = ShopService.GenerateRandomJoker(false);
                 wraithJoker.Rarity = JokerRarity.Rare;
-                engine.Deck.JokerCards.Add(wraithJoker);
-                engine.Money = 0;
+                controller.Deck.JokerCards.Add(wraithJoker);
+                controller.Money = 0;
                 message = $"Wraith summoned Rare Joker {wraithJoker.Name} and set money to $0!";
                 return true;
 
             case SpectralType.Sigil:
-                if (engine.Hand.Count > 0)
+                if (controller.Hand.Count > 0)
                 {
                     var targetSuit = (Suit)_random.Next(4);
-                    foreach (var card in engine.Hand)
+                    foreach (var card in controller.Hand)
                     {
                         card.Suit = targetSuit;
                     }

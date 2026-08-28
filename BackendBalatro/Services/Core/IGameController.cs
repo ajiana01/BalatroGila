@@ -6,7 +6,7 @@ using ShopEntity = BackendBalatro.Models.Entities.Shop;
 
 namespace BackendBalatro.Services.Core;
 
-public interface IGameEngine
+public interface IGameController
 {
     string SessionId { get; }
     IPlayer Player { get; }

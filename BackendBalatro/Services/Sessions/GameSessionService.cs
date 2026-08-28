@@ -10,7 +10,7 @@ namespace BackendBalatro.Services.Sessions;
 
 public class GameSessionService : IGameSessionService
 {
-    private readonly ConcurrentDictionary<string, IGameEngine> _sessions = new();
+    private readonly ConcurrentDictionary<string, IGameController> _sessions = new();
     private readonly ConcurrentDictionary<string, Action> _sessionCleanups = new();
     private readonly IScoringService _scoringService;
     private readonly IShopService _shopService;
@@ -29,7 +29,7 @@ public class GameSessionService : IGameSessionService
         _logger = logger;
     }
 
-    public IGameEngine GetOrCreateSession(string? sessionId, string? playerName = null)
+    public IGameController GetOrCreateSession(string? sessionId, string? playerName = null)
     {
         if (string.IsNullOrWhiteSpace(sessionId))
         {
@@ -43,7 +43,7 @@ public class GameSessionService : IGameSessionService
         });
     }
 
-    public IGameEngine? GetSession(string sessionId)
+    public IGameController? GetSession(string sessionId)
     {
         _sessions.TryGetValue(sessionId, out var engine);
         return engine;
@@ -72,9 +72,9 @@ public class GameSessionService : IGameSessionService
         return id;
     }
 
-    private IGameEngine CreateAndConfigureEngine(string sessionId, string? playerName)
+    private IGameController CreateAndConfigureEngine(string sessionId, string? playerName)
     {
-        var engine = new GameEngine(_scoringService, _shopService, _consumableHandler)
+        var engine = new GameController(_scoringService, _shopService, _consumableHandler)
         {
             SessionId = sessionId,
             Player = new Player(1, playerName ?? "Player 1")
@@ -87,7 +87,7 @@ public class GameSessionService : IGameSessionService
         return engine;
     }
 
-    private void SubscribeToEngineEvents(IGameEngine engine, string sessionId)
+    private void SubscribeToEngineEvents(IGameController controller, string sessionId)
     {
         Action<Blind> onBlindSelected = blind =>
             _logger?.LogInformation("[EVENT][Session: {SessionId}] 🎯 Blind Selected: {BlindName} (Target: {TargetScore}, Reward: ${Reward})", sessionId, blind.Name, blind.ScoreToDefeat, blind.RewardMoney);
@@ -96,13 +96,13 @@ public class GameSessionService : IGameSessionService
             _logger?.LogInformation("[EVENT][Session: {SessionId}] 🃏 Played Hand with {Count} cards: [{Cards}]", sessionId, cards.Count, string.Join(", ", cards.Select(c => c.Name)));
 
         Action<int> onScore = score =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 📈 Score Added: +{Score} pts | Total Score: {CurrentScore}/{TargetScore}", sessionId, score, engine.CurrentScore, engine.CurrentBlind?.ScoreToDefeat ?? 0);
+            _logger?.LogInformation("[EVENT][Session: {SessionId}] 📈 Score Added: +{Score} pts | Total Score: {CurrentScore}/{TargetScore}", sessionId, score, controller.CurrentScore, controller.CurrentBlind?.ScoreToDefeat ?? 0);
 
         Action<Blind> onBlindDefeated = blind =>
             _logger?.LogInformation("[EVENT][Session: {BlindName}] 🏆 Blind Defeated: {BlindName}!", sessionId, blind.Name);
 
         Action onGetCashout = () =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 💰 Cashout Collected! Current Money: ${Money}", sessionId, engine.Money);
+            _logger?.LogInformation("[EVENT][Session: {SessionId}] 💰 Cashout Collected! Current Money: ${Money}", sessionId, controller.Money);
 
         Action onShopOpen = () =>
             _logger?.LogInformation("[EVENT][Session: {SessionId}] 🛒 Shop Opened! Items generated.", sessionId);
@@ -123,32 +123,32 @@ public class GameSessionService : IGameSessionService
             _logger?.LogInformation("[EVENT][Session: {SessionId}] 💀 GAME OVER! Failed to defeat the blind.", sessionId);
 
         // Attach listeners (+=)
-        engine.OnBlindSelected += onBlindSelected;
-        engine.OnPlayHand += onPlayHand;
-        engine.OnScore += onScore;
-        engine.OnBlindDefeated += onBlindDefeated;
-        engine.OnGetCashout += onGetCashout;
-        engine.OnShopOpen += onShopOpen;
-        engine.OnNextRound += onNextRound;
-        engine.OnAnteAdvance += onAnteAdvance;
-        engine.OnAddPlayingCard += onAddPlayingCard;
-        engine.OnWinGame += onWinGame;
-        engine.OnGameOver += onGameOver;
+        controller.OnBlindSelected += onBlindSelected;
+        controller.OnPlayHand += onPlayHand;
+        controller.OnScore += onScore;
+        controller.OnBlindDefeated += onBlindDefeated;
+        controller.OnGetCashout += onGetCashout;
+        controller.OnShopOpen += onShopOpen;
+        controller.OnNextRound += onNextRound;
+        controller.OnAnteAdvance += onAnteAdvance;
+        controller.OnAddPlayingCard += onAddPlayingCard;
+        controller.OnWinGame += onWinGame;
+        controller.OnGameOver += onGameOver;
 
         // Register cleanup callback for Unsubscribe (-=)
         _sessionCleanups[sessionId] = () =>
         {
-            engine.OnBlindSelected -= onBlindSelected;
-            engine.OnPlayHand -= onPlayHand;
-            engine.OnScore -= onScore;
-            engine.OnBlindDefeated -= onBlindDefeated;
-            engine.OnGetCashout -= onGetCashout;
-            engine.OnShopOpen -= onShopOpen;
-            engine.OnNextRound -= onNextRound;
-            engine.OnAnteAdvance -= onAnteAdvance;
-            engine.OnAddPlayingCard -= onAddPlayingCard;
-            engine.OnWinGame -= onWinGame;
-            engine.OnGameOver -= onGameOver;
+            controller.OnBlindSelected -= onBlindSelected;
+            controller.OnPlayHand -= onPlayHand;
+            controller.OnScore -= onScore;
+            controller.OnBlindDefeated -= onBlindDefeated;
+            controller.OnGetCashout -= onGetCashout;
+            controller.OnShopOpen -= onShopOpen;
+            controller.OnNextRound -= onNextRound;
+            controller.OnAnteAdvance -= onAnteAdvance;
+            controller.OnAddPlayingCard -= onAddPlayingCard;
+            controller.OnWinGame -= onWinGame;
+            controller.OnGameOver -= onGameOver;
         };
     }
 }

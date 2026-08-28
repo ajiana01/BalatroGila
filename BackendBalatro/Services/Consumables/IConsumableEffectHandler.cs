@@ -5,7 +5,7 @@ namespace BackendBalatro.Services.Consumables;
 
 public interface IConsumableEffectHandler
 {
-    bool UseTarot(GameEngine engine, TarotCard tarot, List<string> targetCardIds, out string message);
-    bool UsePlanet(GameEngine engine, PlanetCard planet, out string message);
-    bool UseSpectral(GameEngine engine, SpectralCard spectral, out string message);
+    bool UseTarot(GameController controller, TarotCard tarot, List<string> targetCardIds, out string message);
+    bool UsePlanet(GameController controller, PlanetCard planet, out string message);
+    bool UseSpectral(GameController controller, SpectralCard spectral, out string message);
 }
