@@ -370,28 +370,28 @@ public class GameController : IGameController
         return drawn;
     }
 
-    public (bool Success, string Message, ScoreCalculationResultDto? Result) PlayHand(List<string> cardIds)
+    public OperationResult<ScoreCalculationResultDto> PlayHand(List<string> cardIds)
     {
         if (Phase != GameStatePhase.Playing)
         {
-            return (false, $"Cannot play hand while in {Phase} phase.", null);
+            return OperationResult<ScoreCalculationResultDto>.Fail($"Cannot play hand while in {Phase} phase.");
         }
 
         if (cardIds == null || cardIds.Count == 0 || cardIds.Count > 5)
         {
-            return (false, "Must play between 1 and 5 cards.", null);
+            return OperationResult<ScoreCalculationResultDto>.Fail("Must play between 1 and 5 cards.");
         }
 
         // The Psychic: Must play exactly 5 cards
         if (CurrentBlind?.BlindId == BlindId.ThePsychic && cardIds.Count != 5)
         {
-            return (false, "The Psychic forces you to play exactly 5 cards!", null);
+            return OperationResult<ScoreCalculationResultDto>.Fail("The Psychic forces you to play exactly 5 cards!");
         }
 
         var playedCards = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
         if (playedCards.Count != cardIds.Count)
         {
-            return (false, "One or more selected cards are not in hand.", null);
+            return OperationResult<ScoreCalculationResultDto>.Fail("One or more selected cards are not in hand.");
         }
 
         var remainingInHand = Hand.Except(playedCards).ToList();
@@ -402,7 +402,7 @@ public class GameController : IGameController
         // The Eye: No repeat hand types this round
         if (CurrentBlind?.BlindId == BlindId.TheEye && _playedHandTypesThisRound.Contains(result.HandType))
         {
-            return (false, $"The Eye does not allow repeating {result.HandName} in this round!", null);
+            return OperationResult<ScoreCalculationResultDto>.Fail($"The Eye does not allow repeating {result.HandName} in this round!");
         }
 
         // The Mouth: Only 1 hand type allowed this round
@@ -414,7 +414,7 @@ public class GameController : IGameController
             }
             else if (_allowedHandTypeThisRound != result.HandType)
             {
-                return (false, $"The Mouth only allows playing {_allowedHandTypeThisRound} this round!", null);
+                return OperationResult<ScoreCalculationResultDto>.Fail($"The Mouth only allows playing {_allowedHandTypeThisRound} this round!");
             }
         }
 
@@ -510,44 +510,44 @@ public class GameController : IGameController
         if (CurrentBlind != null && RoundScore >= CurrentBlind.ScoreToDefeat)
         {
             DefeatBlind();
-            return (true, $"Blind Defeated! Scored {result.FinalScore} with {result.HandName}.", result);
+            return OperationResult<ScoreCalculationResultDto>.Ok(result, $"Blind Defeated! Scored {result.FinalScore} with {result.HandName}.");
         }
 
         // Check for Game Over
         if (_currentHand <= 0)
         {
             GameOver();
-            return (true, $"Game Over! Hands exhausted before reaching target score.", result);
+            return OperationResult<ScoreCalculationResultDto>.Ok(result, $"Game Over! Hands exhausted before reaching target score.");
         }
 
         // Round continues: draw replacement cards
         int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
         DrawCards(effectiveMaxHand - Hand.Count);
 
-        return (true, $"Played {result.HandName} for {result.FinalScore} points!", result);
+        return OperationResult<ScoreCalculationResultDto>.Ok(result, $"Played {result.HandName} for {result.FinalScore} points!");
     }
 
-    public (bool Success, string Message) DiscardCards(List<string> cardIds)
+    public OperationResult DiscardCards(List<string> cardIds)
     {
         if (Phase != GameStatePhase.Playing)
         {
-            return (false, $"Cannot discard cards while in {Phase} phase.");
+            return OperationResult.Fail($"Cannot discard cards while in {Phase} phase.");
         }
 
         if (_currentDiscard <= 0)
         {
-            return (false, "No discards remaining.");
+            return OperationResult.Fail("No discards remaining.");
         }
 
         if (cardIds == null || cardIds.Count == 0 || cardIds.Count > 5)
         {
-            return (false, "Must discard between 1 and 5 cards.");
+            return OperationResult.Fail("Must discard between 1 and 5 cards.");
         }
 
         var toDiscard = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
         if (toDiscard.Count != cardIds.Count)
         {
-            return (false, "One or more selected cards are not in hand.");
+            return OperationResult.Fail("One or more selected cards are not in hand.");
         }
 
         _currentDiscard--;
@@ -561,21 +561,21 @@ public class GameController : IGameController
         int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
         DrawCards(effectiveMaxHand - Hand.Count);
 
-        return (true, $"Discarded {toDiscard.Count} card(s).");
+        return OperationResult.Ok($"Discarded {toDiscard.Count} card(s).");
     }
 
-    public (bool Success, string Message, ScoreCalculationResultDto? Result) GetScorePreview(List<string> cardIds)
+    public OperationResult<ScoreCalculationResultDto> GetScorePreview(List<string> cardIds)
     {
         if (cardIds == null || cardIds.Count == 0 || cardIds.Count > 5)
         {
-            return (false, "Select 1 to 5 cards for score preview.", null);
+            return OperationResult<ScoreCalculationResultDto>.Fail("Select 1 to 5 cards for score preview.");
         }
 
         var playedCards = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
         var remainingInHand = Hand.Except(playedCards).ToList();
 
         var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels, CurrentBlind?.BlindId);
-        return (true, "Score preview calculated.", result);
+        return OperationResult<ScoreCalculationResultDto>.Ok(result, "Score preview calculated.");
     }
 
     public bool DefeatBlind()
@@ -618,11 +618,11 @@ public class GameController : IGameController
         return totalCashout;
     }
 
-    public (bool Success, string Message) LeaveShop()
+    public OperationResult LeaveShop()
     {
         if (Phase != GameStatePhase.InShop)
         {
-            return (false, "Cannot leave shop when not in Shop phase.");
+            return OperationResult.Fail("Cannot leave shop when not in Shop phase.");
         }
 
         Shop.OpenedBoosterPack = null;
@@ -630,7 +630,7 @@ public class GameController : IGameController
         if (CurrentBlind == null)
         {
             Phase = GameStatePhase.SelectingBlind;
-            return (true, "Proceeding to blind selection.");
+            return OperationResult.Ok("Proceeding to blind selection.");
         }
 
         if (CurrentBlind.BlindType == BlindType.Boss)
@@ -639,20 +639,20 @@ public class GameController : IGameController
             if (CurrentAnte >= 8)
             {
                 Win();
-                return (true, "Victory! You have defeated the Ante 8 Boss Blind!");
+                return OperationResult.Ok("Victory! You have defeated the Ante 8 Boss Blind!");
             }
 
             // Advance to next Ante
             AdvanceAnte();
             NextRound();
             Phase = GameStatePhase.SelectingBlind;
-            return (true, $"Advancing to Ante {CurrentAnte}!");
+            return OperationResult.Ok($"Advancing to Ante {CurrentAnte}!");
         }
 
         // Previous blind was Small or Big -> Next Blind in current Ante
         NextRound();
         Phase = GameStatePhase.SelectingBlind;
-        return (true, "Proceeding to next blind selection.");
+        return OperationResult.Ok("Proceeding to next blind selection.");
     }
 
     public bool AdvanceAnte()
@@ -689,12 +689,12 @@ public class GameController : IGameController
     }
 
     // Consumables & Joker Actions
-    public (bool Success, string Message) UseConsumable(string consumableId, List<string> targetCardIds)
+    public OperationResult UseConsumable(string consumableId, List<string> targetCardIds)
     {
         var card = Deck.UsableCards.FirstOrDefault(c => c.Id == consumableId);
         if (card == null)
         {
-            return (false, "Consumable card not found in inventory.");
+            return OperationResult.Fail("Consumable card not found in inventory.");
         }
 
         bool success = false;
@@ -727,10 +727,10 @@ public class GameController : IGameController
             }
         }
 
-        return (success, msg);
+        return new OperationResult(success, msg);
     }
 
-    public (bool Success, string Message) SellCard(string cardId)
+    public OperationResult SellCard(string cardId)
     {
         var joker = Deck.JokerCards.FirstOrDefault(j => j.Id == cardId);
         if (joker != null)
@@ -746,7 +746,7 @@ public class GameController : IGameController
                 foreach (var card in DiscardPile.PlayingCards) card.IsDebuffed = false;
             }
 
-            return (true, $"Sold {joker.Name} for ${joker.SellValue}.");
+            return OperationResult.Ok($"Sold {joker.Name} for ${joker.SellValue}.");
         }
 
         var consumable = Deck.UsableCards.FirstOrDefault(c => c.Id == cardId);
@@ -755,128 +755,128 @@ public class GameController : IGameController
             Deck.UsableCards.Remove(consumable);
             int sellVal = Math.Max(1, consumable.Price / 2);
             Money += sellVal;
-            return (true, $"Sold {consumable.Name} for ${sellVal}.");
+            return OperationResult.Ok($"Sold {consumable.Name} for ${sellVal}.");
         }
 
-        return (false, "Card not found in Jokers or Consumables.");
+        return OperationResult.Fail("Card not found in Jokers or Consumables.");
     }
 
-    public (bool Success, string Message) ArrangeJokers(List<string> jokerIds)
+    public OperationResult ArrangeJokers(List<string> jokerIds)
     {
         if (jokerIds == null || jokerIds.Count != Deck.JokerCards.Count)
         {
-            return (false, "Must provide all existing Joker IDs in the desired order.");
+            return OperationResult.Fail("Must provide all existing Joker IDs in the desired order.");
         }
 
         var reordered = new List<JokerCard>();
         foreach (var id in jokerIds)
         {
             var j = Deck.JokerCards.FirstOrDefault(x => x.Id == id);
-            if (j == null) return (false, $"Joker with ID {id} not found.");
+            if (j == null) return OperationResult.Fail($"Joker with ID {id} not found.");
             reordered.Add(j);
         }
 
         Deck.JokerCards.Clear();
         Deck.JokerCards.AddRange(reordered);
-        return (true, "Jokers reordered successfully.");
+        return OperationResult.Ok("Jokers reordered successfully.");
     }
 
-    public (bool Success, string Message) ArrangeConsumables(List<string> consumableIds)
+    public OperationResult ArrangeConsumables(List<string> consumableIds)
     {
         if (consumableIds == null || consumableIds.Count != Deck.UsableCards.Count)
         {
-            return (false, "Must provide all existing Consumable IDs in the desired order.");
+            return OperationResult.Fail("Must provide all existing Consumable IDs in the desired order.");
         }
 
         var reordered = new List<IUsableCard>();
         foreach (var id in consumableIds)
         {
             var c = Deck.UsableCards.FirstOrDefault(x => x.Id == id);
-            if (c == null) return (false, $"Consumable with ID {id} not found.");
+            if (c == null) return OperationResult.Fail($"Consumable with ID {id} not found.");
             reordered.Add(c);
         }
 
         Deck.UsableCards.Clear();
         Deck.UsableCards.AddRange(reordered);
-        return (true, "Consumables reordered successfully.");
+        return OperationResult.Ok("Consumables reordered successfully.");
     }
 
     // Shop Actions
-    public (bool Success, string Message) BuyCardFromShop(string cardId)
+    public OperationResult BuyCardFromShop(string cardId)
     {
         if (Phase != GameStatePhase.InShop)
         {
-            return (false, "Can only buy cards while in Shop phase.");
+            return OperationResult.Fail("Can only buy cards while in Shop phase.");
         }
 
         var joker = Shop.JokerCardOffers.FirstOrDefault(j => j.Id == cardId);
         if (joker != null)
         {
-            if (Money < joker.Price) return (false, "Not enough money.");
-            if (Deck.IsJokerContainerFull() && joker.Edition != JokerEdition.Negative) return (false, "Joker slots are full.");
+            if (Money < joker.Price) return OperationResult.Fail("Not enough money.");
+            if (Deck.IsJokerContainerFull() && joker.Edition != JokerEdition.Negative) return OperationResult.Fail("Joker slots are full.");
 
             Money -= joker.Price;
             Shop.JokerCardOffers.Remove(joker);
             Deck.JokerCards.Add(joker);
-            return (true, $"Purchased {joker.Name} for ${joker.Price}!");
+            return OperationResult.Ok($"Purchased {joker.Name} for ${joker.Price}!");
         }
 
         var tarot = Shop.TarotCardOffers.FirstOrDefault(t => t.Id == cardId);
         if (tarot != null)
         {
-            if (Money < tarot.Price) return (false, "Not enough money.");
-            if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+            if (Money < tarot.Price) return OperationResult.Fail("Not enough money.");
+            if (Deck.IsConsumableContainerFull()) return OperationResult.Fail("Consumable slots are full.");
 
             Money -= tarot.Price;
             Shop.TarotCardOffers.Remove(tarot);
             Deck.UsableCards.Add(tarot);
-            return (true, $"Purchased {tarot.Name} for ${tarot.Price}!");
+            return OperationResult.Ok($"Purchased {tarot.Name} for ${tarot.Price}!");
         }
 
         var planet = Shop.PlanetCardOffers.FirstOrDefault(p => p.Id == cardId);
         if (planet != null)
         {
-            if (Money < planet.Price) return (false, "Not enough money.");
-            if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+            if (Money < planet.Price) return OperationResult.Fail("Not enough money.");
+            if (Deck.IsConsumableContainerFull()) return OperationResult.Fail("Consumable slots are full.");
 
             Money -= planet.Price;
             Shop.PlanetCardOffers.Remove(planet);
             Deck.UsableCards.Add(planet);
-            return (true, $"Purchased {planet.Name} for ${planet.Price}!");
+            return OperationResult.Ok($"Purchased {planet.Name} for ${planet.Price}!");
         }
 
         var spectral = Shop.SpectralCardOffers.FirstOrDefault(s => s.Id == cardId);
         if (spectral != null)
         {
-            if (Money < spectral.Price) return (false, "Not enough money.");
-            if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+            if (Money < spectral.Price) return OperationResult.Fail("Not enough money.");
+            if (Deck.IsConsumableContainerFull()) return OperationResult.Fail("Consumable slots are full.");
 
             Money -= spectral.Price;
             Shop.SpectralCardOffers.Remove(spectral);
             Deck.UsableCards.Add(spectral);
-            return (true, $"Purchased {spectral.Name} for ${spectral.Price}!");
+            return OperationResult.Ok($"Purchased {spectral.Name} for ${spectral.Price}!");
         }
 
         var playingCard = Shop.PlayingCardOffers.FirstOrDefault(p => p.Id == cardId);
         if (playingCard != null)
         {
-            if (Money < playingCard.Price) return (false, "Not enough money.");
+            if (Money < playingCard.Price) return OperationResult.Fail("Not enough money.");
 
             Money -= playingCard.Price;
             Shop.PlayingCardOffers.Remove(playingCard);
             DrawPile.PlayingCards.Add(playingCard);
             OnAddPlayingCard?.Invoke(playingCard);
-            return (true, $"Purchased {playingCard.Name} and added to deck!");
+            return OperationResult.Ok($"Purchased {playingCard.Name} and added to deck!");
         }
 
-        return (false, "Card offer not found in shop.");
+        return OperationResult.Fail("Card offer not found in shop.");
     }
 
-    public (bool Success, string Message) RerollShop()
+    public OperationResult RerollShop()
     {
         if (Phase != GameStatePhase.InShop)
         {
-            return (false, "Can only reroll shop in Shop phase.");
+            return OperationResult.Fail("Can only reroll shop in Shop phase.");
         }
 
         int cost = Shop.RerollCost;
@@ -887,32 +887,32 @@ public class GameController : IGameController
 
         if (Money < cost)
         {
-            return (false, $"Not enough money to reroll (Costs ${cost}).");
+            return OperationResult.Fail($"Not enough money to reroll (Costs ${cost}).");
         }
 
         Money -= cost;
         Shop.RerollCount++;
         _shopService.RerollShop(Shop, CurrentAnte, PurchasedVouchers);
 
-        return (true, $"Shop rerolled for ${cost}. Next reroll costs ${Shop.RerollCost}.");
+        return OperationResult.Ok($"Shop rerolled for ${cost}. Next reroll costs ${Shop.RerollCost}.");
     }
 
-    public (bool Success, string Message, BoosterPack? Pack) BuyBoosterPack(string boosterId)
+    public OperationResult<BoosterPack> BuyBoosterPack(string boosterId)
     {
         if (Phase != GameStatePhase.InShop)
         {
-            return (false, "Can only buy booster packs in Shop phase.", null);
+            return OperationResult<BoosterPack>.Fail("Can only buy booster packs in Shop phase.");
         }
 
         var pack = Shop.BoosterPacks.FirstOrDefault(b => b.Id == boosterId);
         if (pack == null)
         {
-            return (false, "Booster pack not found in shop.", null);
+            return OperationResult<BoosterPack>.Fail("Booster pack not found in shop.");
         }
 
         if (Money < pack.Price)
         {
-            return (false, $"Not enough money (Costs ${pack.Price}).", null);
+            return OperationResult<BoosterPack>.Fail($"Not enough money (Costs ${pack.Price}).");
         }
 
         Money -= pack.Price;
@@ -934,14 +934,14 @@ public class GameController : IGameController
             }
         }
 
-        return (true, $"Opened {pack.Name}! Pick {pack.MaxPick} card(s).", pack);
+        return OperationResult<BoosterPack>.Ok(pack, $"Opened {pack.Name}! Pick {pack.MaxPick} card(s).");
     }
 
-    public (bool Success, string Message) SelectBoosterCard(string cardId)
+    public OperationResult SelectBoosterCard(string cardId)
     {
         if (Shop.OpenedBoosterPack == null)
         {
-            return (false, "No booster pack is currently opened.");
+            return OperationResult.Fail("No booster pack is currently opened.");
         }
 
         var pack = Shop.OpenedBoosterPack;
@@ -952,7 +952,7 @@ public class GameController : IGameController
         var joker = pack.JokerCards.FirstOrDefault(j => j.Id == cardId);
         if (joker != null)
         {
-            if (Deck.IsJokerContainerFull() && joker.Edition != JokerEdition.Negative) return (false, "Joker slots are full.");
+            if (Deck.IsJokerContainerFull() && joker.Edition != JokerEdition.Negative) return OperationResult.Fail("Joker slots are full.");
             Deck.JokerCards.Add(joker);
             pack.JokerCards.Remove(joker);
             picked = true;
@@ -964,7 +964,7 @@ public class GameController : IGameController
             var tarot = pack.TarotCards.FirstOrDefault(t => t.Id == cardId);
             if (tarot != null)
             {
-                if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+                if (Deck.IsConsumableContainerFull()) return OperationResult.Fail("Consumable slots are full.");
                 Deck.UsableCards.Add(tarot);
                 pack.TarotCards.Remove(tarot);
                 picked = true;
@@ -977,7 +977,7 @@ public class GameController : IGameController
             var planet = pack.PlanetCards.FirstOrDefault(p => p.Id == cardId);
             if (planet != null)
             {
-                if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+                if (Deck.IsConsumableContainerFull()) return OperationResult.Fail("Consumable slots are full.");
                 Deck.UsableCards.Add(planet);
                 pack.PlanetCards.Remove(planet);
                 picked = true;
@@ -990,7 +990,7 @@ public class GameController : IGameController
             var spectral = pack.SpectralCards.FirstOrDefault(s => s.Id == cardId);
             if (spectral != null)
             {
-                if (Deck.IsConsumableContainerFull()) return (false, "Consumable slots are full.");
+                if (Deck.IsConsumableContainerFull()) return OperationResult.Fail("Consumable slots are full.");
                 Deck.UsableCards.Add(spectral);
                 pack.SpectralCards.Remove(spectral);
                 picked = true;
@@ -1012,7 +1012,7 @@ public class GameController : IGameController
 
         if (!picked)
         {
-            return (false, "Card not found in opened booster pack.");
+            return OperationResult.Fail("Card not found in opened booster pack.");
         }
 
         pack.MaxPick--;
@@ -1022,36 +1022,36 @@ public class GameController : IGameController
             Shop.OpenedBoosterPack = null;
         }
 
-        return (true, resultMessage);
+        return OperationResult.Ok(resultMessage);
     }
 
-    public (bool Success, string Message) SkipBoosterPack()
+    public OperationResult SkipBoosterPack()
     {
         if (Shop.OpenedBoosterPack == null)
         {
-            return (true, "No booster pack opened.");
+            return OperationResult.Ok("No booster pack opened.");
         }
 
         Shop.OpenedBoosterPack = null;
-        return (true, "Booster pack skipped.");
+        return OperationResult.Ok("Booster pack skipped.");
     }
 
-    public (bool Success, string Message) BuyVoucher(string voucherId)
+    public OperationResult BuyVoucher(string voucherId)
     {
         if (Phase != GameStatePhase.InShop)
         {
-            return (false, "Can only buy vouchers in Shop phase.");
+            return OperationResult.Fail("Can only buy vouchers in Shop phase.");
         }
 
         if (Shop.Voucher == null || Shop.Voucher.Id != voucherId)
         {
-            return (false, "Voucher not available in shop.");
+            return OperationResult.Fail("Voucher not available in shop.");
         }
 
         var voucher = Shop.Voucher;
         if (Money < voucher.Price)
         {
-            return (false, $"Not enough money for voucher (Costs ${voucher.Price}).");
+            return OperationResult.Fail($"Not enough money for voucher (Costs ${voucher.Price}).");
         }
 
         Money -= voucher.Price;
@@ -1088,22 +1088,22 @@ public class GameController : IGameController
             MaxHands = Math.Max(1, MaxHands - 1);
         }
 
-        return (true, $"Purchased {voucher.Name} voucher!");
+        return OperationResult.Ok($"Purchased {voucher.Name} voucher!");
     }
 
-    public (bool Success, string Message) RerollBossBlind()
+    public OperationResult RerollBossBlind()
     {
         if (!PurchasedVouchers.Any(v => v.Effect == VoucherEffect.DirectorsCut))
         {
-            return (false, "Director's Cut voucher required to reroll Boss Blind.");
+            return OperationResult.Fail("Director's Cut voucher required to reroll Boss Blind.");
         }
         if (IsBossBlindRerolledThisAnte)
         {
-            return (false, "Boss Blind can only be rerolled once per Ante.");
+            return OperationResult.Fail("Boss Blind can only be rerolled once per Ante.");
         }
         if (Money < 10)
         {
-            return (false, "Not enough money to reroll Boss Blind (Costs $10).");
+            return OperationResult.Fail("Not enough money to reroll Boss Blind (Costs $10).");
         }
 
         Money -= 10;
@@ -1137,7 +1137,7 @@ public class GameController : IGameController
             CurrentBlind = newBoss;
         }
 
-        return (true, $"Boss Blind rerolled to {newBoss.Name} for $10.");
+        return OperationResult.Ok($"Boss Blind rerolled to {newBoss.Name} for $10.");
     }
 
     public GameStateResponseDto GetGameState(string? message = null, ScoreCalculationResultDto? lastScore = null)

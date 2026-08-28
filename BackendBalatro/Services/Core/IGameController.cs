@@ -66,26 +66,26 @@ public interface IGameController
     bool SelectBlind(int blindId);
     Blind? GetCurrentBlind();
     bool DefeatBlind();
-    (bool Success, string Message) RerollBossBlind();
+    OperationResult RerollBossBlind();
 
     // Hand Actions
     List<PlayingCard> DrawCards(int count);
-    (bool Success, string Message, ScoreCalculationResultDto? Result) PlayHand(List<string> cardIds);
-    (bool Success, string Message) DiscardCards(List<string> cardIds);
-    (bool Success, string Message, ScoreCalculationResultDto? Result) GetScorePreview(List<string> cardIds);
+    OperationResult<ScoreCalculationResultDto> PlayHand(List<string> cardIds);
+    OperationResult DiscardCards(List<string> cardIds);
+    OperationResult<ScoreCalculationResultDto> GetScorePreview(List<string> cardIds);
 
     // Consumables & Jokers
-    (bool Success, string Message) UseConsumable(string consumableId, List<string> targetCardIds);
-    (bool Success, string Message) SellCard(string cardId);
-    (bool Success, string Message) ArrangeJokers(List<string> jokerIds);
-    (bool Success, string Message) ArrangeConsumables(List<string> consumableIds);
+    OperationResult UseConsumable(string consumableId, List<string> targetCardIds);
+    OperationResult SellCard(string cardId);
+    OperationResult ArrangeJokers(List<string> jokerIds);
+    OperationResult ArrangeConsumables(List<string> consumableIds);
 
     // Shop
-    (bool Success, string Message) BuyCardFromShop(string cardId);
-    (bool Success, string Message) RerollShop();
-    (bool Success, string Message, BoosterPack? Pack) BuyBoosterPack(string boosterId);
-    (bool Success, string Message) SelectBoosterCard(string cardId);
-    (bool Success, string Message) BuyVoucher(string voucherId);
-    (bool Success, string Message) SkipBoosterPack();
-    (bool Success, string Message) LeaveShop();
+    OperationResult BuyCardFromShop(string cardId);
+    OperationResult RerollShop();
+    OperationResult<BoosterPack> BuyBoosterPack(string boosterId);
+    OperationResult SelectBoosterCard(string cardId);
+    OperationResult BuyVoucher(string voucherId);
+    OperationResult SkipBoosterPack();
+    OperationResult LeaveShop();
 }
