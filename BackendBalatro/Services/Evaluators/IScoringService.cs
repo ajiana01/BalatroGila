@@ -13,5 +13,8 @@ public interface IScoringService
         List<PlayingCard> handCardsRemaining,
         List<JokerCard> jokers,
         Dictionary<PokerHandType, int> handLevels,
-        BlindId? activeBlindId = null);
+        BlindId? activeBlindId = null,
+        int money = 0,
+        int remainingDiscards = 0,
+        int remainingDeckCards = 0);
 }

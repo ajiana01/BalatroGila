@@ -34,11 +34,11 @@ public class JokerScoringTests
     }
 
     // ==========================================
-    // 1. Suit-Based Jokers (+4 Mult per scoring card)
+    // 1. Suit-Based Jokers (+3 Mult per scoring card)
     // ==========================================
 
     [Fact]
-    public void GreedyJoker_Adds4Mult_PerScoringDiamondCard()
+    public void GreedyJoker_Adds3Mult_PerScoringDiamondCard()
     {
         // Pair of Diamonds => Both Diamonds score
         var played = new List<PlayingCard>
@@ -48,15 +48,15 @@ public class JokerScoringTests
         };
         var jokers = new List<JokerCard> { CreateJoker(JokerId.GreedyJoker) };
 
-        // Pair base: 10 chips, 2 mult. 2 Diamonds scored => +8 Mult.
-        // Total Mult = 2 (base) + 8 (Greedy) = 10 Mult.
+        // Pair base: 10 chips, 2 mult. 2 Diamonds scored => +6 Mult.
+        // Total Mult = 2 (base) + 6 (Greedy) = 8 Mult.
         var result = _scoringService.CalculateScore(played, new List<PlayingCard>(), jokers, _defaultLevels);
 
-        Assert.Equal(10f, result.TotalMult);
+        Assert.Equal(8f, result.TotalMult);
     }
 
     [Fact]
-    public void LustyJoker_Adds4Mult_PerScoringHeartCard()
+    public void LustyJoker_Adds3Mult_PerScoringHeartCard()
     {
         // Pair of Hearts => Both Hearts score
         var played = new List<PlayingCard>
@@ -68,11 +68,11 @@ public class JokerScoringTests
 
         var result = _scoringService.CalculateScore(played, new List<PlayingCard>(), jokers, _defaultLevels);
 
-        Assert.Equal(10f, result.TotalMult);
+        Assert.Equal(8f, result.TotalMult);
     }
 
     [Fact]
-    public void WrathfulJoker_Adds4Mult_PerScoringSpadeCard()
+    public void WrathfulJoker_Adds3Mult_PerScoringSpadeCard()
     {
         // Pair of Spades => Both Spades score
         var played = new List<PlayingCard>
@@ -84,11 +84,11 @@ public class JokerScoringTests
 
         var result = _scoringService.CalculateScore(played, new List<PlayingCard>(), jokers, _defaultLevels);
 
-        Assert.Equal(10f, result.TotalMult);
+        Assert.Equal(8f, result.TotalMult);
     }
 
     [Fact]
-    public void GluttonousJoker_Adds4Mult_PerScoringClubCard()
+    public void GluttonousJoker_Adds3Mult_PerScoringClubCard()
     {
         // Pair of Clubs => Both Clubs score
         var played = new List<PlayingCard>
@@ -100,7 +100,7 @@ public class JokerScoringTests
 
         var result = _scoringService.CalculateScore(played, new List<PlayingCard>(), jokers, _defaultLevels);
 
-        Assert.Equal(10f, result.TotalMult);
+        Assert.Equal(8f, result.TotalMult);
     }
 
     [Fact]
@@ -116,10 +116,10 @@ public class JokerScoringTests
             CreateJoker(JokerId.LustyJoker)
         };
 
-        // Wild Card triggers both Greedy (+4) and Lusty (+4) => +8 Mult total
+        // Wild Card triggers both Greedy (+3) and Lusty (+3) => +6 Mult total
         var result = _scoringService.CalculateScore(played, new List<PlayingCard>(), jokers, _defaultLevels);
 
-        Assert.Equal(1f + 4f + 4f, result.TotalMult);
+        Assert.Equal(1f + 3f + 3f, result.TotalMult);
     }
 
     // ==========================================
@@ -589,9 +589,9 @@ public class JokerScoringTests
         };
         var jokers = new List<JokerCard> { CreateJoker(JokerId.GreedyJoker) };
 
-        // Only 1 Diamond (King) scored => +4 Mult (2 of Diamonds is unscored, does not trigger)
+        // Only 1 Diamond (King) scored => +3 Mult (2 of Diamonds is unscored, does not trigger)
         var result = _scoringService.CalculateScore(played, new List<PlayingCard>(), jokers, _defaultLevels);
 
-        Assert.Equal(1f + 4f, result.TotalMult);
+        Assert.Equal(1f + 3f, result.TotalMult);
     }
 }

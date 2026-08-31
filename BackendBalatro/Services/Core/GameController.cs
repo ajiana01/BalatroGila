@@ -435,6 +435,39 @@ public class GameController : IGameController
         }
     }
 
+    private void ApplyJokerEndOfRoundEffects()
+    {
+        foreach (var joker in Deck.JokerCards.ToList())
+        {
+            switch (joker.JokerId)
+            {
+                case JokerId.GoldenJoker:
+                    Money += 4;
+                    break;
+                case JokerId.Popcorn:
+                    joker.MultValue = Math.Max(0, joker.MultValue - 4);
+                    break;
+                case JokerId.GrosMichel when Random.Shared.Next(6) == 0:
+                    Deck.JokerCards.Remove(joker);
+                    break;
+                case JokerId.Cavendish when Random.Shared.Next(1000) == 0:
+                    Deck.JokerCards.Remove(joker);
+                    break;
+            }
+        }
+    }
+
+    private void ApplyJokerAfterHandEffects()
+    {
+        foreach (var joker in Deck.JokerCards)
+        {
+            if (joker.JokerId == JokerId.IceCream)
+            {
+                joker.ChipsValue = Math.Max(0, joker.ChipsValue - 5);
+            }
+        }
+    }
+
     private void LiftVerdantLeafDebuffs()
     {
         if (CurrentBlind?.BlindId != BlindId.VerdantLeaf) return;
@@ -499,7 +532,15 @@ public class GameController : IGameController
 
         var remainingInHand = Hand.Except(playedCards).ToList();
 
-        var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels, CurrentBlind?.BlindId);
+        var result = _scoringService.CalculateScore(
+            playedCards,
+            remainingInHand,
+            Deck.JokerCards,
+            PokerHandLevels,
+            CurrentBlind?.BlindId,
+            Money,
+            DiscardsRemaining,
+            DrawPile.Count + DiscardPile.Count);
 
         if (!ValidateBossHandTypeRestrictions(result.HandType, result.HandName, out var bossHandError))
         {
@@ -527,6 +568,8 @@ public class GameController : IGameController
 
         RoundScore += result.FinalScore;
         CurrentScore += result.FinalScore;
+
+        ApplyJokerAfterHandEffects();
 
         OnPlayHand?.Invoke(playedCards);
         OnScore?.Invoke(result.FinalScore);
@@ -610,7 +653,15 @@ public class GameController : IGameController
         var playedCards = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
         var remainingInHand = Hand.Except(playedCards).ToList();
 
-        var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels, CurrentBlind?.BlindId);
+        var result = _scoringService.CalculateScore(
+            playedCards,
+            remainingInHand,
+            Deck.JokerCards,
+            PokerHandLevels,
+            CurrentBlind?.BlindId,
+            Money,
+            DiscardsRemaining,
+            DrawPile.Count + DiscardPile.Count);
         return OperationResult<ScoreCalculationResultDto>.Ok(result, "Score preview calculated.");
     }
 
@@ -624,6 +675,7 @@ public class GameController : IGameController
         Cashout();
 
         ApplyGoldCardEndOfRoundReward();
+        ApplyJokerEndOfRoundEffects();
 
         _shopService.PopulateShop(Shop, CurrentAnte, PurchasedVouchers, CurrentAnteVoucher, IsAnteVoucherPurchased);
         Phase = GameStatePhase.InShop;

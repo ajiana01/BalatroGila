@@ -45,6 +45,29 @@ public class ShopAndEconomyTests
     }
 
     [Fact]
+    public void GoldenJoker_Adds4DollarsAtEndOfRound()
+    {
+        _controller.StartGame();
+        _controller.Money = 0;
+        _controller.Deck.JokerCards.Add(new JokerCard(
+            JokerId.GoldenJoker,
+            "Golden Joker",
+            JokerEdition.Base,
+            JokerRarity.Common,
+            JokerModifierType.Money,
+            4,
+            6));
+
+        Assert.True(_controller.SelectBlind(1));
+        var blind = _controller.CurrentBlind!;
+        int expectedCashoutWithoutGoldenJoker = blind.RewardMoney + _controller.HandsRemaining;
+
+        Assert.True(_controller.DefeatBlind());
+
+        Assert.Equal(expectedCashoutWithoutGoldenJoker + 4, _controller.Money);
+    }
+
+    [Fact]
     public void Shop_Reroll_IncreasesRerollCost()
     {
         _controller.StartGame();

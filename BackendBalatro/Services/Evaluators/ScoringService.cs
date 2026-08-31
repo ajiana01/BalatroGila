@@ -64,7 +64,10 @@ public class ScoringService : IScoringService
         List<PlayingCard> handCardsRemaining,
         List<JokerCard> jokers,
         Dictionary<PokerHandType, int> handLevels,
-        BlindId? activeBlindId = null)
+        BlindId? activeBlindId = null,
+        int money = 0,
+        int remainingDiscards = 0,
+        int remainingDeckCards = 0)
     {
         var (handType, scoringCards, unscoredCards) = _pokerHandEvaluator.Evaluate(playedCards);
 
@@ -168,7 +171,20 @@ public class ScoringService : IScoringService
                 thisJokerMessages.Add($"X{joker.XMultValue} Mult");
             }
 
-            ApplySpecificJokerLogic(joker, handType, playedCards, scoringCards, handCardsRemaining, ref thisJokerChips, ref thisJokerMult, ref thisJokerXMult, thisJokerMessages);
+            ApplySpecificJokerLogic(
+                joker,
+                handType,
+                playedCards,
+                scoringCards,
+                handCardsRemaining,
+                jokers,
+                money,
+                remainingDiscards,
+                remainingDeckCards,
+                ref thisJokerChips,
+                ref thisJokerMult,
+                ref thisJokerXMult,
+                thisJokerMessages);
 
             jokerChips += thisJokerChips;
             jokerMult += thisJokerMult;
@@ -225,6 +241,10 @@ public class ScoringService : IScoringService
         List<PlayingCard> playedCards,
         List<PlayingCard> scoringCards,
         List<PlayingCard> handCardsRemaining,
+        List<JokerCard> jokers,
+        int money,
+        int remainingDiscards,
+        int remainingDeckCards,
         ref int jokerChips,
         ref float jokerMult,
         ref float jokerXMult,
@@ -294,12 +314,52 @@ public class ScoringService : IScoringService
                 }
                 break;
 
+            case JokerId.Banner:
+                if (remainingDiscards > 0)
+                {
+                    jokerChips += remainingDiscards * 30;
+                    triggerMessages.Add($"Banner: +{remainingDiscards * 30} Chips for remaining discards");
+                }
+                break;
+
+            case JokerId.MysticSummit:
+                if (remainingDiscards == 0)
+                {
+                    jokerMult += 15;
+                    triggerMessages.Add("Mystic Summit: +15 Mult with no discards remaining");
+                }
+                break;
+
+            case JokerId.AbstractJoker:
+                if (jokers.Count > 0)
+                {
+                    jokerMult += jokers.Count * 3;
+                    triggerMessages.Add($"Abstract Joker: +{jokers.Count * 3} Mult for {jokers.Count} Joker(s)");
+                }
+                break;
+
+            case JokerId.Bull:
+                if (money > 0)
+                {
+                    jokerChips += money * 2;
+                    triggerMessages.Add($"Bull: +{money * 2} Chips for ${money}");
+                }
+                break;
+
+            case JokerId.BlueJoker:
+                if (remainingDeckCards > 0)
+                {
+                    jokerChips += remainingDeckCards * 2;
+                    triggerMessages.Add($"Blue Joker: +{remainingDeckCards * 2} Chips for {remainingDeckCards} cards in deck");
+                }
+                break;
+
             case JokerId.GreedyJoker:
                 int diamondCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Diamonds || c.Enhancement == EnhancePokerCard.WildCards));
                 if (diamondCount > 0)
                 {
-                    jokerMult += diamondCount * 4;
-                    triggerMessages.Add($"Greedy Joker: +{diamondCount * 4} Mult from Diamonds");
+                    jokerMult += diamondCount * 3;
+                    triggerMessages.Add($"Greedy Joker: +{diamondCount * 3} Mult from Diamonds");
                 }
                 break;
 
@@ -307,8 +367,8 @@ public class ScoringService : IScoringService
                 int heartCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Hearts || c.Enhancement == EnhancePokerCard.WildCards));
                 if (heartCount > 0)
                 {
-                    jokerMult += heartCount * 4;
-                    triggerMessages.Add($"Lusty Joker: +{heartCount * 4} Mult from Hearts");
+                    jokerMult += heartCount * 3;
+                    triggerMessages.Add($"Lusty Joker: +{heartCount * 3} Mult from Hearts");
                 }
                 break;
 
@@ -316,8 +376,8 @@ public class ScoringService : IScoringService
                 int spadeCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Spades || c.Enhancement == EnhancePokerCard.WildCards));
                 if (spadeCount > 0)
                 {
-                    jokerMult += spadeCount * 4;
-                    triggerMessages.Add($"Wrathful Joker: +{spadeCount * 4} Mult from Spades");
+                    jokerMult += spadeCount * 3;
+                    triggerMessages.Add($"Wrathful Joker: +{spadeCount * 3} Mult from Spades");
                 }
                 break;
 
@@ -325,8 +385,8 @@ public class ScoringService : IScoringService
                 int clubCount = scoringCards.Count(c => !c.IsDebuffed && (c.Suit == Suit.Clubs || c.Enhancement == EnhancePokerCard.WildCards));
                 if (clubCount > 0)
                 {
-                    jokerMult += clubCount * 4;
-                    triggerMessages.Add($"Gluttonous Joker: +{clubCount * 4} Mult from Clubs");
+                    jokerMult += clubCount * 3;
+                    triggerMessages.Add($"Gluttonous Joker: +{clubCount * 3} Mult from Clubs");
                 }
                 break;
 

@@ -146,10 +146,10 @@ public class ShopService : IShopService
         return new List<JokerCard>
         {
             new JokerCard(JokerId.Joker, "Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 4, 2, "+4 Mult"),
-            new JokerCard(JokerId.GreedyJoker, "Greedy Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Diamond suit give +4 Mult when scored"),
-            new JokerCard(JokerId.LustyJoker, "Lusty Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Heart suit give +4 Mult when scored"),
-            new JokerCard(JokerId.WrathfulJoker, "Wrathful Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Spade suit give +4 Mult when scored"),
-            new JokerCard(JokerId.GluttonousJoker, "Gluttonous Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Club suit give +4 Mult when scored"),
+            new JokerCard(JokerId.GreedyJoker, "Greedy Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Diamond suit give +3 Mult when scored"),
+            new JokerCard(JokerId.LustyJoker, "Lusty Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Heart suit give +3 Mult when scored"),
+            new JokerCard(JokerId.WrathfulJoker, "Wrathful Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Spade suit give +3 Mult when scored"),
+            new JokerCard(JokerId.GluttonousJoker, "Gluttonous Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Played cards with Club suit give +3 Mult when scored"),
             new JokerCard(JokerId.JollyJoker, "Jolly Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 3, "+8 Mult if played hand contains a Pair"),
             new JokerCard(JokerId.ZanyJoker, "Zany Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+12 Mult if played hand contains a Three of a Kind"),
             new JokerCard(JokerId.MadJoker, "Mad Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+10 Mult if played hand contains a Two Pair"),
@@ -161,8 +161,8 @@ public class ShopService : IShopService
             new JokerCard(JokerId.DeviousJoker, "Devious Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "+100 Chips if played hand contains a Straight"),
             new JokerCard(JokerId.CraftyJoker, "Crafty Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "+80 Chips if played hand contains a Flush"),
             new JokerCard(JokerId.HalfJoker, "Half Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "+20 Mult if played hand contains 3 or fewer cards"),
-            new JokerCard(JokerId.Banner, "Banner", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 30, 5, "+30 Chips for each remaining discard"),
-            new JokerCard(JokerId.MysticSummit, "Mystic Summit", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 15, 5, "+15 Mult when 0 discards remaining"),
+            new JokerCard(JokerId.Banner, "Banner", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 5, "+30 Chips for each remaining discard"),
+            new JokerCard(JokerId.MysticSummit, "Mystic Summit", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "+15 Mult when 0 discards remaining"),
             new JokerCard(JokerId.Misprint, "Misprint", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+0-23 Mult"),
             new JokerCard(JokerId.RaisedFist, "Raised Fist", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 5, "Adds double the rank of lowest card held in hand to Mult"),
             new JokerCard(JokerId.ChaosTheClown, "Chaos the Clown", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "1 free Reroll per shop"),
@@ -170,7 +170,7 @@ public class ShopService : IShopService
             new JokerCard(JokerId.ScaryFace, "Scary Face", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 0, 4, "Played face cards give +30 Chips when scored"),
             new JokerCard(JokerId.SmileyFace, "Smiley Face", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "Played face cards give +5 Mult when scored"),
             new JokerCard(JokerId.Photograph, "Photograph", JokerEdition.Base, JokerRarity.Common, JokerModifierType.MultiplierMultiplier, 1.0f, 5, "First played face card gives X2 Mult when scored"),
-            new JokerCard(JokerId.AbstractJoker, "Abstract Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 6, 5, "+3 Mult for each Joker card (starts with +6 Mult)"),
+            new JokerCard(JokerId.AbstractJoker, "Abstract Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "+3 Mult for each Joker card (currently +0 Mult)"),
             new JokerCard(JokerId.GrosMichel, "Gros Michel", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 15, 5, "+15 Mult (1 in 6 chance to destroy at end of round)"),
             new JokerCard(JokerId.Cavendish, "Cavendish", JokerEdition.Base, JokerRarity.Common, JokerModifierType.MultiplierMultiplier, 3.0f, 4, "X3 Mult (1 in 1000 chance to destroy at end of round)"),
             new JokerCard(JokerId.EvenSteven, "Even Steven", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4, "Played cards with even rank give +4 Mult when scored (10, 8, 6, 4, 2)"),
@@ -183,7 +183,7 @@ public class ShopService : IShopService
             new JokerCard(JokerId.Popcorn, "Popcorn", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 20, 5, "+20 Mult (reduces by 4 each round)"),
             new JokerCard(JokerId.IceCream, "Ice Cream", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 100, 5, "+100 Chips (-5 Chips for every hand played)"),
             new JokerCard(JokerId.BlueJoker, "Blue Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 50, 5, "+2 Chips for each remaining card in deck"),
-            new JokerCard(JokerId.Constellation, "Constellation", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.MultiplierMultiplier, 1.5f, 6, "Gains X0.1 Mult every time a Planet card is used (currently X1.5 Mult)"),
+            new JokerCard(JokerId.Constellation, "Constellation", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.MultiplierMultiplier, 1.0f, 6, "Gains X0.1 Mult every time a Planet card is used (currently X1 Mult)"),
             new JokerCard(JokerId.GoldenJoker, "Golden Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Money, 4, 6, "Earn $4 at end of round")
         };
     }
