@@ -88,14 +88,6 @@ function OptionsModal({
         }
     };
 
-    const handleToggleHighContrast = () => {
-        const next = !localHighContrast;
-        setLocalHighContrast(next);
-        if (setHighContrast) {
-            setHighContrast(next);
-        }
-    };
-
     return (
         <div className="options-modal-backdrop" onClick={onClose}>
             <div className="options-modal-container" onClick={(e) => e.stopPropagation()}>
@@ -203,17 +195,6 @@ function OptionsModal({
                             <span className="option-name">Game Speed</span>
                             <button className="option-cycle-btn" onClick={handleCycleSpeed}>
                                 {localGameSpeed}X
-                            </button>
-                        </div>
-
-                        {/* High Contrast Cards */}
-                        <div className="option-row">
-                            <span className="option-name">High Contrast Cards</span>
-                            <button
-                                className={`option-toggle-btn ${localHighContrast ? 'active-green' : 'inactive-gray'}`}
-                                onClick={handleToggleHighContrast}
-                            >
-                                {localHighContrast ? 'ON' : 'OFF'}
                             </button>
                         </div>
                     </div>

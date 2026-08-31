@@ -156,6 +156,29 @@ function MainMenu() {
 
                 </div>
 
+                {/* UI Playground Button */}
+                <button
+                    onClick={() => navigate('/playground')}
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        left: '20px',
+                        zIndex: 10,
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        border: '1px solid #3fe0a5',
+                        color: '#3fe0a5',
+                        backgroundColor: 'rgba(10, 25, 20, 0.85)',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                    }}
+                >
+                    🛠️ UI Playground
+                </button>
+
                 {/* Music */}
                 <button
                     onClick={toggleMusic}

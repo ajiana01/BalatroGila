@@ -16,6 +16,9 @@ import DebugMenu from '../components/Gameplay/DebugMenu/DebugMenu.jsx';
 import { startGame, getGameState, selectBlind, generateSessionId } from '../services/api.js';
 import { mapBackendCards, mapBackendJokers, mapBackendConsumables, mapBackendBlind, mapBackendBlinds } from '../utils/cardMapper.js';
 
+// Flag to toggle Debug UI & testing shortcuts (set to false to disable)
+const IS_DEBUG_ENABLED = false;
+
 function Gameplay() {
 
     const navigate = useNavigate();
@@ -358,6 +361,8 @@ function Gameplay() {
 
     // Global keyboard shortcuts for debug & testing
     useEffect(() => {
+        if (!IS_DEBUG_ENABLED) return;
+
         const handleKeyDown = (e) => {
             if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
 
@@ -546,23 +551,25 @@ function Gameplay() {
                 setGameSpeed={setGameSpeed}
                 highContrast={highContrast}
                 setHighContrast={setHighContrast}
-                onForceWin={handleForceWin}
-                onForceLose={handleForceLose}
-                onJumpAnte8={handleJumpToAnte8Boss}
+                onForceWin={IS_DEBUG_ENABLED ? handleForceWin : undefined}
+                onForceLose={IS_DEBUG_ENABLED ? handleForceLose : undefined}
+                onJumpAnte8={IS_DEBUG_ENABLED ? handleJumpToAnte8Boss : undefined}
             />
 
             {/* DEV / DEBUG TESTING MENU */}
-            <DebugMenu
-                gameState={gameState}
-                setGameState={setGameState}
-                gameData={gameData}
-                setGameData={setGameData}
-                onForceWin={handleForceWin}
-                onForceLose={handleForceLose}
-                onRoundWin={handleRoundWin}
-                onRoundLose={handleRoundLose}
-                onRestart={handleRestart}
-            />
+            {IS_DEBUG_ENABLED && (
+                <DebugMenu
+                    gameState={gameState}
+                    setGameState={setGameState}
+                    gameData={gameData}
+                    setGameData={setGameData}
+                    onForceWin={handleForceWin}
+                    onForceLose={handleForceLose}
+                    onRoundWin={handleRoundWin}
+                    onRoundLose={handleRoundLose}
+                    onRestart={handleRestart}
+                />
+            )}
 
         </div>
     );
