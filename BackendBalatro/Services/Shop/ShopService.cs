@@ -184,11 +184,6 @@ public class ShopService : IShopService
             new JokerCard(JokerId.IceCream, "Ice Cream", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 100, 5, "+100 Chips (-5 Chips for every hand played)"),
             new JokerCard(JokerId.BlueJoker, "Blue Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Chips, 50, 5, "+2 Chips for each remaining card in deck"),
             new JokerCard(JokerId.Constellation, "Constellation", JokerEdition.Base, JokerRarity.Uncommon, JokerModifierType.MultiplierMultiplier, 1.5f, 6, "Gains X0.1 Mult every time a Planet card is used (currently X1.5 Mult)"),
-            new JokerCard(JokerId.TheDuo, "The Duo", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 2.0f, 8, "X2 Mult if played hand contains a Pair"),
-            new JokerCard(JokerId.TheTrio, "The Trio", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 3.0f, 8, "X3 Mult if played hand contains a Three of a Kind"),
-            new JokerCard(JokerId.TheOrder, "The Order", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 3.0f, 8, "X3 Mult if played hand contains a Straight"),
-            new JokerCard(JokerId.TheTribe, "The Tribe", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 2.0f, 8, "X2 Mult if played hand contains a Flush"),
-            new JokerCard(JokerId.TheFamily, "The Family", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 4.0f, 8, "X4 Mult if played hand contains a Four of a Kind"),
             new JokerCard(JokerId.GoldenJoker, "Golden Joker", JokerEdition.Base, JokerRarity.Common, JokerModifierType.Money, 4, 6, "Earn $4 at end of round")
         };
     }

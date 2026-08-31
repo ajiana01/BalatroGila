@@ -115,7 +115,6 @@ public class ScoringCalculationTests
         {
             new(JokerId.SmileyFace, "Smiley Face", JokerEdition.Base, JokerRarity.Common, JokerModifierType.AdditionMultiplier, 0, 4), // 2 face cards scored = +10 Mult
             new(JokerId.Photograph, "Photograph", JokerEdition.Base, JokerRarity.Common, JokerModifierType.MultiplierMultiplier, 1.0f, 5), // First face scored = X2 Mult
-            new(JokerId.TheDuo, "The Duo", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 1.0f, 8), // Pair = X2 Mult
             new(JokerId.Baron, "Baron", JokerEdition.Base, JokerRarity.Rare, JokerModifierType.MultiplierMultiplier, 1.0f, 8) // 1 King in hand = X1.5 Mult
         };
         var handLevels = new Dictionary<PokerHandType, int> { { PokerHandType.Pair, 1 } };
@@ -123,14 +122,14 @@ public class ScoringCalculationTests
         // Base Pair: 10 Chips, 2 Mult
         // Card chips: 10 + 10 = 20. Total chips = 30.
         // Base mult (2) + Smiley Face (+10) = 12 Mult.
-        // Joker XMult: Photograph (X2) * TheDuo (X2) * Baron (X1.5) = X6 Mult.
-        // Total mult = 12 * 6 = 72 Mult.
-        // Final score = 30 * 72 = 2160
+        // Joker XMult: Photograph (X2) * Baron (X1.5) = X3 Mult.
+        // Total mult = 12 * 3 = 36 Mult.
+        // Final score = 30 * 36 = 1080
 
         var result = _scoringService.CalculateScore(playedCards, remainingInHand, jokers, handLevels);
 
         Assert.Equal(30, result.TotalChips);
-        Assert.Equal(72f, result.TotalMult);
-        Assert.Equal(2160, result.FinalScore);
+        Assert.Equal(36f, result.TotalMult);
+        Assert.Equal(1080, result.FinalScore);
     }
 }

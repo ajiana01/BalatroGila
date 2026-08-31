@@ -106,10 +106,5 @@ public enum JokerId
     Seltzer,
     Castle,
     SmileyFace,
-    Campfire,
-    TheDuo,
-    TheTrio,
-    TheFamily,
-    TheOrder,
-    TheTribe
+    Campfire
 }

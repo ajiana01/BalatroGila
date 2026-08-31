@@ -457,46 +457,6 @@ public class ScoringService : IScoringService
                 }
                 break;
 
-            case JokerId.TheDuo:
-                if (handType == PokerHandType.Pair || handType == PokerHandType.TwoPair || handType == PokerHandType.FullHouse)
-                {
-                    jokerXMult *= 2.0f;
-                    triggerMessages.Add("The Duo: X2 Mult for Pair");
-                }
-                break;
-
-            case JokerId.TheTrio:
-                if (handType == PokerHandType.ThreeOfAKind || handType == PokerHandType.FullHouse)
-                {
-                    jokerXMult *= 3.0f;
-                    triggerMessages.Add("The Trio: X3 Mult for Three of a Kind");
-                }
-                break;
-
-            case JokerId.TheOrder:
-                if (handType == PokerHandType.Straight || handType == PokerHandType.StraightFlush)
-                {
-                    jokerXMult *= 3.0f;
-                    triggerMessages.Add("The Order: X3 Mult for Straight");
-                }
-                break;
-
-            case JokerId.TheTribe:
-                if (handType == PokerHandType.Flush || handType == PokerHandType.StraightFlush)
-                {
-                    jokerXMult *= 2.0f;
-                    triggerMessages.Add("The Tribe: X2 Mult for Flush");
-                }
-                break;
-
-            case JokerId.TheFamily:
-                if (handType == PokerHandType.FourOfAKind)
-                {
-                    jokerXMult *= 4.0f;
-                    triggerMessages.Add("The Family: X4 Mult for Four of a Kind");
-                }
-                break;
-
             case JokerId.Misprint:
                 var rnd = new Random();
                 int misprintMult = rnd.Next(0, 24);
