@@ -21,7 +21,6 @@ public class Deck
 
     public bool IsJokerContainerFull()
     {
-        // Negative jokers do not count towards the cap
         int nonNegativeCount = JokerCards.Count(j => j.Edition != Enums.JokerEdition.Negative);
         return nonNegativeCount >= MaxJokerContainer;
     }

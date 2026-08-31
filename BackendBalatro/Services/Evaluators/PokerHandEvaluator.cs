@@ -12,29 +12,22 @@ public class PokerHandEvaluator : IPokerHandEvaluator
             return (PokerHandType.HighCard, new List<PlayingCard>(), new List<PlayingCard>());
         }
 
-        // Separate Stone cards (which have no rank/suit, but can be played) from standard cards
-        var standardCards = playedCards.Where(c => c.Enhancement != EnhancePokerCard.StoneCards).ToList();
-        var stoneCards = playedCards.Where(c => c.Enhancement == EnhancePokerCard.StoneCards).ToList();
+        var standardCards = GetStandardCards(playedCards);
 
         if (standardCards.Count == 0)
         {
-            // All cards are stone cards
             return (PokerHandType.HighCard, playedCards, new List<PlayingCard>());
         }
 
         if (playedCards.Count >= 5 && standardCards.Count >= 5)
         {
-            if (IsFlush(standardCards) && TryGetStraight(standardCards, out var straightCards))
+            if (IsFlush(standardCards) && TryGetStraight(standardCards, out var straightFlushCards))
             {
-                return (PokerHandType.StraightFlush, straightCards, playedCards.Except(straightCards).ToList());
+                return (PokerHandType.StraightFlush, straightFlushCards, playedCards.Except(straightFlushCards).ToList());
             }
         }
 
-        var rankGroups = standardCards
-            .GroupBy(c => c.Rank)
-            .OrderByDescending(g => g.Count())
-            .ThenByDescending(g => (int)g.Key)
-            .ToList();
+        var rankGroups = GetRankGroupsDescending(standardCards);
 
         if (rankGroups.Any(g => g.Count() >= 4))
         {
@@ -90,17 +83,30 @@ public class PokerHandEvaluator : IPokerHandEvaluator
         return (PokerHandType.HighCard, highCardList, unscoredList);
     }
 
+    private static List<PlayingCard> GetStandardCards(List<PlayingCard> cards)
+    {
+        return cards.Where(c => c.Enhancement != EnhancePokerCard.StoneCards).ToList();
+    }
+
+    private static List<IGrouping<Rank, PlayingCard>> GetRankGroupsDescending(List<PlayingCard> cards)
+    {
+        return cards
+            .GroupBy(c => c.Rank)
+            .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => (int)g.Key)
+            .ToList();
+    }
+
     private static bool IsFlush(List<PlayingCard> cards)
     {
         if (cards.Count < 5) return false;
 
-        // Check for each suit whether all non-wild cards match it
-        foreach (Suit suit in Enum.GetValues<Suit>())
-        {
-            bool allMatch = cards.All(c => c.Enhancement == EnhancePokerCard.WildCards || c.Suit == suit);
-            if (allMatch) return true;
-        }
-        return false;
+        return Enum.GetValues<Suit>().Any(suit => IsSuitFlush(cards, suit));
+    }
+
+    private static bool IsSuitFlush(List<PlayingCard> cards, Suit suit)
+    {
+        return cards.All(c => c.Enhancement == EnhancePokerCard.WildCards || c.Suit == suit);
     }
 
     private static bool TryGetStraight(List<PlayingCard> cards, out List<PlayingCard> straightCards)
@@ -108,36 +114,59 @@ public class PokerHandEvaluator : IPokerHandEvaluator
         straightCards = new List<PlayingCard>();
         if (cards.Count < 5) return false;
 
-        // Get distinct ranks ordered descending
-        var distinctCards = cards
+        var distinctCards = GetDistinctRankCardsDescending(cards);
+        if (distinctCards.Count < 5) return false;
+
+        if (TryGetSequentialStraight(distinctCards, out straightCards))
+        {
+            return true;
+        }
+
+        return TryGetAceLowStraight(distinctCards, out straightCards);
+    }
+
+    private static List<PlayingCard> GetDistinctRankCardsDescending(List<PlayingCard> cards)
+    {
+        return cards
             .GroupBy(c => (int)c.Rank)
             .Select(g => g.First())
             .OrderByDescending(c => (int)c.Rank)
             .ToList();
+    }
 
-        if (distinctCards.Count < 5) return false;
+    private static bool TryGetSequentialStraight(List<PlayingCard> distinctCards, out List<PlayingCard> straightCards)
+    {
+        straightCards = new List<PlayingCard>();
 
-        // Standard high Ace or regular sequence check
         for (int i = 0; i <= distinctCards.Count - 5; i++)
         {
             var subset = distinctCards.Skip(i).Take(5).ToList();
-            bool isSeq = true;
-            for (int j = 0; j < 4; j++)
-            {
-                if ((int)subset[j].Rank - (int)subset[j + 1].Rank != 1)
-                {
-                    isSeq = false;
-                    break;
-                }
-            }
-            if (isSeq)
+            if (IsSequentialFiveCards(subset))
             {
                 straightCards = subset;
                 return true;
             }
         }
 
-        // Check Ace-low straight (A, 5, 4, 3, 2)
+        return false;
+    }
+
+    private static bool IsSequentialFiveCards(List<PlayingCard> cards)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            if ((int)cards[j].Rank - (int)cards[j + 1].Rank != 1)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static bool TryGetAceLowStraight(List<PlayingCard> distinctCards, out List<PlayingCard> straightCards)
+    {
+        straightCards = new List<PlayingCard>();
+
         var ace = distinctCards.FirstOrDefault(c => c.Rank == Rank.Ace);
         var five = distinctCards.FirstOrDefault(c => c.Rank == Rank.Five);
         var four = distinctCards.FirstOrDefault(c => c.Rank == Rank.Four);

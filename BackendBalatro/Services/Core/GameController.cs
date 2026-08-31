@@ -54,7 +54,6 @@ public class GameController : IGameController
     public TarotCard? LastTarotUsed { get; set; }
     public PlanetCard? LastPlanetUsed { get; set; }
 
-    // Boss Blind State Tracking
     private readonly HashSet<string> _playedCardIdsThisAnte = new();
     private readonly HashSet<PokerHandType> _playedHandTypesThisRound = new();
     private PokerHandType? _allowedHandTypeThisRound = null;
@@ -70,14 +69,12 @@ public class GameController : IGameController
 
     private static readonly List<BossBlindDef> SupportedBossBlinds = new()
     {
-        // Suit Debuffs
         new(BlindId.TheClub, "The Club", "All Club cards are debuffed", 1, 2.0f, 5),
         new(BlindId.TheGoad, "The Goad", "All Spade cards are debuffed", 1, 2.0f, 5),
         new(BlindId.TheWindow, "The Window", "All Diamond cards are debuffed", 1, 2.0f, 5),
         new(BlindId.TheHead, "The Head", "All Heart cards are debuffed", 1, 2.0f, 5),
         new(BlindId.ThePlant, "The Plant", "All face cards are debuffed", 4, 2.0f, 5),
 
-        // Rules & Constraints
         new(BlindId.ThePsychic, "The Psychic", "Must play exactly 5 cards", 1, 2.0f, 5),
         new(BlindId.TheNeedle, "The Needle", "Play only 1 hand", 2, 1.0f, 5),
         new(BlindId.TheWater, "The Water", "Start with 0 discards", 2, 2.0f, 5),
@@ -92,12 +89,10 @@ public class GameController : IGameController
         new(BlindId.TheOx, "The Ox", "Playing the most played poker hand sets money to $0", 6, 2.0f, 5),
         new(BlindId.ThePillar, "The Pillar", "Cards played previously this Ante are debuffed", 1, 2.0f, 5),
 
-        // Showdown Boss Blinds (Ante 8)
         new(BlindId.VioletVessel, "Violet Vessel", "Very large blind (6x base score)", 8, 6.0f, 8, true),
         new(BlindId.VerdantLeaf, "Verdant Leaf", "All cards are debuffed until 1 Joker is sold", 8, 2.0f, 8, true)
     };
 
-    // Events
     public event Action<Blind>? OnBlindSelected;
     public event Action<List<PlayingCard>>? OnPlayHand;
     public event Action<int>? OnScore;
@@ -267,27 +262,10 @@ public class GameController : IGameController
 
         RoundScore = 0;
 
-        if (selected.BlindId == BlindId.TheNeedle)
-        {
-            _currentHand = 1;
-        }
-        else
-        {
-            _currentHand = MaxHands;
-        }
+        _currentHand = GetInitialHandsForBlind(selected);
+        _currentDiscard = GetInitialDiscardsForBlind(selected);
 
-        if (selected.BlindId == BlindId.TheWater)
-        {
-            _currentDiscard = 0;
-        }
-        else
-        {
-            _currentDiscard = MaxDiscards;
-        }
-
-        // The Manacle: -1 Hand Size
-        int initialDraw = (selected.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
-        DrawCards(initialDraw);
+        DrawCards(GetEffectiveMaxHandSize(selected));
 
         Phase = GameStatePhase.Playing;
         OnBlindSelected?.Invoke(selected);
@@ -340,9 +318,143 @@ public class GameController : IGameController
         if (boss.BlindId == BlindId.VerdantLeaf) card.IsDebuffed = true;
     }
 
+    private int GetEffectiveMaxHandSize(Blind? blind = null)
+    {
+        var activeBlind = blind ?? CurrentBlind;
+        return activeBlind?.BlindId == BlindId.TheManacle
+            ? Math.Max(1, MaxHand - 1)
+            : MaxHand;
+    }
+
+    private int GetInitialHandsForBlind(Blind blind)
+    {
+        return blind.BlindId == BlindId.TheNeedle ? 1 : MaxHands;
+    }
+
+    private int GetInitialDiscardsForBlind(Blind blind)
+    {
+        return blind.BlindId == BlindId.TheWater ? 0 : MaxDiscards;
+    }
+
+    private bool IsHandPlayAllowedByPsychic(int cardCount, out string? errorMessage)
+    {
+        if (CurrentBlind?.BlindId == BlindId.ThePsychic && cardCount != 5)
+        {
+            errorMessage = "The Psychic forces you to play exactly 5 cards!";
+            return false;
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
+    private bool ValidateBossHandTypeRestrictions(PokerHandType handType, string handName, out string? errorMessage)
+    {
+        if (CurrentBlind?.BlindId == BlindId.TheEye && _playedHandTypesThisRound.Contains(handType))
+        {
+            errorMessage = $"The Eye does not allow repeating {handName} in this round!";
+            return false;
+        }
+
+        if (CurrentBlind?.BlindId == BlindId.TheMouth)
+        {
+            if (_allowedHandTypeThisRound == null)
+            {
+                _allowedHandTypeThisRound = handType;
+            }
+            else if (_allowedHandTypeThisRound != handType)
+            {
+                errorMessage = $"The Mouth only allows playing {_allowedHandTypeThisRound} this round!";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
+    private void ApplyBossHandPlayedPenalties(PokerHandType playedHandType, int playedCardCount)
+    {
+        if (CurrentBlind == null || CurrentBlind.BlindType != BlindType.Boss) return;
+
+        if (CurrentBlind.BlindId == BlindId.TheArm && PokerHandLevels.TryGetValue(playedHandType, out int lvl) && lvl > 1)
+        {
+            PokerHandLevels[playedHandType] = lvl - 1;
+        }
+
+        if (CurrentBlind.BlindId == BlindId.TheTooth)
+        {
+            Money = Math.Max(0, Money - playedCardCount);
+        }
+
+        if (CurrentBlind.BlindId == BlindId.TheOx && PokerHandPlayed.Values.Any(v => v > 0))
+        {
+            var mostPlayedType = PokerHandPlayed.OrderByDescending(kv => kv.Value).First().Key;
+            if (playedHandType == mostPlayedType)
+            {
+                Money = 0;
+            }
+        }
+    }
+
+    private List<PlayingCard> ProcessGlassCardDestruction(IEnumerable<PlayingCard> scoringCards, List<string> triggerMessages)
+    {
+        var destroyedCards = new List<PlayingCard>();
+        var rng = new Random();
+        foreach (var card in scoringCards)
+        {
+            if (!card.IsDebuffed && card.Enhancement == EnhancePokerCard.GlassCards && rng.Next(4) == 0)
+            {
+                destroyedCards.Add(card);
+                triggerMessages.Add($"{card.Name} (Glass): Shattered!");
+            }
+        }
+        return destroyedCards;
+    }
+
+    private void ApplyTheHookPenalty()
+    {
+        if (CurrentBlind?.BlindId != BlindId.TheHook || Hand.Count == 0) return;
+
+        var rng = new Random();
+        int discardCount = Math.Min(2, Hand.Count);
+        var discarded = Hand.OrderBy(_ => rng.Next()).Take(discardCount).ToList();
+        foreach (var card in discarded)
+        {
+            Hand.Remove(card);
+        }
+        DiscardPile.DiscardCards(discarded);
+    }
+
+    private void ApplyGoldCardEndOfRoundReward()
+    {
+        int goldCardCount = Hand.Count(c => !c.IsDebuffed && c.Enhancement == EnhancePokerCard.GoldCards);
+        if (goldCardCount > 0)
+        {
+            Money += goldCardCount * 3;
+        }
+    }
+
+    private void LiftVerdantLeafDebuffs()
+    {
+        if (CurrentBlind?.BlindId != BlindId.VerdantLeaf) return;
+
+        foreach (var card in Hand) card.IsDebuffed = false;
+        foreach (var card in DrawPile.PlayingCards) card.IsDebuffed = false;
+        foreach (var card in DiscardPile.PlayingCards) card.IsDebuffed = false;
+    }
+
+    private void EnsureHandAvailableForConsumableBooster(BoosterPack pack)
+    {
+        if ((pack.BoosterPackType == BoosterType.Arcana || pack.BoosterPackType == BoosterType.Spectral) && Hand.Count == 0)
+        {
+            DrawCards(MaxHand);
+        }
+    }
+
     public List<PlayingCard> DrawCards(int count)
     {
-        int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
+        int effectiveMaxHand = GetEffectiveMaxHandSize();
         int needed = Math.Min(count, effectiveMaxHand - Hand.Count);
         if (needed <= 0) return new List<PlayingCard>();
 
@@ -374,10 +486,9 @@ public class GameController : IGameController
             return OperationResult<ScoreCalculationResultDto>.Fail("Must play between 1 and 5 cards.");
         }
 
-        // The Psychic: Must play exactly 5 cards
-        if (CurrentBlind?.BlindId == BlindId.ThePsychic && cardIds.Count != 5)
+        if (!IsHandPlayAllowedByPsychic(cardIds.Count, out var psychicError))
         {
-            return OperationResult<ScoreCalculationResultDto>.Fail("The Psychic forces you to play exactly 5 cards!");
+            return OperationResult<ScoreCalculationResultDto>.Fail(psychicError!);
         }
 
         var playedCards = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
@@ -390,48 +501,14 @@ public class GameController : IGameController
 
         var result = _scoringService.CalculateScore(playedCards, remainingInHand, Deck.JokerCards, PokerHandLevels, CurrentBlind?.BlindId);
 
-        // The Eye: No repeat hand types this round
-        if (CurrentBlind?.BlindId == BlindId.TheEye && _playedHandTypesThisRound.Contains(result.HandType))
+        if (!ValidateBossHandTypeRestrictions(result.HandType, result.HandName, out var bossHandError))
         {
-            return OperationResult<ScoreCalculationResultDto>.Fail($"The Eye does not allow repeating {result.HandName} in this round!");
-        }
-
-        // The Mouth: Only 1 hand type allowed this round
-        if (CurrentBlind?.BlindId == BlindId.TheMouth)
-        {
-            if (_allowedHandTypeThisRound == null)
-            {
-                _allowedHandTypeThisRound = result.HandType;
-            }
-            else if (_allowedHandTypeThisRound != result.HandType)
-            {
-                return OperationResult<ScoreCalculationResultDto>.Fail($"The Mouth only allows playing {_allowedHandTypeThisRound} this round!");
-            }
+            return OperationResult<ScoreCalculationResultDto>.Fail(bossHandError!);
         }
 
         _currentHand--;
 
-        // The Arm: Decrease level of played poker hand by 1 (min level 1)
-        if (CurrentBlind?.BlindId == BlindId.TheArm && PokerHandLevels.TryGetValue(result.HandType, out int lvl) && lvl > 1)
-        {
-            PokerHandLevels[result.HandType] = lvl - 1;
-        }
-
-        // The Tooth: Lose $1 per card played
-        if (CurrentBlind?.BlindId == BlindId.TheTooth)
-        {
-            Money = Math.Max(0, Money - playedCards.Count);
-        }
-
-        // The Ox: Playing the most played poker hand sets money to $0
-        if (CurrentBlind?.BlindId == BlindId.TheOx && PokerHandPlayed.Values.Any(v => v > 0))
-        {
-            var mostPlayedType = PokerHandPlayed.OrderByDescending(kv => kv.Value).First().Key;
-            if (result.HandType == mostPlayedType)
-            {
-                Money = 0;
-            }
-        }
+        ApplyBossHandPlayedPenalties(result.HandType, playedCards.Count);
 
         _playedHandTypesThisRound.Add(result.HandType);
         foreach (var card in playedCards)
@@ -459,20 +536,7 @@ public class GameController : IGameController
             Money += result.LuckyMoneyWon;
         }
 
-        // Glass Card: 1 in 4 chance (25%) to destroy after scoring
-        var destroyedGlassCards = new List<PlayingCard>();
-        var glassRng = new Random();
-        foreach (var card in result.ScoringCards)
-        {
-            if (!card.IsDebuffed && card.Enhancement == EnhancePokerCard.GlassCards)
-            {
-                if (glassRng.Next(4) == 0)
-                {
-                    destroyedGlassCards.Add(card);
-                    result.JokerTriggerMessages.Add($"{card.Name} (Glass): Shattered!");
-                }
-            }
-        }
+        var destroyedGlassCards = ProcessGlassCardDestruction(result.ScoringCards, result.JokerTriggerMessages);
 
         foreach (var card in playedCards)
         {
@@ -481,18 +545,7 @@ public class GameController : IGameController
         var survivingPlayedCards = playedCards.Except(destroyedGlassCards).ToList();
         DiscardPile.DiscardCards(survivingPlayedCards);
 
-        // The Hook: Discard 2 random cards in hand after each hand played
-        if (CurrentBlind?.BlindId == BlindId.TheHook && Hand.Count > 0)
-        {
-            var random = new Random();
-            int hookDiscardCount = Math.Min(2, Hand.Count);
-            var hookDiscarded = Hand.OrderBy(_ => random.Next()).Take(hookDiscardCount).ToList();
-            foreach (var card in hookDiscarded)
-            {
-                Hand.Remove(card);
-            }
-            DiscardPile.DiscardCards(hookDiscarded);
-        }
+        ApplyTheHookPenalty();
 
         if (CurrentBlind != null && RoundScore >= CurrentBlind.ScoreToDefeat)
         {
@@ -506,8 +559,7 @@ public class GameController : IGameController
             return OperationResult<ScoreCalculationResultDto>.Ok(result, $"Game Over! Hands exhausted before reaching target score.");
         }
 
-        int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
-        DrawCards(effectiveMaxHand - Hand.Count);
+        DrawCards(GetEffectiveMaxHandSize() - Hand.Count);
 
         return OperationResult<ScoreCalculationResultDto>.Ok(result, $"Played {result.HandName} for {result.FinalScore} points!");
     }
@@ -543,8 +595,7 @@ public class GameController : IGameController
         }
         DiscardPile.DiscardCards(toDiscard);
 
-        int effectiveMaxHand = (CurrentBlind?.BlindId == BlindId.TheManacle) ? Math.Max(1, MaxHand - 1) : MaxHand;
-        DrawCards(effectiveMaxHand - Hand.Count);
+        DrawCards(GetEffectiveMaxHandSize() - Hand.Count);
 
         return OperationResult.Ok($"Discarded {toDiscard.Count} card(s).");
     }
@@ -572,12 +623,7 @@ public class GameController : IGameController
 
         Cashout();
 
-        // Gold Card: +$3 each if held in hand at end of round
-        int goldCardCount = Hand.Count(c => !c.IsDebuffed && c.Enhancement == EnhancePokerCard.GoldCards);
-        if (goldCardCount > 0)
-        {
-            Money += goldCardCount * 3;
-        }
+        ApplyGoldCardEndOfRoundReward();
 
         _shopService.PopulateShop(Shop, CurrentAnte, PurchasedVouchers, CurrentAnteVoucher, IsAnteVoucherPurchased);
         Phase = GameStatePhase.InShop;
@@ -669,7 +715,6 @@ public class GameController : IGameController
         return true;
     }
 
-    // Consumables & Joker Actions
     public OperationResult UseConsumable(string consumableId, List<string> targetCardIds)
     {
         var card = Deck.UsableCards.FirstOrDefault(c => c.Id == consumableId);
@@ -719,13 +764,7 @@ public class GameController : IGameController
             Deck.JokerCards.Remove(joker);
             Money += joker.SellValue;
 
-            // Verdant Leaf: All cards debuffed until 1 Joker is sold
-            if (CurrentBlind?.BlindId == BlindId.VerdantLeaf)
-            {
-                foreach (var card in Hand) card.IsDebuffed = false;
-                foreach (var card in DrawPile.PlayingCards) card.IsDebuffed = false;
-                foreach (var card in DiscardPile.PlayingCards) card.IsDebuffed = false;
-            }
+            LiftVerdantLeafDebuffs();
 
             return OperationResult.Ok($"Sold {joker.Name} for ${joker.SellValue}.");
         }
@@ -782,7 +821,6 @@ public class GameController : IGameController
         return OperationResult.Ok("Consumables reordered successfully.");
     }
 
-    // Shop Actions
     public OperationResult BuyCardFromShop(string cardId)
     {
         if (Phase != GameStatePhase.InShop)
@@ -906,14 +944,7 @@ public class GameController : IGameController
         _shopService.OpenBoosterPack(pack, PurchasedVouchers, mostPlayedHand);
         Shop.OpenedBoosterPack = pack;
 
-        // For Arcana (Tarot) and Spectral booster packs, ensure hand cards are available to view/target
-        if (pack.BoosterPackType == BoosterType.Arcana || pack.BoosterPackType == BoosterType.Spectral)
-        {
-            if (Hand.Count == 0)
-            {
-                DrawCards(MaxHand);
-            }
-        }
+        EnsureHandAvailableForConsumableBooster(pack);
 
         return OperationResult<BoosterPack>.Ok(pack, $"Opened {pack.Name}! Pick {pack.MaxPick} card(s).");
     }

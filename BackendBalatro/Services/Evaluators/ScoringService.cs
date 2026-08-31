@@ -68,7 +68,6 @@ public class ScoringService : IScoringService
     {
         var (handType, scoringCards, unscoredCards) = _pokerHandEvaluator.Evaluate(playedCards);
 
-        // Also add any Stone cards from playedCards to scoring cards if not already included
         var stoneCards = playedCards.Where(c => c.Enhancement == EnhancePokerCard.StoneCards && !scoringCards.Contains(c)).ToList();
         if (stoneCards.Count > 0)
         {
@@ -79,7 +78,6 @@ public class ScoringService : IScoringService
         int level = handLevels.TryGetValue(handType, out int lvl) ? lvl : 1;
         var (baseChips, baseMult) = GetBaseChipsAndMult(handType, level);
 
-        // The Flint: Base Chips and Mult halved during round
         if (activeBlindId == BlindId.TheFlint)
         {
             baseChips = Math.Max(1, (int)Math.Floor(baseChips / 2.0));
@@ -98,16 +96,15 @@ public class ScoringService : IScoringService
             cardMult += card.GetEffectiveMult();
             cardXMult *= card.GetEffectiveXMult();
 
-            // Lucky Card evaluation (1 in 5 for +20 Mult, 1 in 15 for +$20)
             if (!card.IsDebuffed && card.Enhancement == EnhancePokerCard.LuckyCards)
             {
                 var rng = new Random();
-                if (rng.Next(5) == 0) // 1 in 5 (20%)
+                if (rng.Next(5) == 0)
                 {
                     cardMult += 20f;
                     triggerMessages.Add($"{card.Name} (Lucky): +20 Mult!");
                 }
-                if (rng.Next(15) == 0) // 1 in 15 (~6.67%)
+                if (rng.Next(15) == 0)
                 {
                     luckyMoney += 20;
                     triggerMessages.Add($"{card.Name} (Lucky): +$20!");
@@ -139,7 +136,6 @@ public class ScoringService : IScoringService
             float thisJokerXMult = 1.0f;
             var thisJokerMessages = new List<string>();
 
-            // Joker Editions
             if (joker.Edition == JokerEdition.Foil)
             {
                 thisJokerChips += 50;
@@ -156,7 +152,6 @@ public class ScoringService : IScoringService
                 thisJokerMessages.Add("X1.5 Mult");
             }
 
-            // Joker Modifier Types
             if (joker.ChipsValue > 0)
             {
                 thisJokerChips += joker.ChipsValue;
@@ -173,7 +168,6 @@ public class ScoringService : IScoringService
                 thisJokerMessages.Add($"X{joker.XMultValue} Mult");
             }
 
-            // Specific Joker Key Logic
             ApplySpecificJokerLogic(joker, handType, playedCards, scoringCards, handCardsRemaining, ref thisJokerChips, ref thisJokerMult, ref thisJokerXMult, thisJokerMessages);
 
             jokerChips += thisJokerChips;
@@ -239,7 +233,6 @@ public class ScoringService : IScoringService
         switch (joker.JokerId)
         {
             case JokerId.ScaryFace:
-                // Face cards give +30 Chips when scored
                 int faceCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Jack || c.Rank == Rank.Queen || c.Rank == Rank.King));
                 if (faceCount > 0)
                 {
@@ -249,7 +242,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.SmileyFace:
-                // Face cards give +5 Mult when scored
                 int smileyFaceCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Jack || c.Rank == Rank.Queen || c.Rank == Rank.King));
                 if (smileyFaceCount > 0)
                 {
@@ -259,7 +251,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.Photograph:
-                // First played face card gives X2 Mult when scored
                 var firstFace = scoringCards.FirstOrDefault(c => !c.IsDebuffed && (c.Rank == Rank.Jack || c.Rank == Rank.Queen || c.Rank == Rank.King));
                 if (firstFace != null)
                 {
@@ -269,7 +260,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.HalfJoker:
-                // +20 Mult if played hand contains 3 or fewer cards
                 if (playedCards.Count <= 3)
                 {
                     jokerMult += 20;
@@ -278,7 +268,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.RaisedFist:
-                // Adds double the rank of lowest card held in hand to Mult
                 if (handCardsRemaining.Count > 0)
                 {
                     var lowestRank = handCardsRemaining.Min(c => (int)c.Rank);
@@ -288,7 +277,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.Baron:
-                // Each King held in hand gives X1.5 Mult
                 int kingHeldCount = handCardsRemaining.Count(c => !c.IsDebuffed && c.Rank == Rank.King);
                 if (kingHeldCount > 0)
                 {
@@ -299,7 +287,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.Blackboard:
-                // X3 Mult if all cards held in hand are Spades or Clubs
                 if (handCardsRemaining.Count > 0 && handCardsRemaining.All(c => c.Suit == Suit.Spades || c.Suit == Suit.Clubs))
                 {
                     jokerXMult *= 3.0f;
@@ -344,7 +331,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.Fibonacci:
-                // Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored
                 int fibCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Ace || c.Rank == Rank.Two || c.Rank == Rank.Three || c.Rank == Rank.Five || c.Rank == Rank.Eight));
                 if (fibCount > 0)
                 {
@@ -354,7 +340,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.EvenSteven:
-                // Played cards with even rank give +4 Mult when scored (10, 8, 6, 4, 2)
                 int evenCount = scoringCards.Count(c => !c.IsDebuffed && ((int)c.Rank % 2 == 0) && (int)c.Rank <= 10);
                 if (evenCount > 0)
                 {
@@ -364,7 +349,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.OddTodd:
-                // Played cards with odd rank give +31 Chips when scored (A, 9, 7, 5, 3)
                 int oddCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Ace || ((int)c.Rank % 2 == 1 && (int)c.Rank <= 9)));
                 if (oddCount > 0)
                 {
@@ -374,7 +358,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.Scholar:
-                // Played Aces give +20 Chips and +4 Mult when scored
                 int aceCount = scoringCards.Count(c => !c.IsDebuffed && c.Rank == Rank.Ace);
                 if (aceCount > 0)
                 {
@@ -385,7 +368,6 @@ public class ScoringService : IScoringService
                 break;
 
             case JokerId.WalkieTalkie:
-                // Each played 10 or 4 gives +10 Chips and +4 Mult when scored
                 int wtCount = scoringCards.Count(c => !c.IsDebuffed && (c.Rank == Rank.Ten || c.Rank == Rank.Four));
                 if (wtCount > 0)
                 {

@@ -156,7 +156,7 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
                     message = "No Jokers available to upgrade!";
                     return false;
                 }
-                bool wheelHit = _random.Next(4) == 0; // 1 in 4 chance
+                bool wheelHit = _random.Next(4) == 0;
                 if (wheelHit)
                 {
                     var eligibleJokers = controller.Deck.JokerCards.Where(j => j.Edition == JokerEdition.Base).ToList();
@@ -337,16 +337,20 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
             controller.PokerHandLevels[planet.PokerHandType] = 2;
         }
 
-        // Check if player has Constellation joker (+X0.1 Mult on planet use)
-        var constellation = controller.Deck.JokerCards.FirstOrDefault(j => j.JokerKey == "constellation");
-        if (constellation != null)
-        {
-            constellation.XMultValue += 0.1f;
-        }
+        ApplyConstellationJokerEffect(controller);
 
         int newLevel = controller.PokerHandLevels[planet.PokerHandType];
         message = $"Upgraded {planet.PokerHandType} to Level {newLevel}!";
         return true;
+    }
+
+    private static void ApplyConstellationJokerEffect(GameController controller)
+    {
+        var constellation = controller.Deck.JokerCards.FirstOrDefault(j => j.JokerId == JokerId.Constellation);
+        if (constellation != null)
+        {
+            constellation.XMultValue += 0.1f;
+        }
     }
 
     public bool UseSpectral(GameController controller, SpectralCard spectral, out string message)

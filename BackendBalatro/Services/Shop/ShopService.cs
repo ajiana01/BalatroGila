@@ -197,7 +197,7 @@ public class ShopService : IShopService
     {
         var types = new[] { BoosterType.Arcana, BoosterType.Celestial, BoosterType.Standard, BoosterType.Buffoon, BoosterType.Spectral };
         var type = types[_random.Next(types.Length)];
-        var size = (PackSize)_random.Next(3); // Normal, Jumbo, Mega
+        var size = (PackSize)_random.Next(3);
 
         int price = type switch
         {

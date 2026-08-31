@@ -40,7 +40,6 @@ public interface IGameController
     TarotCard? LastTarotUsed { get; set; }
     PlanetCard? LastPlanetUsed { get; set; }
 
-    // Actions
     event Action<Blind>? OnBlindSelected;
     event Action<List<PlayingCard>>? OnPlayHand;
     event Action<int>? OnScore;
@@ -53,7 +52,6 @@ public interface IGameController
     event Action? OnWinGame;
     event Action? OnGameOver;
 
-    // Game lifecycle
     bool StartGame();
     GameStateResponseDto GetGameState(string? message = null, ScoreCalculationResultDto? lastScore = null);
     bool GameOver();
@@ -61,26 +59,22 @@ public interface IGameController
     bool AdvanceAnte();
     bool NextRound();
 
-    // Blinds
     List<Blind> GetAvailableBlinds();
     bool SelectBlind(int blindId);
     Blind? GetCurrentBlind();
     bool DefeatBlind();
     OperationResult RerollBossBlind();
 
-    // Hand Actions
     List<PlayingCard> DrawCards(int count);
     OperationResult<ScoreCalculationResultDto> PlayHand(List<string> cardIds);
     OperationResult DiscardCards(List<string> cardIds);
     OperationResult<ScoreCalculationResultDto> GetScorePreview(List<string> cardIds);
 
-    // Consumables & Jokers
     OperationResult UseConsumable(string consumableId, List<string> targetCardIds);
     OperationResult SellCard(string cardId);
     OperationResult ArrangeJokers(List<string> jokerIds);
     OperationResult ArrangeConsumables(List<string> consumableIds);
 
-    // Shop
     OperationResult BuyCardFromShop(string cardId);
     OperationResult RerollShop();
     OperationResult<BoosterPack> BuyBoosterPack(string boosterId);
