@@ -1364,7 +1364,104 @@ public class GameControllerTests
 
     #region Blind Defeat, Cashout, & End-of-Round Effects Tests
 
-    
+    [Test]
+    [Description("TC-6.1: Memverifikasi cashout menghitung reward, sisa hand, dan interest")]
+    public void DefeatBlind_StandardCashout_CalculatesRewardHandsAndInterest()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.Money = 15;
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 });
+
+        for (var hand = 0; hand < 2; hand++)
+        {
+            var playResult = _gameController.PlayHand(new List<string> { _gameController.Hand[0].Id });
+            Assert.That(playResult.Success, Is.True);
+        }
+
+        var result = _gameController.DefeatBlind();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(23),
+                "Cashout should add $3 reward, $2 for remaining hands, and $3 interest.");
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.InShop));
+        });
+    }
+
+    [Test]
+    [Description("TC-6.2: Memverifikasi voucher SeedMoney menaikkan batas interest menjadi sepuluh dolar")]
+    public void DefeatBlind_WithSeedMoneyVoucher_CapsInterestAtTenDollars()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.PurchasedVouchers.Add(
+            new Voucher("SeedMoney", VoucherEffect.SeedMoney, 10));
+        _gameController.Money = 60;
+
+        var result = _gameController.DefeatBlind();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(77),
+                "Cashout should include the $10 SeedMoney interest cap.");
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.InShop));
+        });
+    }
+
+    [Test]
+    [Description("TC-6.3: Memverifikasi dua Gold Card yang tidak didebuff memberikan bonus enam dolar")]
+    public void DefeatBlind_WithGoldCardsInHand_AwardsThreeDollarsPerGoldCard()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.Money = 0;
+        _gameController.Hand[0].Enhancement = EnhancePokerCard.GoldCards;
+        _gameController.Hand[1].Enhancement = EnhancePokerCard.GoldCards;
+
+        var result = _gameController.DefeatBlind();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(13),
+                "Cashout adds $3 reward, $4 for remaining hands, and $6 for two Gold Cards.");
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.InShop));
+        });
+    }
+
+    [Test]
+    [Description("TC-6.4: Memverifikasi efek akhir ronde GoldenJoker dan Popcorn")]
+    public void DefeatBlind_WithJokers_TriggersEndOfRoundJokerEffects()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.Money = 0;
+        var goldenJoker = new JokerCard(JokerId.GoldenJoker, "Golden Joker", JokerEdition.Base,
+            JokerRarity.Common, JokerModifierType.AdditionMultiplier, 4f, 4);
+        var popcorn = new JokerCard(JokerId.Popcorn, "Popcorn", JokerEdition.Base,
+            JokerRarity.Common, JokerModifierType.AdditionMultiplier, 10f, 4);
+        _gameController.Deck.JokerCards.Add(goldenJoker);
+        _gameController.Deck.JokerCards.Add(popcorn);
+
+        var result = _gameController.DefeatBlind();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(11),
+                "Cashout adds $3 reward, $4 for remaining hands, and $4 from Golden Joker.");
+            Assert.That(popcorn.MultValue, Is.EqualTo(6f));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.InShop));
+        });
+    }
 
     #endregion
 
