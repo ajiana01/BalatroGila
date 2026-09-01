@@ -1730,7 +1730,145 @@ public class GameControllerTests
 
     #region Consumables & Inventory Management Tests
 
-    
+    [Test]
+    [Description("TC-8.1: Memverifikasi penggunaan Tarot memanggil handler, menyimpan LastTarotUsed, dan menghapus kartu")]
+    public void UseConsumable_ValidTarotCard_ExecutesEffectAndRemovesFromDeck()
+    {
+        var tarot = new TarotCard("The Magician", 3, TarotType.TheMagician);
+        _gameController.Deck.UsableCards.Add(tarot);
+        var targetCardIds = new List<string>();
+        var handlerMessage = "Tarot effect applied.";
+        _mockConsumableHandler
+            .Setup(handler => handler.UseTarot(_gameController, tarot, targetCardIds, out handlerMessage))
+            .Returns(true);
+
+        var result = _gameController.UseConsumable(tarot.Id, targetCardIds);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Message, Is.EqualTo(handlerMessage));
+            Assert.That(_gameController.LastTarotUsed, Is.SameAs(tarot));
+            Assert.That(_gameController.Deck.UsableCards, Does.Not.Contain(tarot));
+        });
+
+        _mockConsumableHandler.Verify(
+            handler => handler.UseTarot(_gameController, tarot, targetCardIds, out handlerMessage), Times.Once);
+    }
+
+    [Test]
+    [Description("TC-8.2: Memverifikasi penggunaan consumable yang tidak ada di inventaris ditolak")]
+    public void UseConsumable_CardNotFound_ReturnsFailure()
+    {
+        var result = _gameController.UseConsumable("missing-consumable", new List<string>());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("Consumable card not found in inventory."));
+        });
+    }
+
+    [Test]
+    [Description("TC-8.3: Memverifikasi penjualan Joker menghapus kartu dan menambah uang sesuai SellValue")]
+    public void SellCard_ExistingJoker_RemovesJokerAndIncreasesMoneyBySellValue()
+    {
+        var joker = new JokerCard("Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 4f, 6);
+        _gameController.Deck.JokerCards.Add(joker);
+        _gameController.Money = 4;
+
+        var result = _gameController.SellCard(joker.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Deck.JokerCards, Does.Not.Contain(joker));
+            Assert.That(_gameController.Money, Is.EqualTo(7), "SellValue should be half of the $6 Joker price.");
+        });
+    }
+
+    [Test]
+    [Description("TC-8.4: Memverifikasi penjualan consumable menambah setengah harga ke saldo")]
+    public void SellCard_ExistingConsumable_RemovesConsumableAndAddsHalfPrice()
+    {
+        var tarot = new TarotCard("The Fool", 5, TarotType.TheFool);
+        _gameController.Deck.UsableCards.Add(tarot);
+        _gameController.Money = 4;
+
+        var result = _gameController.SellCard(tarot.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Deck.UsableCards, Does.Not.Contain(tarot));
+            Assert.That(_gameController.Money, Is.EqualTo(6));
+        });
+    }
+
+    [Test]
+    [Description("TC-8.5: Memverifikasi penjualan kartu yang tidak ada di inventaris ditolak")]
+    public void SellCard_CardNotInInventory_ReturnsFailure()
+    {
+        var result = _gameController.SellCard("missing-card");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("Card not found in Jokers or Consumables."));
+            Assert.That(_gameController.Money, Is.EqualTo(4));
+        });
+    }
+
+    [Test]
+    [Description("TC-8.6: Memverifikasi urutan Joker dapat diatur ulang dengan seluruh ID valid")]
+    public void ArrangeJokers_ValidOrder_ReordersJokerDeck()
+    {
+        var firstJoker = new JokerCard("First Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 1f, 4);
+        var secondJoker = new JokerCard("Second Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 1f, 4);
+        var thirdJoker = new JokerCard("Third Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 1f, 4);
+        _gameController.Deck.JokerCards.AddRange(new[] { firstJoker, secondJoker, thirdJoker });
+
+        var result = _gameController.ArrangeJokers(new List<string>
+        {
+            thirdJoker.Id, firstJoker.Id, secondJoker.Id
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Deck.JokerCards,
+                Is.EqualTo(new[] { thirdJoker, firstJoker, secondJoker }));
+        });
+    }
+
+    [Test]
+    [Description("TC-8.7: Memverifikasi ArrangeJokers menolak jumlah ID tidak cocok dan ID fiktif tanpa mengubah urutan")]
+    public void ArrangeJokers_CountMismatchOrInvalidId_ReturnsFailure()
+    {
+        var firstJoker = new JokerCard("First Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 1f, 4);
+        var secondJoker = new JokerCard("Second Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 1f, 4);
+        _gameController.Deck.JokerCards.AddRange(new[] { firstJoker, secondJoker });
+        var originalOrder = _gameController.Deck.JokerCards.ToList();
+
+        var countMismatchResult = _gameController.ArrangeJokers(new List<string> { firstJoker.Id });
+        var invalidIdResult = _gameController.ArrangeJokers(new List<string> { firstJoker.Id, "missing-joker" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(countMismatchResult.Success, Is.False);
+            Assert.That(countMismatchResult.Message,
+                Is.EqualTo("Must provide all existing Joker IDs in the desired order."));
+            Assert.That(invalidIdResult.Success, Is.False);
+            Assert.That(invalidIdResult.Message, Is.EqualTo("Joker with ID missing-joker not found."));
+            Assert.That(_gameController.Deck.JokerCards, Is.EqualTo(originalOrder));
+        });
+    }
 
     #endregion
 }
