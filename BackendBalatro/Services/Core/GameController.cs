@@ -8,6 +8,7 @@ using BackendBalatro.Services.Shop;
 
 namespace BackendBalatro.Services.Core;
 
+//TODO SERILOG
 public class GameController : IGameController
 {
     private readonly IScoringService _scoringService;
@@ -755,6 +756,11 @@ public class GameController : IGameController
 
     public bool Win()
     {
+        if (Phase == GameStatePhase.GameOver)
+        {
+            return false;
+        }
+
         Phase = GameStatePhase.Victory;
         OnWinGame?.Invoke();
         return true;
@@ -1209,12 +1215,12 @@ public class GameController : IGameController
         {
             shopDto = new ShopDto
             {
-                JokerCards = Shop.JokerCardOffers,
-                PlayingCards = Shop.PlayingCardOffers,
-                TarotCards = Shop.TarotCardOffers,
-                PlanetCards = Shop.PlanetCardOffers,
-                SpectralCards = Shop.SpectralCardOffers,
-                BoosterPacks = Shop.BoosterPacks,
+                JokerCards = Shop.JokerCardOffers ?? new List<JokerCard>(),
+                PlayingCards = Shop.PlayingCardOffers ?? new List<PlayingCard>(),
+                TarotCards = Shop.TarotCardOffers ?? new List<TarotCard>(),
+                PlanetCards = Shop.PlanetCardOffers ?? new List<PlanetCard>(),
+                SpectralCards = Shop.SpectralCardOffers ?? new List<SpectralCard>(),
+                BoosterPacks = Shop.BoosterPacks ?? new List<BoosterPack>(),
                 Voucher = Shop.Voucher,
                 OpenedBoosterPack = Shop.OpenedBoosterPack,
                 RerollCost = Shop.RerollCost,

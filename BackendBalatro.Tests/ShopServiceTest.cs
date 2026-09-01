@@ -1,6 +1,6 @@
 namespace BackendBalatro.Tests;
 
-public class GameController_BlindTests
+public class ShopServiceTest
 {
     
 }

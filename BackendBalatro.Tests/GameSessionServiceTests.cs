@@ -1,6 +1,6 @@
 namespace BackendBalatro.Tests;
 
-public class GameController_DiscardTests
+public class GameSessionServiceTests
 {
     
 }
