@@ -30,6 +30,8 @@ public class GameControllerTests
             _mockConsumableHandler.Object);
     }
 
+    #region Game Lifecycle Tests
+
     [Test]
     [Description("TC-1.1: Memulai permainan baru dan memverifikasi default state serta 52 kartu di DrawPile")]
     public void StartGame_NewGame_InitializesDefaultStateAnd52CardDeck()
@@ -353,4 +355,262 @@ public class GameControllerTests
             Assert.That(winEventFired, Is.False, "OnWinGame must not fire from GameOver phase.");
         });
     }
+
+    #endregion
+
+    #region Blind Selection & Boss Generation Tests
+
+    [Test]
+    [Description("TC-2.1: Memverifikasi pemilihan Small Blind mengubah phase, mengisi CurrentBlind, membagikan 8 kartu, dan memicu event")]
+    public void SelectBlind_ValidSmallBlind_TransitionsToPlayingPhaseAndDrawsInitialHand()
+    {
+        _gameController.StartGame();
+        Blind? selectedBlindFromEvent = null;
+        _gameController.OnBlindSelected += blind => selectedBlindFromEvent = blind;
+
+        var result = _gameController.SelectBlind(1);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True, "Selecting a valid Small Blind should succeed.");
+            Assert.That(_gameController.CurrentBlind, Is.Not.Null, "CurrentBlind should be populated.");
+            Assert.That(_gameController.CurrentBlind!.Id, Is.EqualTo(1), "Small Blind has ID 1.");
+            Assert.That(_gameController.CurrentBlind.BlindType, Is.EqualTo(BlindType.Small));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(_gameController.MaxHand),
+                "Initial hand should contain MaxHand cards.");
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+            Assert.That(selectedBlindFromEvent, Is.SameAs(_gameController.CurrentBlind),
+                "OnBlindSelected should fire with the selected blind.");
+        });
+    }
+
+    [Test]
+    [Description("TC-2.2: Memverifikasi kartu dari ronde sebelumnya dikembalikan ke DrawPile dan seluruh debuff dihapus")]
+    public void SelectBlind_CardsFromPreviousRound_RecyclesAndClearsDebuffs()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+
+        var cardMovedToDiscard = _gameController.Hand[0];
+        _gameController.Hand.RemoveAt(0);
+        _gameController.DiscardPile.DiscardCards(new[] { cardMovedToDiscard });
+
+        foreach (var card in _gameController.Hand
+                     .Concat(_gameController.DrawPile.PlayingCards)
+                     .Concat(_gameController.DiscardPile.PlayingCards))
+        {
+            card.IsDebuffed = true;
+        }
+
+        _gameController.DefeatBlind();
+        _gameController.LeaveShop();
+
+        var result = _gameController.SelectBlind(2);
+        var allCards = _gameController.Hand
+            .Concat(_gameController.DrawPile.PlayingCards)
+            .Concat(_gameController.DiscardPile.PlayingCards)
+            .ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True, "Selecting the next valid blind should succeed.");
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(_gameController.MaxHand));
+            Assert.That(_gameController.DiscardPile, Is.Empty,
+                "DiscardPile should be empty after cards are recycled.");
+            Assert.That(allCards, Has.Count.EqualTo(52), "The complete deck should be preserved.");
+            Assert.That(allCards.Any(card => card.IsDebuffed), Is.False,
+                "All cards should have their debuff cleared before the new blind.");
+        });
+    }
+
+    [TestCase(999)]
+    [TestCase(-1)]
+    [Description("TC-2.3: Memverifikasi ID blind yang tidak valid ditolak tanpa mengubah state game")]
+    public void SelectBlind_InvalidBlindId_ReturnsFalseAndPhaseUnchanged(int invalidBlindId)
+    {
+        _gameController.StartGame();
+
+        var result = _gameController.SelectBlind(invalidBlindId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.False, "Selecting an invalid blind ID should fail.");
+            Assert.That(_gameController.CurrentBlind, Is.Null, "CurrentBlind should remain null.");
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.SelectingBlind),
+                "Phase should remain SelectingBlind.");
+        });
+    }
+    [Test]
+    [Description("TC-2.4: Memverifikasi blind yang sudah dikalahkan tidak dapat dipilih kembali")]
+    public void SelectBlind_AlreadyDefeatedBlind_ReturnsFalse()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var defeatedBlind = _gameController.CurrentBlind;
+        _gameController.DefeatBlind();
+        _gameController.LeaveShop();
+
+        var handCountBeforeRetry = _gameController.Hand.Count;
+        var result = _gameController.SelectBlind(1);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(defeatedBlind!.IsDefeated, Is.True);
+            Assert.That(result, Is.False);
+            Assert.That(_gameController.CurrentBlind, Is.SameAs(defeatedBlind));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.SelectingBlind));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(handCountBeforeRetry));
+        });
+    }
+
+    [TestCase(GameStatePhase.Playing)]
+    [TestCase(GameStatePhase.InShop)]
+    [Description("TC-2.5: Memverifikasi SelectBlind ditolak saat game tidak berada pada fase SelectingBlind")]
+    public void SelectBlind_WhenNotInSelectingBlindPhase_ReturnsFalse(GameStatePhase phase)
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        if (phase == GameStatePhase.InShop)
+        {
+            _gameController.DefeatBlind();
+        }
+
+        var currentBlindBeforeRetry = _gameController.CurrentBlind;
+        var handCountBeforeRetry = _gameController.Hand.Count;
+        var result = _gameController.SelectBlind(2);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_gameController.Phase, Is.EqualTo(phase));
+            Assert.That(result, Is.False);
+            Assert.That(_gameController.CurrentBlind, Is.SameAs(currentBlindBeforeRetry));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(handCountBeforeRetry));
+        });
+    }
+
+    [Test]
+    [Description("TC-2.6: Memverifikasi DirectorsCut dan uang yang cukup memungkinkan reroll Boss Blind")]
+    public void RerollBossBlind_WithDirectorsCutVoucherAndSufficientMoney_RerollsBossBlind()
+    {
+        _gameController.StartGame();
+        _gameController.PurchasedVouchers.Add(
+            new Voucher("DirectorsCut", VoucherEffect.DirectorsCut, 10));
+        _gameController.Money = 20;
+
+        var oldBossBlind = _gameController.BlindEnemies[_gameController.CurrentAnte]
+            .Single(blind => blind.BlindType == BlindType.Boss);
+        var result = _gameController.RerollBossBlind();
+        var newBossBlind = _gameController.BlindEnemies[_gameController.CurrentAnte]
+            .Single(blind => blind.BlindType == BlindType.Boss);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(10));
+            Assert.That(_gameController.IsBossBlindRerolledThisAnte, Is.True);
+            Assert.That(newBossBlind, Is.Not.SameAs(oldBossBlind));
+            Assert.That(newBossBlind.BlindType, Is.EqualTo(BlindType.Boss));
+        });
+    }
+
+    [Test]
+    [Description("TC-2.7: Memverifikasi reroll boss ditolak tanpa voucher DirectorsCut")]
+    public void RerollBossBlind_WithoutDirectorsCutVoucher_ReturnsFailure()
+    {
+        _gameController.StartGame();
+
+        var result = _gameController.RerollBossBlind();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("Director's Cut voucher required to reroll Boss Blind."));
+            Assert.That(_gameController.Money, Is.EqualTo(4));
+            Assert.That(_gameController.IsBossBlindRerolledThisAnte, Is.False);
+        });
+    }
+
+    [Test]
+    [Description("TC-2.8: Memverifikasi reroll boss kedua dalam ante yang sama ditolak")]
+    public void RerollBossBlind_AlreadyRerolledInSameAnte_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.PurchasedVouchers.Add(
+            new Voucher("DirectorsCut", VoucherEffect.DirectorsCut, 10));
+        _gameController.Money = 20;
+
+        var firstResult = _gameController.RerollBossBlind();
+        var moneyAfterFirstReroll = _gameController.Money;
+        var secondResult = _gameController.RerollBossBlind();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstResult.Success, Is.True);
+            Assert.That(secondResult.Success, Is.False);
+            Assert.That(secondResult.Message,
+                Is.EqualTo("Boss Blind can only be rerolled once per Ante."));
+            Assert.That(_gameController.Money, Is.EqualTo(moneyAfterFirstReroll));
+            Assert.That(_gameController.IsBossBlindRerolledThisAnte, Is.True);
+        });
+    }
+
+    [Test]
+    [Description("TC-2.9: Memverifikasi reroll boss ditolak saat uang kurang dari $10")]
+    public void RerollBossBlind_InsufficientMoney_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.PurchasedVouchers.Add(
+            new Voucher("DirectorsCut", VoucherEffect.DirectorsCut, 10));
+        _gameController.Money = 9;
+
+        var result = _gameController.RerollBossBlind();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message,
+                Is.EqualTo("Not enough money to reroll Boss Blind (Costs $10)."));
+            Assert.That(_gameController.Money, Is.EqualTo(9));
+            Assert.That(_gameController.IsBossBlindRerolledThisAnte, Is.False);
+        });
+    }
+
+    #endregion
+
+    #region Play Hand Mechanics & Scoring Tests
+
+    
+
+    #endregion
+
+    #region Boss Blind Specific Rules & Restrictions Tests
+
+    
+
+    #endregion
+
+    #region Discard & Preview Mechanics Tests
+
+    
+
+    #endregion
+
+    #region Blind Defeat, Cashout, & End-of-Round Effects Tests
+
+    
+
+    #endregion
+
+    #region Shop Purchases & Boosters Tests
+    
+
+    
+    #endregion
+
+    #region Consumables & Inventory Management Tests
+
+    
+
+    #endregion
 }
