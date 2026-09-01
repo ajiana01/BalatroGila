@@ -1467,8 +1467,265 @@ public class GameControllerTests
 
     #region Shop Purchases & Boosters Tests
     
+    [Test]
+    [Description("TC-7.1: Memverifikasi pembelian Joker yang terjangkau mengurangi uang dan memindahkan kartu ke deck")]
+    public void BuyCardFromShop_AffordableJoker_AddsToJokersAndDeductsMoney()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        var joker = new JokerCard("Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 4f, 4);
+        _gameController.Shop.JokerCardOffers.Add(joker);
+        _gameController.Money = 10;
 
-    
+        var result = _gameController.BuyCardFromShop(joker.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(6));
+            Assert.That(_gameController.Deck.JokerCards, Does.Contain(joker));
+            Assert.That(_gameController.Shop.JokerCardOffers, Does.Not.Contain(joker));
+        });
+    }
+
+    [Test]
+    [Description("TC-7.2: Memverifikasi Joker edisi Negative tetap dapat dibeli saat slot penuh")]
+    public void BuyCardFromShop_NegativeJokerWhenSlotsFull_SuccessfullyPurchases()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        for (var slot = 0; slot < 5; slot++)
+        {
+            _gameController.Deck.JokerCards.Add(new JokerCard($"Joker {slot}", JokerEdition.Base,
+                JokerRarity.Common, JokerModifierType.AdditionMultiplier, 1f, 1));
+        }
+        var negativeJoker = new JokerCard("Negative Joker", JokerEdition.Negative, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 4f, 4);
+        _gameController.Shop.JokerCardOffers.Add(negativeJoker);
+        _gameController.Money = 10;
+
+        var result = _gameController.BuyCardFromShop(negativeJoker.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(6));
+            Assert.That(_gameController.Deck.JokerCards, Does.Contain(negativeJoker));
+            Assert.That(_gameController.Shop.JokerCardOffers, Does.Not.Contain(negativeJoker));
+        });
+    }
+
+    [Test]
+    [Description("TC-7.3: Memverifikasi pembelian kartu ditolak saat uang tidak mencukupi")]
+    public void BuyCardFromShop_InsufficientMoney_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        var joker = new JokerCard("Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 4f, 4);
+        _gameController.Shop.JokerCardOffers.Add(joker);
+        _gameController.Money = 3;
+
+        var result = _gameController.BuyCardFromShop(joker.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("Not enough money."));
+            Assert.That(_gameController.Money, Is.EqualTo(3));
+            Assert.That(_gameController.Deck.JokerCards, Does.Not.Contain(joker));
+            Assert.That(_gameController.Shop.JokerCardOffers, Does.Contain(joker));
+        });
+    }
+
+    [Test]
+    [Description("TC-7.4: Memverifikasi Joker non-negative ditolak saat slot Joker penuh")]
+    public void BuyCardFromShop_JokerSlotsFull_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        for (var slot = 0; slot < 5; slot++)
+        {
+            _gameController.Deck.JokerCards.Add(new JokerCard($"Joker {slot}", JokerEdition.Base,
+                JokerRarity.Common, JokerModifierType.AdditionMultiplier, 1f, 1));
+        }
+        var joker = new JokerCard("Joker Offer", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 4f, 4);
+        _gameController.Shop.JokerCardOffers.Add(joker);
+        _gameController.Money = 10;
+
+        var result = _gameController.BuyCardFromShop(joker.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("Joker slots are full."));
+            Assert.That(_gameController.Money, Is.EqualTo(10));
+            Assert.That(_gameController.Shop.JokerCardOffers, Does.Contain(joker));
+        });
+    }
+
+    [Test]
+    [Description("TC-7.5: Memverifikasi pembelian consumable ditolak saat slot consumable penuh")]
+    public void BuyCardFromShop_ConsumableSlotsFull_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        _gameController.Deck.UsableCards.Add(new TarotCard("The Fool", 3, TarotType.TheFool));
+        _gameController.Deck.UsableCards.Add(new TarotCard("The Magician", 3, TarotType.TheMagician));
+        var tarot = new TarotCard("The Empress", 3, TarotType.TheEmpress);
+        _gameController.Shop.TarotCardOffers.Add(tarot);
+        _gameController.Money = 10;
+
+        var result = _gameController.BuyCardFromShop(tarot.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("Consumable slots are full."));
+            Assert.That(_gameController.Money, Is.EqualTo(10));
+            Assert.That(_gameController.Shop.TarotCardOffers, Does.Contain(tarot));
+        });
+    }
+
+    [Test]
+    [Description("TC-7.6: Memverifikasi voucher RerollSurplus mengurangi biaya reroll shop sebesar dua dolar")]
+    public void RerollShop_WithRerollSurplusVoucher_ReducesRerollCostByTwo()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        _gameController.PurchasedVouchers.Add(
+            new Voucher("RerollSurplus", VoucherEffect.RerollSurplus, 10));
+        _gameController.Money = 10;
+
+        var result = _gameController.RerollShop();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(7));
+            Assert.That(_gameController.Shop.RerollCount, Is.EqualTo(1));
+        });
+
+        _mockShopService.Verify(
+            service => service.RerollShop(_gameController.Shop, _gameController.CurrentAnte,
+                _gameController.PurchasedVouchers), Times.Once);
+    }
+
+    [Test]
+    [Description("TC-7.7: Memverifikasi pembelian booster pack mengurangi uang dan membuka pack")]
+    public void BuyBoosterPack_ValidPack_DeductsMoneyAndOpensPack()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        var pack = new BoosterPack("Standard Pack", 4, 1, 1, BoosterType.Standard, PackSize.Normal);
+        pack.PlayingCards.Add(new PlayingCard(Suit.Hearts, Rank.Ace));
+        _gameController.Shop.BoosterPacks.Add(pack);
+        _gameController.Money = 10;
+        _mockShopService
+            .Setup(service => service.OpenBoosterPack(pack, It.IsAny<List<Voucher>>(), It.IsAny<PokerHandType>()))
+            .Returns(pack);
+
+        var result = _gameController.BuyBoosterPack(pack.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Data, Is.SameAs(pack));
+            Assert.That(_gameController.Money, Is.EqualTo(6));
+            Assert.That(_gameController.Shop.BoosterPacks, Does.Not.Contain(pack));
+            Assert.That(_gameController.Shop.OpenedBoosterPack, Is.SameAs(pack));
+        });
+    }
+
+    [Test]
+    [Description("TC-7.8: Memverifikasi pemilihan kartu booster hingga kuota habis menutup pack")]
+    public void SelectBoosterCard_PicksCardUntilMaxPickReached_ClosesPack()
+    {
+        _gameController.StartGame();
+        var pack = new BoosterPack("Mega Pack", 4, 2, 2, BoosterType.Standard, PackSize.Normal);
+        var firstCard = new PlayingCard(Suit.Hearts, Rank.Ace);
+        var secondCard = new PlayingCard(Suit.Spades, Rank.King);
+        pack.PlayingCards.Add(firstCard);
+        pack.PlayingCards.Add(secondCard);
+        _gameController.Shop.OpenedBoosterPack = pack;
+
+        var firstResult = _gameController.SelectBoosterCard(firstCard.Id);
+        var secondResult = _gameController.SelectBoosterCard(secondCard.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstResult.Success, Is.True);
+            Assert.That(secondResult.Success, Is.True);
+            Assert.That(_gameController.DrawPile.PlayingCards, Does.Contain(firstCard));
+            Assert.That(_gameController.DrawPile.PlayingCards, Does.Contain(secondCard));
+            Assert.That(_gameController.Shop.OpenedBoosterPack, Is.Null);
+        });
+    }
+
+    [TestCase(VoucherEffect.Grabber, 5, 4, 8, 1)]
+    [TestCase(VoucherEffect.Wasteful, 4, 5, 8, 1)]
+    [TestCase(VoucherEffect.PaintBrush, 4, 4, 9, 1)]
+    [TestCase(VoucherEffect.Hieroglyph, 3, 4, 8, 1)]
+    [Description("TC-7.9: Memverifikasi efek permanen voucher diterapkan saat voucher dibeli")]
+    public void BuyVoucher_VoucherEffects_AppliesRespectivePermanentBonus(
+        VoucherEffect effect, int expectedMaxHands, int expectedMaxDiscards, int expectedMaxHand, int expectedAnte)
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _gameController.DefeatBlind();
+        var voucher = new Voucher(effect.ToString(), effect, 10);
+        _gameController.Shop.Voucher = voucher;
+        _gameController.Money = 20;
+
+        var result = _gameController.BuyVoucher(voucher.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(10));
+            Assert.That(_gameController.MaxHands, Is.EqualTo(expectedMaxHands));
+            Assert.That(_gameController.MaxDiscards, Is.EqualTo(expectedMaxDiscards));
+            Assert.That(_gameController.MaxHand, Is.EqualTo(expectedMaxHand));
+            Assert.That(_gameController.CurrentAnte, Is.EqualTo(expectedAnte));
+            Assert.That(_gameController.PurchasedVouchers, Does.Contain(voucher));
+            Assert.That(_gameController.Shop.Voucher, Is.Null);
+        });
+    }
+
+    [Test]
+    [Description("TC-7.10: Memverifikasi kekalahan Boss Ante 8 diikuti Victory saat meninggalkan shop")]
+    public void LeaveShop_DefeatedAnteEightBoss_TriggersVictory()
+    {
+        _gameController.StartGame();
+        for (var ante = 2; ante <= 8; ante++)
+        {
+            _gameController.AdvanceAnte();
+        }
+
+        var boss = new Blind(BlindId.TheClub, "The Club", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = boss;
+        _gameController.SelectBlind(3);
+        _gameController.DefeatBlind();
+
+        var result = _gameController.LeaveShop();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Message, Is.EqualTo("Victory! You have defeated the Ante 8 Boss Blind!"));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Victory));
+        });
+    }
+
     #endregion
 
     #region Consumables & Inventory Management Tests
