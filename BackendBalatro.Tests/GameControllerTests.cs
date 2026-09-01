@@ -575,18 +575,631 @@ public class GameControllerTests
             Assert.That(_gameController.IsBossBlindRerolledThisAnte, Is.False);
         });
     }
-
+    
     #endregion
 
     #region Play Hand Mechanics & Scoring Tests
 
-    
+    [Test]
+    [Description("TC-3.1: Memverifikasi PlayHand menghitung score, mengurangi hand, dan menarik kartu pengganti")]
+    public void PlayHand_ValidCardsSelected_CalculatesScoreReducesHandsAndDrawsCards()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var cardToPlay = _gameController.Hand[0];
+        var scoreResult = new ScoreCalculationResultDto
+        {
+            HandType = PokerHandType.HighCard,
+            FinalScore = 100,
+            ScoringCards = new List<PlayingCard> { cardToPlay }
+        };
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(),
+                It.IsAny<BlindId?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()))
+            .Returns(scoreResult);
+
+        var result = _gameController.PlayHand(new List<string> { cardToPlay.Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Data, Is.SameAs(scoreResult));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(3));
+            Assert.That(_gameController.RoundScore, Is.EqualTo(100));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(_gameController.MaxHand),
+                "A replacement card should be drawn after playing a card.");
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+
+        _mockScoringService.Verify(
+            s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(),
+                It.IsAny<BlindId?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()),
+            Times.Once);
+    }
+
+    [Test]
+    [Description("TC-3.2: Memverifikasi score yang mencapai target mengalahkan blind dan membuka shop")]
+    public void PlayHand_ScoreReachesTarget_DefeatsBlindAndOpensShop()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var cardToPlay = _gameController.Hand[0];
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(),
+                It.IsAny<BlindId?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto
+            {
+                HandType = PokerHandType.HighCard,
+                FinalScore = _gameController.CurrentBlind!.ScoreToDefeat,
+                ScoringCards = new List<PlayingCard> { cardToPlay }
+            });
+
+        var result = _gameController.PlayHand(new List<string> { cardToPlay.Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.CurrentBlind!.IsDefeated, Is.True);
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.InShop));
+        });
+    }
+
+    [Test]
+    [Description("TC-3.3: Memverifikasi bonus uang dari Lucky Card ditambahkan ke saldo pemain")]
+    public void PlayHand_WithLuckyCardMoneyWon_AddsBonusMoneyToPlayer()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var cardToPlay = _gameController.Hand[0];
+        const int luckyMoneyWon = 7;
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(),
+                It.IsAny<BlindId?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto
+            {
+                HandType = PokerHandType.HighCard,
+                FinalScore = 100,
+                LuckyMoneyWon = luckyMoneyWon,
+                ScoringCards = new List<PlayingCard> { cardToPlay }
+            });
+
+        var result = _gameController.PlayHand(new List<string> { cardToPlay.Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(4 + luckyMoneyWon));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-3.4: Memverifikasi kartu Glass yang shatter dihapus dan kartu yang selamat masuk DiscardPile")]
+    public void PlayHand_WithGlassCard_DestroysShatteredCardsAndDiscardsSurviving()
+    {
+        var shattered = false;
+
+        // Shatter memiliki peluang acak 1/4, sehingga ulangi pada game baru sampai cabang shatter teruji.
+        for (var attempt = 0; attempt < 100 && !shattered; attempt++)
+        {
+            _mockScoringService.Reset();
+            _gameController = new GameController(
+                _mockScoringService.Object,
+                _mockShopService.Object,
+                _mockConsumableHandler.Object);
+            _gameController.StartGame();
+            _gameController.SelectBlind(1);
+
+            var glassCard = _gameController.Hand[0];
+            var survivingCard = _gameController.Hand[1];
+            glassCard.Enhancement = EnhancePokerCard.GlassCards;
+            survivingCard.Enhancement = EnhancePokerCard.None;
+
+            _mockScoringService
+                .Setup(s => s.CalculateScore(
+                    It.IsAny<List<PlayingCard>>(),
+                    It.IsAny<List<PlayingCard>>(),
+                    It.IsAny<List<JokerCard>>(),
+                    It.IsAny<Dictionary<PokerHandType, int>>(),
+                    It.IsAny<BlindId?>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>()))
+                .Returns(new ScoreCalculationResultDto
+                {
+                    HandType = PokerHandType.HighCard,
+                    FinalScore = 1,
+                    ScoringCards = new List<PlayingCard> { glassCard, survivingCard }
+                });
+
+            var result = _gameController.PlayHand(new List<string> { glassCard.Id, survivingCard.Id });
+            Assert.That(result.Success, Is.True);
+
+            if (result.Data!.JokerTriggerMessages.Any(message => message.Contains("Shattered!")))
+            {
+                shattered = true;
+                Assert.Multiple(() =>
+                {
+                    Assert.That(_gameController.DiscardPile.PlayingCards, Does.Contain(survivingCard));
+                    Assert.That(_gameController.DiscardPile.PlayingCards, Does.Not.Contain(glassCard));
+                });
+            }
+        }
+
+        Assert.That(shattered, Is.True, "At least one Glass card should shatter during the attempts.");
+    }
+
+    [TestCase(GameStatePhase.SelectingBlind)]
+    [TestCase(GameStatePhase.InShop)]
+    [Description("TC-3.5: Memverifikasi PlayHand ditolak saat game tidak berada pada fase Playing")]
+    public void PlayHand_WhenNotInPlayingPhase_ReturnsFailureResult(GameStatePhase phase)
+    {
+        _gameController.StartGame();
+        if (phase == GameStatePhase.InShop)
+        {
+            _gameController.SelectBlind(1);
+            _gameController.DefeatBlind();
+        }
+
+        var result = _gameController.PlayHand(new List<string> { "card-not-in-play" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo($"Cannot play hand while in {phase} phase."));
+            Assert.That(result.Data, Is.Null);
+            Assert.That(_gameController.Phase, Is.EqualTo(phase));
+        });
+    }
+
+    [Test]
+    [Description("TC-3.6: Memverifikasi PlayHand menolak parameter null maupun list kartu kosong")]
+    public void PlayHand_EmptyCardList_ReturnsFailureResult()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        List<string>? nullCardIds = null;
+
+        var nullResult = _gameController.PlayHand(nullCardIds!);
+        var emptyResult = _gameController.PlayHand(new List<string>());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(nullResult.Success, Is.False);
+            Assert.That(nullResult.Message, Is.EqualTo("Must play between 1 and 5 cards."));
+            Assert.That(emptyResult.Success, Is.False);
+            Assert.That(emptyResult.Message, Is.EqualTo("Must play between 1 and 5 cards."));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-3.7: Memverifikasi PlayHand menolak enam kartu atau lebih")]
+    public void PlayHand_ExceedsFiveCards_ReturnsFailureResult()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var initialHandsRemaining = _gameController.HandsRemaining;
+        var sixCardIds = _gameController.Hand.Take(6).Select(card => card.Id).ToList();
+
+        var result = _gameController.PlayHand(sixCardIds);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("Must play between 1 and 5 cards."));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(initialHandsRemaining));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-3.8: Memverifikasi PlayHand menolak ID kartu yang tidak terdapat di tangan")]
+    public void PlayHand_CardNotInHand_ReturnsFailureResult()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var initialHandsRemaining = _gameController.HandsRemaining;
+
+        var result = _gameController.PlayHand(new List<string> { "card-not-in-hand" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("One or more selected cards are not in hand."));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(initialHandsRemaining));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-3.9: Memverifikasi hand terakhir yang tidak mencapai target memicu GameOver")]
+    public void PlayHand_LastHandExhaustedWithoutMeetingTarget_TriggersGameOver()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<PlayingCard>>(),
+                It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(),
+                It.IsAny<BlindId?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto
+            {
+                HandType = PokerHandType.HighCard,
+                FinalScore = 1
+            });
+
+        for (var hand = 0; hand < 3; hand++)
+        {
+            var cardId = _gameController.Hand[0].Id;
+            var intermediateResult = _gameController.PlayHand(new List<string> { cardId });
+            Assert.That(intermediateResult.Success, Is.True);
+        }
+
+        var lastCardId = _gameController.Hand[0].Id;
+        var result = _gameController.PlayHand(new List<string> { lastCardId });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Message, Is.EqualTo("Game Over! Hands exhausted before reaching target score."));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(0));
+            Assert.That(_gameController.RoundScore, Is.EqualTo(4));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.GameOver));
+        });
+    }
 
     #endregion
 
     #region Boss Blind Specific Rules & Restrictions Tests
 
-    
+    [Test]
+    [Description("TC-4.1: Memverifikasi The Psychic menolak permainan kurang dari 5 kartu")]
+    public void PlayHand_ThePsychicBoss_FailsWhenPlayingLessThanFiveCards()
+    {
+        _gameController.StartGame();
+        var psychic = new Blind(BlindId.ThePsychic, "The Psychic", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = psychic;
+        _gameController.SelectBlind(3);
+
+        var lessThanFiveCards = _gameController.Hand.Take(4).Select(card => card.Id).ToList();
+        var result = _gameController.PlayHand(lessThanFiveCards);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("The Psychic forces you to play exactly 5 cards!"));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(4));
+        });
+
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 });
+
+        var fiveCardResult = _gameController.PlayHand(_gameController.Hand.Take(5).Select(card => card.Id).ToList());
+        Assert.That(fiveCardResult.Success, Is.True, "The Psychic should allow exactly five cards.");
+    }
+
+    [Test]
+    [Description("TC-4.2: Memverifikasi The Eye menolak tipe poker hand yang sama pada ronde yang sama")]
+    public void PlayHand_TheEyeBoss_FailsWhenPlayingRepeatedPokerHandType()
+    {
+        _gameController.StartGame();
+        var theEye = new Blind(BlindId.TheEye, "The Eye", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theEye;
+        _gameController.SelectBlind(3);
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 });
+
+        var firstResult = _gameController.PlayHand(new List<string> { _gameController.Hand[0].Id });
+        var secondResult = _gameController.PlayHand(new List<string> { _gameController.Hand[0].Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstResult.Success, Is.True);
+            Assert.That(secondResult.Success, Is.False);
+            Assert.That(secondResult.Message, Is.EqualTo("The Eye does not allow repeating HighCard in this round!"));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.3: Memverifikasi The Mouth menolak tipe poker hand berbeda pada ronde yang sama")]
+    public void PlayHand_TheMouthBoss_FailsWhenPlayingDifferentPokerHandType()
+    {
+        _gameController.StartGame();
+        var theMouth = new Blind(BlindId.TheMouth, "The Mouth", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theMouth;
+        _gameController.SelectBlind(3);
+        _mockScoringService
+            .SetupSequence(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 })
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.Pair, FinalScore = 1 });
+
+        var firstResult = _gameController.PlayHand(new List<string> { _gameController.Hand[0].Id });
+        var secondResult = _gameController.PlayHand(new List<string> { _gameController.Hand[0].Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstResult.Success, Is.True);
+            Assert.That(secondResult.Success, Is.False);
+            Assert.That(secondResult.Message, Is.EqualTo("The Mouth only allows playing HighCard this round!"));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.4: Memverifikasi The Needle membatasi kesempatan bermain menjadi satu")]
+    public void SelectBlind_TheNeedleBoss_SetsInitialHandsToOne()
+    {
+        _gameController.StartGame();
+        var theNeedle = new Blind(BlindId.TheNeedle, "The Needle", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theNeedle;
+
+        var result = _gameController.SelectBlind(3);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(_gameController.CurrentBlind, Is.SameAs(theNeedle));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(1));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.5: Memverifikasi The Water mengatur jumlah discard awal menjadi nol")]
+    public void SelectBlind_TheWaterBoss_SetsInitialDiscardsToZero()
+    {
+        _gameController.StartGame();
+        var theWater = new Blind(BlindId.TheWater, "The Water", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theWater;
+
+        var result = _gameController.SelectBlind(3);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(_gameController.CurrentBlind, Is.SameAs(theWater));
+            Assert.That(_gameController.DiscardsRemaining, Is.EqualTo(0));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.6: Memverifikasi The Manacle mengurangi ukuran hand efektif sebanyak satu kartu")]
+    public void SelectBlind_TheManacleBoss_ReducesEffectiveHandSizeByOne()
+    {
+        _gameController.StartGame();
+        var theManacle = new Blind(BlindId.TheManacle, "The Manacle", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theManacle;
+
+        var result = _gameController.SelectBlind(3);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(_gameController.MaxHand - 1));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.7: Memverifikasi The Arm menurunkan level poker hand yang dimainkan sebanyak satu")]
+    public void PlayHand_TheArmBoss_DecreasesPlayedPokerHandLevelByOne()
+    {
+        _gameController.StartGame();
+        var theArm = new Blind(BlindId.TheArm, "The Arm", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theArm;
+        _gameController.SelectBlind(3);
+        _gameController.PokerHandLevels[PokerHandType.HighCard] = 2;
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 });
+
+        var result = _gameController.PlayHand(new List<string> { _gameController.Hand[0].Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.PokerHandLevels[PokerHandType.HighCard], Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.8: Memverifikasi The Tooth memotong satu dolar untuk setiap kartu yang dimainkan")]
+    public void PlayHand_TheToothBoss_DeductsOneDollarPerPlayedCard()
+    {
+        _gameController.StartGame();
+        var theTooth = new Blind(BlindId.TheTooth, "The Tooth", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theTooth;
+        _gameController.SelectBlind(3);
+        _gameController.Money = 20;
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 });
+
+        var result = _gameController.PlayHand(_gameController.Hand.Take(5).Select(card => card.Id).ToList());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(15));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.9: Memverifikasi The Ox mereset uang saat memainkan poker hand yang paling sering dimainkan")]
+    public void PlayHand_TheOxBoss_ResetsMoneyToZeroWhenPlayingMostPlayedHand()
+    {
+        _gameController.StartGame();
+        var theOx = new Blind(BlindId.TheOx, "The Ox", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theOx;
+        _gameController.SelectBlind(3);
+        _gameController.PokerHandPlayed[PokerHandType.HighCard] = 3;
+        _gameController.PokerHandPlayed[PokerHandType.Pair] = 1;
+        _gameController.Money = 20;
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 });
+
+        var result = _gameController.PlayHand(new List<string> { _gameController.Hand[0].Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Money, Is.EqualTo(0));
+        });
+    }
+
+    [Test]
+    [Description("TC-4.10: Memverifikasi The Hook membuang dua kartu acak dari sisa hand")]
+    public void PlayHand_TheHookBoss_DiscardsTwoRandomCardsFromHand()
+    {
+        _gameController.StartGame();
+        var theHook = new Blind(BlindId.TheHook, "The Hook", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = theHook;
+        _gameController.SelectBlind(3);
+        var playedCard = _gameController.Hand[0];
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(new ScoreCalculationResultDto { HandType = PokerHandType.HighCard, FinalScore = 1 });
+
+        var result = _gameController.PlayHand(new List<string> { playedCard.Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(_gameController.MaxHand));
+            Assert.That(_gameController.DiscardPile.PlayingCards, Has.Count.EqualTo(3));
+            Assert.That(_gameController.DiscardPile.PlayingCards, Does.Contain(playedCard));
+        });
+    }
+
+    [TestCase(BlindId.TheClub, Suit.Clubs, Rank.Ace)]
+    [TestCase(BlindId.TheGoad, Suit.Spades, Rank.Ace)]
+    [TestCase(BlindId.TheWindow, Suit.Diamonds, Rank.Ace)]
+    [TestCase(BlindId.TheHead, Suit.Hearts, Rank.Ace)]
+    [TestCase(BlindId.ThePlant, Suit.Hearts, Rank.Jack)]
+    [Description("TC-4.11: Memverifikasi boss suit/face debuff diterapkan pada kartu yang sesuai")]
+    public void SelectBlind_SuitDebuffBosses_DebuffsMatchingCards(BlindId bossId, Suit matchingSuit, Rank matchingRank)
+    {
+        _gameController.StartGame();
+        var matchingCard = new PlayingCard(matchingSuit, matchingRank);
+        var nonMatchingCard = bossId == BlindId.ThePlant
+            ? new PlayingCard(Suit.Hearts, Rank.Ace)
+            : new PlayingCard(matchingSuit == Suit.Clubs ? Suit.Spades : Suit.Clubs, Rank.Two);
+        _gameController.DrawPile.PlayingCards.Clear();
+        _gameController.DrawPile.AddCards(new[]
+        {
+            matchingCard, nonMatchingCard, new PlayingCard(Suit.Hearts, Rank.Two),
+            new PlayingCard(Suit.Spades, Rank.Three), new PlayingCard(Suit.Clubs, Rank.Four),
+            new PlayingCard(Suit.Diamonds, Rank.Five), new PlayingCard(Suit.Hearts, Rank.Six),
+            new PlayingCard(Suit.Spades, Rank.Seven)
+        });
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] =
+            new Blind(bossId, bossId.ToString(), BlindType.Boss, 1000) { Id = 3 };
+
+        var result = _gameController.SelectBlind(3);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.True);
+            Assert.That(matchingCard.IsDebuffed, Is.True);
+            Assert.That(nonMatchingCard.IsDebuffed, Is.False);
+        });
+    }
+
+    [Test]
+    [Description("TC-4.12: Memverifikasi penjualan Joker pada Verdant Leaf mencabut seluruh debuff kartu")]
+    public void SellCard_VerdantLeafBoss_LiftsAllCardDebuffsWhenJokerSold()
+    {
+        _gameController.StartGame();
+        for (var ante = 2; ante <= 8; ante++)
+        {
+            _gameController.AdvanceAnte();
+        }
+
+        var verdantLeaf = new Blind(BlindId.VerdantLeaf, "Verdant Leaf", BlindType.Boss, 1000) { Id = 3 };
+        _gameController.BlindEnemies[_gameController.CurrentAnte][2] = verdantLeaf;
+        _gameController.SelectBlind(3);
+        var discardedCard = _gameController.Hand[0];
+        _gameController.Hand.RemoveAt(0);
+        _gameController.DiscardPile.DiscardCards(new[] { discardedCard });
+        var joker = new JokerCard("Joker", JokerEdition.Base, JokerRarity.Common,
+            JokerModifierType.AdditionMultiplier, 4f, 4);
+        _gameController.Deck.JokerCards.Add(joker);
+        discardedCard.IsDebuffed = true;
+
+        var result = _gameController.SellCard(joker.Id);
+        var allCards = _gameController.Hand
+            .Concat(_gameController.DrawPile.PlayingCards)
+            .Concat(_gameController.DiscardPile.PlayingCards);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.Deck.JokerCards, Does.Not.Contain(joker));
+            Assert.That(allCards.Any(card => card.IsDebuffed), Is.False);
+        });
+    }
 
     #endregion
 
