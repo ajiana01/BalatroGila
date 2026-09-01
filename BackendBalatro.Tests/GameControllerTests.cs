@@ -1205,7 +1205,160 @@ public class GameControllerTests
 
     #region Discard & Preview Mechanics Tests
 
-    
+    [Test]
+    [Description("TC-5.1: Memverifikasi discard kartu valid mengurangi discard dan menarik kartu pengganti")]
+    public void DiscardCards_ValidCards_DiscardsAndDrawsReplacementCards()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var cardsToDiscard = _gameController.Hand.Take(2).ToList();
+
+        var result = _gameController.DiscardCards(cardsToDiscard.Select(card => card.Id).ToList());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(_gameController.DiscardsRemaining, Is.EqualTo(3));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(_gameController.MaxHand));
+            Assert.That(_gameController.DiscardPile.PlayingCards, Has.Count.EqualTo(2));
+            Assert.That(_gameController.DiscardPile.PlayingCards, Does.Contain(cardsToDiscard[0]));
+            Assert.That(_gameController.DiscardPile.PlayingCards, Does.Contain(cardsToDiscard[1]));
+        });
+    }
+
+    [Test]
+    [Description("TC-5.2: Memverifikasi discard ditolak saat seluruh kesempatan discard telah habis")]
+    public void DiscardCards_NoDiscardsRemaining_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+
+        for (var discard = 0; discard < 4; discard++)
+        {
+            var intermediateResult = _gameController.DiscardCards(new List<string> { _gameController.Hand[0].Id });
+            Assert.That(intermediateResult.Success, Is.True);
+        }
+
+        var handCountBeforeRetry = _gameController.Hand.Count;
+        var result = _gameController.DiscardCards(new List<string> { _gameController.Hand[0].Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("No discards remaining."));
+            Assert.That(_gameController.DiscardsRemaining, Is.EqualTo(0));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(handCountBeforeRetry));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [TestCase(GameStatePhase.SelectingBlind)]
+    [TestCase(GameStatePhase.InShop)]
+    [Description("TC-5.3: Memverifikasi discard ditolak saat game tidak berada pada fase Playing")]
+    public void DiscardCards_WhenNotInPlayingPhase_ReturnsFailure(GameStatePhase phase)
+    {
+        _gameController.StartGame();
+        if (phase == GameStatePhase.InShop)
+        {
+            _gameController.SelectBlind(1);
+            _gameController.DefeatBlind();
+        }
+
+        var result = _gameController.DiscardCards(new List<string> { "card-not-in-play" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo($"Cannot discard cards while in {phase} phase."));
+            Assert.That(_gameController.Phase, Is.EqualTo(phase));
+        });
+    }
+
+    [Test]
+    [Description("TC-5.4: Memverifikasi discard ditolak untuk ID kartu yang tidak ada di tangan")]
+    public void DiscardCards_CardsNotInHand_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var handCountBeforeRetry = _gameController.Hand.Count;
+        var discardsBeforeRetry = _gameController.DiscardsRemaining;
+
+        var result = _gameController.DiscardCards(new List<string> { "card-not-in-hand" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("One or more selected cards are not in hand."));
+            Assert.That(_gameController.Hand, Has.Count.EqualTo(handCountBeforeRetry));
+            Assert.That(_gameController.DiscardsRemaining, Is.EqualTo(discardsBeforeRetry));
+            Assert.That(_gameController.Phase, Is.EqualTo(GameStatePhase.Playing));
+        });
+    }
+
+    [Test]
+    [Description("TC-5.5: Memverifikasi preview score valid tidak mengubah state permainan")]
+    public void GetScorePreview_ValidCards_ReturnsCalculatedPreviewWithoutMutatingState()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        var card = _gameController.Hand[0];
+        var expectedScore = new ScoreCalculationResultDto
+        {
+            HandType = PokerHandType.HighCard,
+            FinalScore = 125
+        };
+        _mockScoringService
+            .Setup(s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(expectedScore);
+
+        var handsBeforePreview = _gameController.HandsRemaining;
+        var moneyBeforePreview = _gameController.Money;
+        var discardCountBeforePreview = _gameController.DiscardPile.Count;
+        var result = _gameController.GetScorePreview(new List<string> { card.Id });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Message, Is.EqualTo("Score preview calculated."));
+            Assert.That(result.Data, Is.SameAs(expectedScore));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(handsBeforePreview));
+            Assert.That(_gameController.Money, Is.EqualTo(moneyBeforePreview));
+            Assert.That(_gameController.DiscardPile.Count, Is.EqualTo(discardCountBeforePreview));
+            Assert.That(_gameController.Hand, Does.Contain(card));
+        });
+
+        _mockScoringService.Verify(
+            s => s.CalculateScore(
+                It.IsAny<List<PlayingCard>>(), It.IsAny<List<PlayingCard>>(), It.IsAny<List<JokerCard>>(),
+                It.IsAny<Dictionary<PokerHandType, int>>(), It.IsAny<BlindId?>(), It.IsAny<int>(),
+                It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+    }
+
+    [Test]
+    [Description("TC-5.6: Memverifikasi preview score menolak input kosong dan lebih dari lima kartu")]
+    public void GetScorePreview_EmptyOrMoreThanFiveCards_ReturnsFailure()
+    {
+        _gameController.StartGame();
+        _gameController.SelectBlind(1);
+        List<string>? nullCardIds = null;
+
+        var emptyResult = _gameController.GetScorePreview(nullCardIds!);
+        var tooManyResult = _gameController.GetScorePreview(
+            _gameController.Hand.Take(6).Select(card => card.Id).ToList());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(emptyResult.Success, Is.False);
+            Assert.That(emptyResult.Message, Is.EqualTo("Select 1 to 5 cards for score preview."));
+            Assert.That(tooManyResult.Success, Is.False);
+            Assert.That(tooManyResult.Message, Is.EqualTo("Select 1 to 5 cards for score preview."));
+            Assert.That(_gameController.HandsRemaining, Is.EqualTo(4));
+            Assert.That(_gameController.Money, Is.EqualTo(4));
+        });
+    }
 
     #endregion
 
