@@ -10,8 +10,8 @@ namespace BackendBalatro.Tests;
 [TestFixture]
 public class ScoringServiceTests
 {
-    private Mock<IPokerHandEvaluator> _evaluator = null!;
-    private ScoringService _service = null!;
+    private Mock<IPokerHandEvaluator> _evaluator;
+    private ScoringService _service;
 
     [SetUp]
     public void SetUp()
