@@ -1,3 +1,18 @@
+/*
+ * PokerHandEvaluatorServiceTest.cs - Unit Tests for Poker-Hand Evaluation
+ *
+ * This fixture documents the evaluator contract: hand classification,
+ * scoring-card selection, unscored-card handling, special enhancements, and
+ * precedence when multiple poker hands can be formed from the same cards.
+ *
+ * Key testing practices demonstrated:
+ * - Arrange-Act-Assert (AAA)
+ * - Parameterized tests for related hand scenarios
+ * - Assertions for both hand type and participating cards
+ * - Small test-data helpers for readable card definitions
+ *
+ */
+
 using BackendBalatro.Enums;
 using BackendBalatro.Models.Entities;
 using BackendBalatro.Services.Evaluators;
@@ -5,14 +20,29 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BackendBalatro.Tests;
 
+/// <summary>
+/// Test fixture for <see cref="PokerHandEvaluator"/>.
+///
+/// Each test uses a fresh evaluator with a null logger because the behavior
+/// under test is limited to poker-hand detection and card classification.
+/// </summary>
 [TestFixture]
 public class PokerHandEvaluatorServiceTest
 {
+    // System under test: classifies cards into a poker hand and scoring groups.
     private PokerHandEvaluator _evaluator;
 
+    /// <summary>
+    /// Creates a fresh evaluator before each test to keep evaluator state
+    /// isolated between scenarios.
+    /// </summary>
     [SetUp]
     public void SetUp() => _evaluator = new PokerHandEvaluator(NullLogger<PokerHandEvaluator>.Instance);
 
+    /// <summary>
+    /// Verifies that null or empty input is treated as an empty High Card hand
+    /// with no scoring or unscored cards.
+    /// </summary>
     [TestCase(true)]
     [TestCase(false)]
     public void Evaluate_NullOrEmptyCards_ReturnsEmptyHighCardResult(bool useNull)
@@ -27,6 +57,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that Stone cards are returned as scoring cards when the hand
+    /// contains only Stone enhancements.
+    /// </summary>
     [Test]
     public void Evaluate_AllStoneCards_ReturnsAllCardsAsScoringHighCard()
     {
@@ -44,6 +78,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that a standard High Card hand scores only its highest card and
+    /// marks the remaining cards as unscored.
+    /// </summary>
     [Test]
     public void Evaluate_HighCard_ReturnsHighestStandardCardOnly()
     {
@@ -59,6 +97,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that a Pair is classified correctly and its kicker remains
+    /// outside the scoring cards.
+    /// </summary>
     [Test]
     public void Evaluate_Pair_ReturnsPairAndKickersUnscored()
     {
@@ -74,6 +116,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that the two highest matching pairs are selected as a Two Pair
+    /// hand while the remaining card is unscored.
+    /// </summary>
     [Test]
     public void Evaluate_TwoPair_ReturnsTwoHighestPairs()
     {
@@ -92,6 +138,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that three cards of the same rank form a Three of a Kind and
+    /// that the unrelated card is unscored.
+    /// </summary>
     [Test]
     public void Evaluate_ThreeOfAKind_ReturnsThreeMatchingCards()
     {
@@ -109,6 +159,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that five sequential cards with distinct ranks form a Straight
+    /// and all participate in scoring.
+    /// </summary>
     [Test]
     public void Evaluate_Straight_ReturnsFiveSequentialDistinctRanks()
     {
@@ -127,6 +181,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that the Ace-low sequence A-2-3-4-5 is recognized as a
+    /// Straight with the expected scoring-card order.
+    /// </summary>
     [Test]
     public void Evaluate_AceLowStraight_RecognizesWheel()
     {
@@ -144,6 +202,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that duplicate ranks prevent a Straight and that the evaluator
+    /// correctly classifies the cards as Two Pair instead.
+    /// </summary>
     [Test]
     public void Evaluate_DuplicateRanksDoNotFormStraight()
     {
@@ -161,6 +223,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that five cards of the same suit form a Flush and all five are
+    /// included in the scoring cards.
+    /// </summary>
     [Test]
     public void Evaluate_Flush_ReturnsFiveSameSuitCards()
     {
@@ -178,6 +244,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that a Wild card can complete a Flush when the other four cards
+    /// share a suit.
+    /// </summary>
     [Test]
     public void Evaluate_WildCardsCompleteFlush()
     {
@@ -196,6 +266,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that three matching cards and a pair form a Full House while a
+    /// sixth unrelated card remains unscored.
+    /// </summary>
     [Test]
     public void Evaluate_FullHouse_ReturnsTripsAndPair()
     {
@@ -213,6 +287,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that four cards of the same rank form a Four of a Kind and the
+    /// kicker is excluded from scoring.
+    /// </summary>
     [Test]
     public void Evaluate_FourOfAKind_ReturnsFourMatchingCards()
     {
@@ -230,6 +308,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that a Straight Flush is detected and takes precedence over
+    /// the separate Straight and Flush patterns.
+    /// </summary>
     [Test]
     public void Evaluate_StraightFlush_TakesPrecedenceOverStraightAndFlush()
     {
@@ -246,6 +328,10 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that competing poker-hand patterns are resolved according to
+    /// the evaluator's documented hand precedence.
+    /// </summary>
     [TestCase("straight-flush", PokerHandType.StraightFlush)]
     [TestCase("four-over-full-house", PokerHandType.FourOfAKind)]
     [TestCase("full-house-over-trips", PokerHandType.FullHouse)]
@@ -273,6 +359,10 @@ public class PokerHandEvaluatorServiceTest
         Assert.That(result.HandType, Is.EqualTo(expectedHandType));
     }
 
+    /// <summary>
+    /// Verifies that Stone cards are excluded from standard pattern detection
+    /// and returned as unscored cards.
+    /// </summary>
     [Test]
     public void Evaluate_StoneCardsAreExcludedFromStandardPatternAndReturnedUnscored()
     {
@@ -290,12 +380,18 @@ public class PokerHandEvaluatorServiceTest
         });
     }
 
+    /// <summary>
+    /// Creates playing cards from suit, rank, and enhancement definitions.
+    /// </summary>
     private static List<PlayingCard> Cards(params (Suit Suit, Rank Rank, EnhancePokerCard Enhancement)[] definitions)
     {
         return definitions.Select(definition =>
             new PlayingCard(definition.Suit, definition.Rank, definition.Enhancement)).ToList();
     }
 
+    /// <summary>
+    /// Creates standard playing cards from suit and rank definitions.
+    /// </summary>
     private static List<PlayingCard> Cards(params (Suit Suit, Rank Rank)[] definitions)
     {
         return definitions.Select(definition => new PlayingCard(definition.Suit, definition.Rank)).ToList();
