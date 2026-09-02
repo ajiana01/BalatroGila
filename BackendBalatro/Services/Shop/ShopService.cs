@@ -6,6 +6,12 @@ namespace BackendBalatro.Services.Shop;
 public class ShopService : IShopService
 {
     private static readonly Random _random = new();
+    private readonly ILogger<ShopService> _logger;
+
+    public ShopService(ILogger<ShopService> logger)
+    {
+        _logger = logger;
+    }
 
     public void PopulateShop(
         BackendBalatro.Models.Entities.Shop shop,
@@ -37,6 +43,16 @@ public class ShopService : IShopService
         {
             shop.Voucher = null;
         }
+
+        _logger.LogDebug(
+            "Shop populated for ante {Ante} with {JokerOfferCount} jokers, {PlayingCardOfferCount} playing cards, {TarotOfferCount} tarot cards, {PlanetOfferCount} planet cards, {SpectralOfferCount} spectral cards, and {BoosterPackCount} booster packs",
+            ante,
+            shop.JokerCardOffers.Count,
+            shop.PlayingCardOffers.Count,
+            shop.TarotCardOffers.Count,
+            shop.PlanetCardOffers.Count,
+            shop.SpectralCardOffers.Count,
+            shop.BoosterPacks.Count);
     }
 
     public void RerollShop(BackendBalatro.Models.Entities.Shop shop, int ante, List<Voucher> purchasedVouchers)
@@ -51,6 +67,12 @@ public class ShopService : IShopService
         {
             GenerateRandomShopCard(shop, ante, purchasedVouchers);
         }
+
+        _logger.LogDebug(
+            "Shop rerolled for ante {Ante} with {ItemOfferCount} item offers and reroll count {RerollCount}",
+            ante,
+            shop.GetAllCardOffers().Count,
+            shop.RerollCount);
     }
 
     private static void GenerateRandomShopCard(BackendBalatro.Models.Entities.Shop shop, int ante, List<Voucher> vouchers)
@@ -270,6 +292,13 @@ public class ShopService : IShopService
             }
         }
 
+        _logger.LogDebug(
+            "Booster pack {BoosterPackId} of type {BoosterType} opened with {TotalCardCount} generated cards and {MaxPickCount} maximum picks",
+            pack.Id,
+            pack.BoosterPackType,
+            pack.TotalCard,
+            pack.MaxPick);
+
         return pack;
     }
 
@@ -279,9 +308,15 @@ public class ShopService : IShopService
             .Where(e => !purchasedVouchers.Any(p => p.Effect == e))
             .ToList();
 
-        if (allEffects.Count == 0) return null;
+        if (allEffects.Count == 0)
+        {
+            _logger.LogDebug("No voucher is available for ante {Ante}", ante);
+            return null;
+        }
 
         var effect = allEffects[_random.Next(allEffects.Count)];
-        return new Voucher(effect.ToString(), effect, 10);
+        var voucher = new Voucher(effect.ToString(), effect, 10);
+        _logger.LogDebug("Voucher {VoucherEffect} generated for ante {Ante}", effect, ante);
+        return voucher;
     }
 }

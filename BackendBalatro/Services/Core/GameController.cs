@@ -8,12 +8,12 @@ using BackendBalatro.Services.Shop;
 
 namespace BackendBalatro.Services.Core;
 
-//TODO SERILOG
 public class GameController : IGameController
 {
     private readonly IScoringService _scoringService;
     private readonly IShopService _shopService;
     private readonly IConsumableEffectHandler _consumableHandler;
+    private readonly ILogger<GameController> _logger;
 
     public string SessionId { get; set; } = Guid.NewGuid().ToString();
     public IPlayer Player { get; set; } = new Player(1, "Player 1");
@@ -109,8 +109,10 @@ public class GameController : IGameController
     public GameController(
         IScoringService scoringService,
         IShopService shopService,
-        IConsumableEffectHandler consumableHandler)
+        IConsumableEffectHandler consumableHandler,
+        ILogger<GameController> logger)
     {
+        _logger = logger;
         _scoringService = scoringService;
         _shopService = shopService;
         _consumableHandler = consumableHandler;
@@ -131,6 +133,8 @@ public class GameController : IGameController
 
     public bool StartGame()
     {
+        using var scope = BeginOperationScope(nameof(StartGame));
+
         CurrentAnte = 1;
         CurrentRound = 1;
         Money = 4;
@@ -174,6 +178,8 @@ public class GameController : IGameController
 
         GenerateBlindsForAnte(CurrentAnte);
         CurrentAnteVoucher = _shopService.GenerateVoucherForAnte(CurrentAnte, PurchasedVouchers);
+
+        _logger.LogInformation("Game started with {DeckCardCount} deck cards", DrawPile.Count);
 
         return true;
     }
@@ -240,8 +246,11 @@ public class GameController : IGameController
 
     public bool SelectBlind(int blindId)
     {
+        using var scope = BeginOperationScope(nameof(SelectBlind));
+
         if (Phase != GameStatePhase.SelectingBlind)
         {
+            _logger.LogDebug("Blind selection rejected for {BlindId} in phase {GamePhase}", blindId, Phase);
             return false;
         }
 
@@ -249,6 +258,7 @@ public class GameController : IGameController
         var selected = blinds.FirstOrDefault(b => b.Id == blindId && !b.IsDefeated);
         if (selected == null)
         {
+            _logger.LogDebug("Blind selection rejected because blind {BlindId} is unavailable", blindId);
             return false;
         }
 
@@ -510,24 +520,30 @@ public class GameController : IGameController
 
     public OperationResult<ScoreCalculationResultDto> PlayHand(List<string> cardIds)
     {
+        using var scope = BeginOperationScope(nameof(PlayHand));
+
         if (Phase != GameStatePhase.Playing)
         {
+            _logger.LogDebug("Play hand rejected in phase {GamePhase} with {RequestedCardCount} requested cards", Phase, cardIds?.Count ?? 0);
             return OperationResult<ScoreCalculationResultDto>.Fail($"Cannot play hand while in {Phase} phase.");
         }
 
         if (cardIds == null || cardIds.Count == 0 || cardIds.Count > 5)
         {
+            _logger.LogDebug("Play hand rejected with {RequestedCardCount} requested cards", cardIds?.Count ?? 0);
             return OperationResult<ScoreCalculationResultDto>.Fail("Must play between 1 and 5 cards.");
         }
 
         if (!IsHandPlayAllowedByPsychic(cardIds.Count, out var psychicError))
         {
+            _logger.LogDebug("Play hand rejected by active boss restriction with {RequestedCardCount} requested cards", cardIds.Count);
             return OperationResult<ScoreCalculationResultDto>.Fail(psychicError!);
         }
 
         var playedCards = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
         if (playedCards.Count != cardIds.Count)
         {
+            _logger.LogDebug("Play hand rejected because {RequestedCardCount} requested cards resolved to {FoundCardCount} cards", cardIds.Count, playedCards.Count);
             return OperationResult<ScoreCalculationResultDto>.Fail("One or more selected cards are not in hand.");
         }
 
@@ -545,6 +561,7 @@ public class GameController : IGameController
 
         if (!ValidateBossHandTypeRestrictions(result.HandType, result.HandName, out var bossHandError))
         {
+            _logger.LogDebug("Play hand rejected because hand type {HandType} violates a boss restriction", result.HandType);
             return OperationResult<ScoreCalculationResultDto>.Fail(bossHandError!);
         }
 
@@ -610,24 +627,30 @@ public class GameController : IGameController
 
     public OperationResult DiscardCards(List<string> cardIds)
     {
+        using var scope = BeginOperationScope(nameof(DiscardCards));
+
         if (Phase != GameStatePhase.Playing)
         {
+            _logger.LogDebug("Discard rejected in phase {GamePhase} with {RequestedCardCount} requested cards", Phase, cardIds?.Count ?? 0);
             return OperationResult.Fail($"Cannot discard cards while in {Phase} phase.");
         }
 
         if (_currentDiscard <= 0)
         {
+            _logger.LogDebug("Discard rejected because no discards remain");
             return OperationResult.Fail("No discards remaining.");
         }
 
         if (cardIds == null || cardIds.Count == 0 || cardIds.Count > 5)
         {
+            _logger.LogDebug("Discard rejected with {RequestedCardCount} requested cards", cardIds?.Count ?? 0);
             return OperationResult.Fail("Must discard between 1 and 5 cards.");
         }
 
         var toDiscard = Hand.Where(c => cardIds.Contains(c.Id)).ToList();
         if (toDiscard.Count != cardIds.Count)
         {
+            _logger.LogDebug("Discard rejected because {RequestedCardCount} requested cards resolved to {FoundCardCount} cards", cardIds.Count, toDiscard.Count);
             return OperationResult.Fail("One or more selected cards are not in hand.");
         }
 
@@ -640,6 +663,8 @@ public class GameController : IGameController
         DiscardPile.DiscardCards(toDiscard);
 
         DrawCards(GetEffectiveMaxHandSize() - Hand.Count);
+
+        _logger.LogInformation("Discarded {DiscardedCardCount} cards; {DiscardsRemaining} discards remain", toDiscard.Count, DiscardsRemaining);
 
         return OperationResult.Ok($"Discarded {toDiscard.Count} card(s).");
     }
@@ -775,9 +800,12 @@ public class GameController : IGameController
 
     public OperationResult UseConsumable(string consumableId, List<string> targetCardIds)
     {
+        using var scope = BeginOperationScope(nameof(UseConsumable));
+
         var card = Deck.UsableCards.FirstOrDefault(c => c.Id == consumableId);
         if (card == null)
         {
+            _logger.LogDebug("Consumable use rejected because {ConsumableId} was not found", consumableId);
             return OperationResult.Fail("Consumable card not found in inventory.");
         }
 
@@ -811,11 +839,29 @@ public class GameController : IGameController
             }
         }
 
+        if (success)
+        {
+            _logger.LogInformation(
+                "Consumable {ConsumableId} of type {ConsumableType} used with {TargetCardCount} target cards",
+                consumableId,
+                card.GetType().Name,
+                targetCardIds.Count);
+        }
+        else
+        {
+            _logger.LogDebug(
+                "Consumable {ConsumableId} of type {ConsumableType} could not be used",
+                consumableId,
+                card.GetType().Name);
+        }
+
         return new OperationResult(success, msg);
     }
 
     public OperationResult SellCard(string cardId)
     {
+        using var scope = BeginOperationScope(nameof(SellCard));
+
         var joker = Deck.JokerCards.FirstOrDefault(j => j.Id == cardId);
         if (joker != null)
         {
@@ -823,6 +869,12 @@ public class GameController : IGameController
             Money += joker.SellValue;
 
             LiftVerdantLeafDebuffs();
+
+            _logger.LogInformation(
+                "Joker {CardId} sold for {SellValue}; money remaining {MoneyRemaining}",
+                joker.Id,
+                joker.SellValue,
+                Money);
 
             return OperationResult.Ok($"Sold {joker.Name} for ${joker.SellValue}.");
         }
@@ -833,9 +885,15 @@ public class GameController : IGameController
             Deck.UsableCards.Remove(consumable);
             int sellVal = Math.Max(1, consumable.Price / 2);
             Money += sellVal;
+            _logger.LogInformation(
+                "Consumable {CardId} sold for {SellValue}; money remaining {MoneyRemaining}",
+                consumable.Id,
+                sellVal,
+                Money);
             return OperationResult.Ok($"Sold {consumable.Name} for ${sellVal}.");
         }
 
+        _logger.LogDebug("Sell card rejected because {CardId} was not found", cardId);
         return OperationResult.Fail("Card not found in Jokers or Consumables.");
     }
 
@@ -881,6 +939,8 @@ public class GameController : IGameController
 
     public OperationResult BuyCardFromShop(string cardId)
     {
+        using var scope = BeginOperationScope(nameof(BuyCardFromShop));
+
         if (Phase != GameStatePhase.InShop)
         {
             return OperationResult.Fail("Can only buy cards while in Shop phase.");
@@ -895,6 +955,7 @@ public class GameController : IGameController
             Money -= joker.Price;
             Shop.JokerCardOffers.Remove(joker);
             Deck.JokerCards.Add(joker);
+            LogShopCardPurchase(joker.Id, nameof(JokerCard), joker.Price);
             return OperationResult.Ok($"Purchased {joker.Name} for ${joker.Price}!");
         }
 
@@ -907,6 +968,7 @@ public class GameController : IGameController
             Money -= tarot.Price;
             Shop.TarotCardOffers.Remove(tarot);
             Deck.UsableCards.Add(tarot);
+            LogShopCardPurchase(tarot.Id, nameof(TarotCard), tarot.Price);
             return OperationResult.Ok($"Purchased {tarot.Name} for ${tarot.Price}!");
         }
 
@@ -919,6 +981,7 @@ public class GameController : IGameController
             Money -= planet.Price;
             Shop.PlanetCardOffers.Remove(planet);
             Deck.UsableCards.Add(planet);
+            LogShopCardPurchase(planet.Id, nameof(PlanetCard), planet.Price);
             return OperationResult.Ok($"Purchased {planet.Name} for ${planet.Price}!");
         }
 
@@ -931,6 +994,7 @@ public class GameController : IGameController
             Money -= spectral.Price;
             Shop.SpectralCardOffers.Remove(spectral);
             Deck.UsableCards.Add(spectral);
+            LogShopCardPurchase(spectral.Id, nameof(SpectralCard), spectral.Price);
             return OperationResult.Ok($"Purchased {spectral.Name} for ${spectral.Price}!");
         }
 
@@ -943,14 +1007,18 @@ public class GameController : IGameController
             Shop.PlayingCardOffers.Remove(playingCard);
             DrawPile.PlayingCards.Add(playingCard);
             OnAddPlayingCard?.Invoke(playingCard);
+            LogShopCardPurchase(playingCard.Id, nameof(PlayingCard), playingCard.Price);
             return OperationResult.Ok($"Purchased {playingCard.Name} and added to deck!");
         }
 
+        _logger.LogDebug("Shop purchase rejected because card {CardId} was not found", cardId);
         return OperationResult.Fail("Card offer not found in shop.");
     }
 
     public OperationResult RerollShop()
     {
+        using var scope = BeginOperationScope(nameof(RerollShop));
+
         if (Phase != GameStatePhase.InShop)
         {
             return OperationResult.Fail("Can only reroll shop in Shop phase.");
@@ -971,11 +1039,15 @@ public class GameController : IGameController
         Shop.RerollCount++;
         _shopService.RerollShop(Shop, CurrentAnte, PurchasedVouchers);
 
+        _logger.LogInformation("Shop rerolled for {RerollCost}; money remaining {MoneyRemaining}", cost, Money);
+
         return OperationResult.Ok($"Shop rerolled for ${cost}. Next reroll costs ${Shop.RerollCost}.");
     }
 
     public OperationResult<BoosterPack> BuyBoosterPack(string boosterId)
     {
+        using var scope = BeginOperationScope(nameof(BuyBoosterPack));
+
         if (Phase != GameStatePhase.InShop)
         {
             return OperationResult<BoosterPack>.Fail("Can only buy booster packs in Shop phase.");
@@ -1004,11 +1076,20 @@ public class GameController : IGameController
 
         EnsureHandAvailableForConsumableBooster(pack);
 
+        _logger.LogInformation(
+            "Booster pack {BoosterPackId} of type {BoosterType} purchased for {Price}; money remaining {MoneyRemaining}",
+            pack.Id,
+            pack.BoosterPackType,
+            pack.Price,
+            Money);
+
         return OperationResult<BoosterPack>.Ok(pack, $"Opened {pack.Name}! Pick {pack.MaxPick} card(s).");
     }
 
     public OperationResult SelectBoosterCard(string cardId)
     {
+        using var scope = BeginOperationScope(nameof(SelectBoosterCard));
+
         if (Shop.OpenedBoosterPack == null)
         {
             return OperationResult.Fail("No booster pack is currently opened.");
@@ -1091,22 +1172,33 @@ public class GameController : IGameController
             Shop.OpenedBoosterPack = null;
         }
 
+        _logger.LogInformation(
+            "Booster card {CardId} selected; {RemainingPickCount} picks and {RemainingCardCount} cards remain",
+            cardId,
+            pack.MaxPick,
+            totalRemainingCards);
+
         return OperationResult.Ok(resultMessage);
     }
 
     public OperationResult SkipBoosterPack()
     {
+        using var scope = BeginOperationScope(nameof(SkipBoosterPack));
+
         if (Shop.OpenedBoosterPack == null)
         {
             return OperationResult.Ok("No booster pack opened.");
         }
 
         Shop.OpenedBoosterPack = null;
+        _logger.LogInformation("Booster pack skipped");
         return OperationResult.Ok("Booster pack skipped.");
     }
 
     public OperationResult BuyVoucher(string voucherId)
     {
+        using var scope = BeginOperationScope(nameof(BuyVoucher));
+
         if (Phase != GameStatePhase.InShop)
         {
             return OperationResult.Fail("Can only buy vouchers in Shop phase.");
@@ -1155,6 +1247,13 @@ public class GameController : IGameController
             CurrentAnte = Math.Max(1, CurrentAnte - 1);
             MaxHands = Math.Max(1, MaxHands - 1);
         }
+
+        _logger.LogInformation(
+            "Voucher {VoucherId} with effect {VoucherEffect} purchased for {Price}; money remaining {MoneyRemaining}",
+            voucher.Id,
+            voucher.Effect,
+            voucher.Price,
+            Money);
 
         return OperationResult.Ok($"Purchased {voucher.Name} voucher!");
     }
@@ -1266,4 +1365,22 @@ public class GameController : IGameController
             LastMessage = message
         };
     }
+
+    private IDisposable? BeginOperationScope(string operationName) =>
+        _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["SessionId"] = SessionId,
+            ["Ante"] = CurrentAnte,
+            ["Round"] = CurrentRound,
+            ["GamePhase"] = Phase.ToString(),
+            ["OperationName"] = operationName
+        });
+
+    private void LogShopCardPurchase(string cardId, string cardType, int price) =>
+        _logger.LogInformation(
+            "Shop card {CardId} of type {CardType} purchased for {Price}; money remaining {MoneyRemaining}",
+            cardId,
+            cardType,
+            price,
+            Money);
 }

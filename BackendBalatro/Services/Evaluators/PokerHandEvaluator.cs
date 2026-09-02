@@ -5,25 +5,46 @@ namespace BackendBalatro.Services.Evaluators;
 
 public class PokerHandEvaluator : IPokerHandEvaluator
 {
-    public (PokerHandType HandType, List<PlayingCard> ScoringCards, List<PlayingCard> UnscoredCards) Evaluate(List<PlayingCard> playedCards)
+    private readonly ILogger<PokerHandEvaluator> _logger;
+
+    public PokerHandEvaluator(ILogger<PokerHandEvaluator> logger)
+    {
+        _logger = logger;
+    }
+
+    public PokerHandEvaluationResult Evaluate(List<PlayingCard>? playedCards)
+    {
+        var result = EvaluateCore(playedCards);
+
+        _logger.LogDebug(
+            "Evaluated {PlayedCardCount} cards as {HandType} with {ScoringCardCount} scoring cards and {UnscoredCardCount} unscored cards",
+            playedCards?.Count ?? 0,
+            result.HandType,
+            result.ScoringCards.Count,
+            result.UnscoredCards.Count);
+
+        return result;
+    }
+
+    private static PokerHandEvaluationResult EvaluateCore(List<PlayingCard>? playedCards)
     {
         if (playedCards == null || playedCards.Count == 0)
         {
-            return (PokerHandType.HighCard, new List<PlayingCard>(), new List<PlayingCard>());
+            return new PokerHandEvaluationResult(PokerHandType.HighCard, new List<PlayingCard>(), new List<PlayingCard>());
         }
 
         var standardCards = GetStandardCards(playedCards);
 
         if (standardCards.Count == 0)
         {
-            return (PokerHandType.HighCard, playedCards, new List<PlayingCard>());
+            return new PokerHandEvaluationResult(PokerHandType.HighCard, playedCards, new List<PlayingCard>());
         }
 
         if (playedCards.Count >= 5 && standardCards.Count >= 5)
         {
             if (IsFlush(standardCards) && TryGetStraight(standardCards, out var straightFlushCards))
             {
-                return (PokerHandType.StraightFlush, straightFlushCards, playedCards.Except(straightFlushCards).ToList());
+                return new PokerHandEvaluationResult(PokerHandType.StraightFlush, straightFlushCards, playedCards.Except(straightFlushCards).ToList());
             }
         }
 
@@ -33,54 +54,54 @@ public class PokerHandEvaluator : IPokerHandEvaluator
         {
             var fourGroup = rankGroups.First(g => g.Count() >= 4).Take(4).ToList();
             var unscored = playedCards.Except(fourGroup).ToList();
-            return (PokerHandType.FourOfAKind, fourGroup, unscored);
+            return new PokerHandEvaluationResult(PokerHandType.FourOfAKind, fourGroup, unscored);
         }
 
         if (rankGroups.Count >= 2 && rankGroups[0].Count() >= 3 && rankGroups[1].Count() >= 2)
         {
             var fullHouseCards = rankGroups[0].Take(3).Concat(rankGroups[1].Take(2)).ToList();
             var unscored = playedCards.Except(fullHouseCards).ToList();
-            return (PokerHandType.FullHouse, fullHouseCards, unscored);
+            return new PokerHandEvaluationResult(PokerHandType.FullHouse, fullHouseCards, unscored);
         }
 
         if (playedCards.Count >= 5 && standardCards.Count >= 5 && IsFlush(standardCards))
         {
             var flushCards = standardCards.Take(5).ToList();
             var unscored = playedCards.Except(flushCards).ToList();
-            return (PokerHandType.Flush, flushCards, unscored);
+            return new PokerHandEvaluationResult(PokerHandType.Flush, flushCards, unscored);
         }
 
         if (playedCards.Count >= 5 && standardCards.Count >= 5 && TryGetStraight(standardCards, out var straightCardsResult))
         {
             var unscored = playedCards.Except(straightCardsResult).ToList();
-            return (PokerHandType.Straight, straightCardsResult, unscored);
+            return new PokerHandEvaluationResult(PokerHandType.Straight, straightCardsResult, unscored);
         }
 
         if (rankGroups.Any(g => g.Count() >= 3))
         {
             var threeGroup = rankGroups.First(g => g.Count() >= 3).Take(3).ToList();
             var unscored = playedCards.Except(threeGroup).ToList();
-            return (PokerHandType.ThreeOfAKind, threeGroup, unscored);
+            return new PokerHandEvaluationResult(PokerHandType.ThreeOfAKind, threeGroup, unscored);
         }
 
         if (rankGroups.Count >= 2 && rankGroups[0].Count() >= 2 && rankGroups[1].Count() >= 2)
         {
             var twoPairCards = rankGroups[0].Take(2).Concat(rankGroups[1].Take(2)).ToList();
             var unscored = playedCards.Except(twoPairCards).ToList();
-            return (PokerHandType.TwoPair, twoPairCards, unscored);
+            return new PokerHandEvaluationResult(PokerHandType.TwoPair, twoPairCards, unscored);
         }
 
         if (rankGroups.Any(g => g.Count() >= 2))
         {
             var pairGroup = rankGroups.First(g => g.Count() >= 2).Take(2).ToList();
             var unscored = playedCards.Except(pairGroup).ToList();
-            return (PokerHandType.Pair, pairGroup, unscored);
+            return new PokerHandEvaluationResult(PokerHandType.Pair, pairGroup, unscored);
         }
 
         var highestCard = standardCards.OrderByDescending(c => (int)c.Rank).First();
         var highCardList = new List<PlayingCard> { highestCard };
         var unscoredList = playedCards.Except(highCardList).ToList();
-        return (PokerHandType.HighCard, highCardList, unscoredList);
+        return new PokerHandEvaluationResult(PokerHandType.HighCard, highCardList, unscoredList);
     }
 
     private static List<PlayingCard> GetStandardCards(List<PlayingCard> cards)

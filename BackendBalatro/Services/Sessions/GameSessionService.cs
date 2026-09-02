@@ -15,18 +15,21 @@ public class GameSessionService : IGameSessionService
     private readonly IScoringService _scoringService;
     private readonly IShopService _shopService;
     private readonly IConsumableEffectHandler _consumableHandler;
-    private readonly ILogger<GameSessionService>? _logger;
+    private readonly ILogger<GameSessionService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
     public GameSessionService(
         IScoringService scoringService,
         IShopService shopService,
         IConsumableEffectHandler consumableHandler,
-        ILogger<GameSessionService>? logger = null)
+        ILogger<GameSessionService> logger,
+        ILoggerFactory loggerFactory)
     {
         _scoringService = scoringService;
         _shopService = shopService;
         _consumableHandler = consumableHandler;
         _logger = logger;
+        _loggerFactory = loggerFactory;
     }
 
     public IGameController GetOrCreateSession(string? sessionId, string? playerName = null)
@@ -36,9 +39,16 @@ public class GameSessionService : IGameSessionService
             sessionId = "default";
         }
 
+        if (_sessions.TryGetValue(sessionId, out var existingSession))
+        {
+            _logger.LogDebug("Game session {SessionId} retrieved", sessionId);
+            return existingSession;
+        }
+
         return _sessions.GetOrAdd(sessionId, id =>
         {
             var engine = CreateAndConfigureEngine(id, playerName);
+            _logger.LogInformation("Game session {SessionId} created", id);
             return engine;
         });
     }
@@ -46,6 +56,7 @@ public class GameSessionService : IGameSessionService
     public IGameController? GetSession(string sessionId)
     {
         _sessions.TryGetValue(sessionId, out var engine);
+        _logger.LogDebug("Game session lookup for {SessionId} found {SessionFound}", sessionId, engine is not null);
         return engine;
     }
 
@@ -56,7 +67,9 @@ public class GameSessionService : IGameSessionService
             if (_sessionCleanups.TryRemove(sessionId, out var cleanup))
             {
                 cleanup.Invoke();
-                _logger?.LogInformation("[EVENT][Session: {SessionId}] 🧹 Session removed and all event listeners unsubscribed.", sessionId);
+                _logger.LogInformation(
+                    "Session removed and event subscriptions disposed for {SessionId}",
+                    sessionId);
             }
             return true;
         }
@@ -68,12 +81,13 @@ public class GameSessionService : IGameSessionService
         var id = Guid.NewGuid().ToString("N");
         var engine = CreateAndConfigureEngine(id, playerName);
         _sessions[id] = engine;
+        _logger.LogInformation("Game session {SessionId} created", id);
         return id;
     }
 
     private IGameController CreateAndConfigureEngine(string sessionId, string? playerName)
     {
-        var engine = new GameController(_scoringService, _shopService, _consumableHandler)
+        var engine = new GameController(_scoringService, _shopService, _consumableHandler, _loggerFactory.CreateLogger<GameController>())
         {
             SessionId = sessionId,
             Player = new Player(1, playerName ?? "Player 1")
@@ -88,37 +102,88 @@ public class GameSessionService : IGameSessionService
     private void SubscribeToEngineEvents(IGameController controller, string sessionId)
     {
         Action<Blind> onBlindSelected = blind =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 🎯 Blind Selected: {BlindName} (Target: {TargetScore}, Reward: ${Reward})", sessionId, blind.Name, blind.ScoreToDefeat, blind.RewardMoney);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation(
+                "Blind {BlindId} ({BlindName}) selected with target {TargetScore} and reward {RewardMoney}",
+                blind.BlindId,
+                blind.Name,
+                blind.ScoreToDefeat,
+                blind.RewardMoney);
+        };
 
         Action<List<PlayingCard>> onPlayHand = cards =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 🃏 Played Hand with {Count} cards: [{Cards}]", sessionId, cards.Count, string.Join(", ", cards.Select(c => c.Name)));
+        {
+            using var scope = BeginSessionScope(sessionId);
+            var cardIds = cards.Select(card => card.Id).ToArray();
+
+            _logger.LogInformation(
+                "Hand played with {PlayedCardCount} cards {CardIds}",
+                cards.Count,
+                cardIds);
+        };
+
 
         Action<int> onScore = score =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 📈 Score Added: +{Score} pts | Total Score: {CurrentScore}/{TargetScore}", sessionId, score, controller.CurrentScore, controller.CurrentBlind?.ScoreToDefeat ?? 0);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation(
+                "Score {Score} added; current score {CurrentScore} of target {TargetScore}",
+                score,
+                controller.CurrentScore,
+                controller.CurrentBlind?.ScoreToDefeat ?? 0);
+        };
 
         Action<Blind> onBlindDefeated = blind =>
-            _logger?.LogInformation("[EVENT][Session: {BlindName}] 🏆 Blind Defeated: {BlindName}!", sessionId, blind.Name);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation(
+                "Blind {BlindId} ({BlindName}) defeated",
+                blind.BlindId,
+                blind.Name);
+        };
 
         Action onGetCashout = () =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 💰 Cashout Collected! Current Money: ${Money}", sessionId, controller.Money);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation("Cashout collected; money is now {Money}", controller.Money);
+        };
 
         Action onShopOpen = () =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 🛒 Shop Opened! Items generated.", sessionId);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation("Shop opened");
+        };
 
         Action<int> onNextRound = round =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 🔄 Round Advanced to Round {Round}", sessionId, round);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation("Round advanced to {Round}", round);
+        };
 
         Action<int> onAnteAdvance = ante =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 🚩 Ante Advanced to Ante {Ante}", sessionId, ante);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation("Ante advanced to {Ante}", ante);
+        };
 
         Action<PlayingCard> onAddPlayingCard = card =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] ➕ Card Added to Deck: {CardName}", sessionId, card.Name);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation("Playing card {CardId} ({CardName}) added to deck", card.Id, card.Name);
+        };
 
         Action onWinGame = () =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 🎉 GAME WON! All 8 Antes completed successfully!", sessionId);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation("Game won");
+        };
 
         Action onGameOver = () =>
-            _logger?.LogInformation("[EVENT][Session: {SessionId}] 💀 GAME OVER! Failed to defeat the blind.", sessionId);
+        {
+            using var scope = BeginSessionScope(sessionId);
+            _logger.LogInformation("Game over");
+        };
 
         controller.OnBlindSelected += onBlindSelected;
         controller.OnPlayHand += onPlayHand;
@@ -147,4 +212,10 @@ public class GameSessionService : IGameSessionService
             controller.OnGameOver -= onGameOver;
         };
     }
+
+    private IDisposable? BeginSessionScope(string sessionId) =>
+        _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["SessionId"] = sessionId
+        });
 }

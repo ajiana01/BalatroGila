@@ -7,10 +7,12 @@ namespace BackendBalatro.Services.Evaluators;
 public class ScoringService : IScoringService
 {
     private readonly IPokerHandEvaluator _pokerHandEvaluator;
+    private readonly ILogger<ScoringService> _logger;
 
-    public ScoringService(IPokerHandEvaluator pokerHandEvaluator)
+    public ScoringService(IPokerHandEvaluator pokerHandEvaluator, ILogger<ScoringService> logger)
     {
         _pokerHandEvaluator = pokerHandEvaluator;
+        _logger = logger;
     }
 
     public (int BaseChips, float BaseMult) GetBaseChipsAndMult(PokerHandType handType, int level)
@@ -69,7 +71,10 @@ public class ScoringService : IScoringService
         int remainingDiscards = 0,
         int remainingDeckCards = 0)
     {
-        var (handType, scoringCards, unscoredCards) = _pokerHandEvaluator.Evaluate(playedCards);
+        var evaluation = _pokerHandEvaluator.Evaluate(playedCards);
+        var handType = evaluation.HandType;
+        var scoringCards = evaluation.ScoringCards;
+        var unscoredCards = evaluation.UnscoredCards;
 
         var stoneCards = playedCards.Where(c => c.Enhancement == EnhancePokerCard.StoneCards && !scoringCards.Contains(c)).ToList();
         if (stoneCards.Count > 0)
@@ -212,7 +217,7 @@ public class ScoringService : IScoringService
 
         int finalScore = (int)Math.Floor(totalChips * totalMult);
 
-        return new ScoreCalculationResultDto
+        var result = new ScoreCalculationResultDto
         {
             HandType = handType,
             HandLevel = level,
@@ -233,6 +238,20 @@ public class ScoringService : IScoringService
             JokerTriggers = jokerTriggers,
             LuckyMoneyWon = luckyMoney
         };
+
+        _logger.LogDebug(
+            "Score calculated for {HandType} at level {HandLevel}: base chips {BaseChips}, base mult {BaseMult}, total chips {TotalChips}, total mult {TotalMult}, final score {FinalScore}, joker count {JokerCount}, active blind {ActiveBlindId}",
+            result.HandType,
+            result.HandLevel,
+            result.BaseChips,
+            result.BaseMult,
+            result.TotalChips,
+            result.TotalMult,
+            result.FinalScore,
+            jokers.Count,
+            activeBlindId);
+
+        return result;
     }
 
     private static void ApplySpecificJokerLogic(

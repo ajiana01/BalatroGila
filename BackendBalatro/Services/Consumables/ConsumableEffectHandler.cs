@@ -8,9 +8,20 @@ namespace BackendBalatro.Services.Consumables;
 public class ConsumableEffectHandler : IConsumableEffectHandler
 {
     private static readonly Random _random = new();
+    private readonly ILogger<ConsumableEffectHandler> _logger;
+
+    public ConsumableEffectHandler(ILogger<ConsumableEffectHandler> logger)
+    {
+        _logger = logger;
+    }
 
     public bool UseTarot(GameController controller, TarotCard tarot, List<string> targetCardIds, out string message)
     {
+        _logger.LogDebug(
+            "Applying tarot {TarotType} with {TargetCardCount} target cards",
+            tarot.Type,
+            targetCardIds.Count);
+
         message = string.Empty;
 
         var targetCards = controller.Hand.Where(c => targetCardIds.Contains(c.Id)).ToList();
@@ -328,6 +339,8 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
 
     public bool UsePlanet(GameController controller, PlanetCard planet, out string message)
     {
+        _logger.LogDebug("Applying planet {PokerHandType}", planet.PokerHandType);
+
         if (controller.PokerHandLevels.ContainsKey(planet.PokerHandType))
         {
             controller.PokerHandLevels[planet.PokerHandType]++;
@@ -355,6 +368,11 @@ public class ConsumableEffectHandler : IConsumableEffectHandler
 
     public bool UseSpectral(GameController controller, SpectralCard spectral, out string message)
     {
+        _logger.LogDebug(
+            "Applying spectral {SpectralType} with {HandCardCount} cards in hand",
+            spectral.Type,
+            controller.Hand.Count);
+
         message = string.Empty;
 
         switch (spectral.Type)
