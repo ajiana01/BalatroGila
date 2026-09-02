@@ -1,3 +1,19 @@
+/*
+ * ShopServiceTest.cs - Unit Tests for Shop Generation and Booster Packs
+ *
+ * This file documents the shop-service contract: shop population and rerolls,
+ * voucher effects, random offer generation, booster-pack contents, and
+ * voucher availability. Random scenarios use bounded retries to find the
+ * generated item needed for each assertion.
+ *
+ * Key testing practices demonstrated:
+ * - Arrange-Act-Assert (AAA)
+ * - Parameterized tests with [TestCase]
+ * - Isolating random outcomes through bounded searches
+ * - Test names following [Method]_[Scenario]_[ExpectedResult]
+ *
+ */
+
 using BackendBalatro.Enums;
 using BackendBalatro.Models.Entities;
 using BackendBalatro.Models.Interfaces;
@@ -6,15 +22,29 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BackendBalatro.Tests;
 
+/// <summary>
+/// Test fixture for <see cref="ShopService"/>.
+///
+/// Each test creates fresh shop state and verifies shop offers, booster packs,
+/// and vouchers without relying on persisted game-session data.
+/// </summary>
 [TestFixture]
 [NonParallelizable]
 public class ShopServiceTest
 {
+    // System under test responsible for generating and refreshing shop content.
     private ShopService _service;
 
+    /// <summary>
+    /// Runs before every test to create a fresh shop service with a null logger.
+    /// </summary>
     [SetUp]
     public void SetUp() => _service = new ShopService(NullLogger<ShopService>.Instance);
 
+    /// <summary>
+    /// Verifies that populating a shop resets transient state and creates the
+    /// default number of card offers and booster packs.
+    /// </summary>
     [Test]
     public void PopulateShop_DefaultState_ResetsAndCreatesTwoCardsAndTwoBoosters()
     {
@@ -37,6 +67,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that the Overstock voucher increases the maximum number of card
+    /// offers and generates three offers.
+    /// </summary>
     [Test]
     public void PopulateShop_WithOverstock_CreatesThreeCardOffers()
     {
@@ -52,6 +86,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that an available voucher for the current ante is displayed in
+    /// the populated shop.
+    /// </summary>
     [Test]
     public void PopulateShop_WithCurrentAnteVoucher_ShowsVoucher()
     {
@@ -63,6 +101,10 @@ public class ShopServiceTest
         Assert.That(shop.Voucher, Is.SameAs(voucher));
     }
 
+    /// <summary>
+    /// Verifies that the shop clears a voucher when none is available or when
+    /// the current voucher has already been purchased.
+    /// </summary>
     [TestCase(true, false)]
     [TestCase(false, true)]
     public void PopulateShop_VoucherUnavailable_ClearsVoucher(bool voucherIsNull, bool isPurchased)
@@ -76,6 +118,10 @@ public class ShopServiceTest
         Assert.That(shop.Voucher, Is.Null);
     }
 
+    /// <summary>
+    /// Verifies that rerolling replaces card offers while retaining booster
+    /// packs, the voucher, the opened pack, and the reroll count.
+    /// </summary>
     [Test]
     public void RerollShop_ExistingOffers_ReplacesOnlyCardOffers()
     {
@@ -104,6 +150,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that Clearance Sale discounts every generated card type by
+    /// twenty-five percent without reducing its price below one.
+    /// </summary>
     [TestCase("joker", -1)]
     [TestCase("tarot", 2)]
     [TestCase("planet", 2)]
@@ -124,6 +174,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that Tarot Merchant, Planet Merchant, and Magic Trick use their
+    /// configured weights to generate the corresponding offer type.
+    /// </summary>
     [TestCase("tarot", 60)]
     [TestCase("planet", 80)]
     [TestCase("playing", 95)]
@@ -144,6 +198,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that independently generated jokers are distinct copies and
+    /// cannot mutate the shared catalog metadata.
+    /// </summary>
     [Test]
     public void GenerateRandomJoker_ReturnsIndependentCopyFromCatalog()
     {
@@ -166,6 +224,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that joker generation assigns the expected edition for the
+    /// configured Hone status and edition outcome.
+    /// </summary>
     [TestCase(false, 10, 0, JokerEdition.Base)]
     [TestCase(false, 0, 0, JokerEdition.Foil)]
     [TestCase(true, 0, 50, JokerEdition.Holographic)]
@@ -179,6 +241,10 @@ public class ShopServiceTest
         Assert.That(joker!.Edition, Is.EqualTo(expectedEdition));
     }
 
+    /// <summary>
+    /// Verifies that every generated joker includes valid catalog metadata and
+    /// a non-negative price.
+    /// </summary>
     [Test]
     public void GenerateRandomJoker_AlwaysReturnsValidCatalogMetadata()
     {
@@ -196,6 +262,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that opening each booster-pack type populates only its expected
+    /// card collection and marks the pack as opened.
+    /// </summary>
     [TestCase(BoosterType.Arcana)]
     [TestCase(BoosterType.Celestial)]
     [TestCase(BoosterType.Standard)]
@@ -224,6 +294,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that opening a prepopulated booster pack clears its existing
+    /// contents before generating new cards.
+    /// </summary>
     [Test]
     public void OpenBoosterPack_PrepopulatedPack_ClearsOldContentsBeforeGeneration()
     {
@@ -244,6 +318,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that Telescope makes the first card in a Celestial pack match
+    /// the most-played poker hand.
+    /// </summary>
     [Test]
     public void OpenBoosterPack_CelestialWithTelescope_FirstPlanetMatchesMostPlayedHand()
     {
@@ -257,6 +335,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that a booster pack with zero total cards opens successfully
+    /// with every card collection empty.
+    /// </summary>
     [Test]
     public void OpenBoosterPack_ZeroTotalCards_OpensWithEmptyCollections()
     {
@@ -275,6 +357,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that booster-pack type, size, and Clearance Sale determine the
+    /// generated pack's price, card count, and maximum pick count.
+    /// </summary>
     [TestCase(BoosterType.Arcana, PackSize.Normal, false, 4, 3, 1)]
     [TestCase(BoosterType.Arcana, PackSize.Jumbo, false, 6, 5, 1)]
     [TestCase(BoosterType.Arcana, PackSize.Mega, false, 8, 5, 2)]
@@ -296,6 +382,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that an ante with available voucher effects produces an
+    /// unpurchased voucher with the expected basic metadata.
+    /// </summary>
     [Test]
     public void GenerateVoucherForAnte_WithAvailableEffects_ReturnsUnpurchasedEffect()
     {
@@ -313,6 +403,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that voucher generation excludes every effect that has already
+    /// been purchased.
+    /// </summary>
     [Test]
     public void GenerateVoucherForAnte_ExcludesEveryPurchasedEffect()
     {
@@ -328,6 +422,10 @@ public class ShopServiceTest
         Assert.That(voucher!.Effect, Is.EqualTo(remainingEffect));
     }
 
+    /// <summary>
+    /// Verifies that voucher generation returns no voucher when every effect
+    /// has already been purchased and leaves the purchase list unchanged.
+    /// </summary>
     [Test]
     public void GenerateVoucherForAnte_AllEffectsPurchased_ReturnsNull()
     {
@@ -343,6 +441,10 @@ public class ShopServiceTest
         });
     }
 
+    /// <summary>
+    /// Verifies that duplicate purchased-voucher entries do not prevent safe
+    /// generation of a different available effect.
+    /// </summary>
     [Test]
     public void GenerateVoucherForAnte_DuplicatePurchasedEntries_RemainsSafe()
     {
