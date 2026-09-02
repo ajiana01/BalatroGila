@@ -1,3 +1,18 @@
+/*
+ * GameSessionServiceTests.cs - Unit Tests for Game Session Management
+ *
+ * This fixture documents the session-service contract: default and named
+ * session resolution, session identity and lifecycle, thread-safe creation,
+ * event subscription management, and structured logging.
+ *
+ * Key testing practices demonstrated:
+ * - Arrange-Act-Assert (AAA)
+ * - Dependency mocking with Moq
+ * - Parameterized tests for equivalent input cases
+ * - Assertions for object identity, lifecycle state, and logging behavior
+ *
+ */
+
 using BackendBalatro.Enums;
 using BackendBalatro.Models.DTOs;
 using BackendBalatro.Models.Entities;
@@ -11,15 +26,34 @@ using Moq;
 
 namespace BackendBalatro.Tests;
 
+/// <summary>
+/// Test fixture for <see cref="GameSessionService"/>.
+///
+/// The service uses mocked scoring, shop, consumable, and logging dependencies
+/// so these tests focus on session management and event-subscription behavior.
+/// </summary>
 [TestFixture]
 public class GameSessionServiceTests
 {
+    // Mocked scoring dependency used when configuring a new game engine.
     private Mock<IScoringService> _mockScoringService;
+
+    // Mocked shop dependency used to verify initial voucher generation.
     private Mock<IShopService> _mockShopService;
+
+    // Mocked consumable dependency passed to each configured game engine.
     private Mock<IConsumableEffectHandler> _mockConsumableHandler;
+
+    // System under test: creates, retrieves, and removes game sessions.
     private GameSessionService _service;
+
+    // Mocked logger used to inspect structured log messages and scopes.
     private Mock<ILogger<GameSessionService>> _mockLogger;
 
+    /// <summary>
+    /// Creates fresh mocks and a new session service before every test to keep
+    /// session state, dependency calls, and captured logs isolated.
+    /// </summary>
     [SetUp]
     public void SetUp()
     {
@@ -36,6 +70,10 @@ public class GameSessionServiceTests
             NullLoggerFactory.Instance);
     }
 
+    /// <summary>
+    /// Verifies that null, empty, and whitespace-only IDs resolve to the
+    /// default session with the expected initial game state.
+    /// </summary>
     [TestCase(null)]
     [TestCase("")]
     [TestCase("   ")]
@@ -52,6 +90,10 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that a new named session uses the supplied player name,
+    /// initializes the game engine, and generates the first ante voucher.
+    /// </summary>
     [Test]
     public void GetOrCreateSession_NewId_CreatesConfiguredEngine()
     {
@@ -67,6 +109,10 @@ public class GameSessionServiceTests
         _mockShopService.Verify(service => service.GenerateVoucherForAnte(1, session.PurchasedVouchers), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that requesting an existing session returns the same engine
+    /// instance and preserves the original player's name.
+    /// </summary>
     [Test]
     public void GetOrCreateSession_ExistingId_ReturnsSameInstance()
     {
@@ -80,6 +126,10 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that concurrent requests for the same ID create and store only
+    /// one shared session instance.
+    /// </summary>
     [Test]
     public async Task GetOrCreateSession_ConcurrentSameId_ReturnsSingleInstance()
     {
@@ -96,6 +146,9 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that GetSession returns the stored engine for an existing ID.
+    /// </summary>
     [Test]
     public void GetSession_ExistingId_ReturnsSession()
     {
@@ -104,12 +157,19 @@ public class GameSessionServiceTests
         Assert.That(_service.GetSession("existing"), Is.SameAs(created));
     }
 
+    /// <summary>
+    /// Verifies that GetSession returns null when the requested ID is unknown.
+    /// </summary>
     [Test]
     public void GetSession_UnknownId_ReturnsNull()
     {
         Assert.That(_service.GetSession("unknown"), Is.Null);
     }
 
+    /// <summary>
+    /// Verifies that CreateNewSession generates distinct 32-character
+    /// identifier values and stores each session under its generated ID.
+    /// </summary>
     [Test]
     public void CreateNewSession_CreatesUniqueThirtyTwoCharacterId()
     {
@@ -128,6 +188,10 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that removing an existing session returns true, deletes it,
+    /// and records disposal of its event subscriptions.
+    /// </summary>
     [Test]
     public void RemoveSession_ExistingId_RemovesSessionAndReturnsTrue()
     {
@@ -144,6 +208,10 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that removing an unknown session returns false without writing
+    /// a removal log entry.
+    /// </summary>
     [Test]
     public void RemoveSession_UnknownId_ReturnsFalse()
     {
@@ -156,6 +224,10 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that configured engine events produce structured log messages
+    /// containing the expected gameplay events and session scope.
+    /// </summary>
     [Test]
     public void ConfiguredEngine_EventsWriteStructuredLogs()
     {
@@ -194,6 +266,10 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that removing a session unsubscribes all engine event handlers,
+    /// preventing later engine events from producing additional logs.
+    /// </summary>
     [Test]
     public void RemoveSession_UnsubscribesAllEngineEventHandlers()
     {
@@ -211,6 +287,10 @@ public class GameSessionServiceTests
         Assert.That(LogInvocationCount, Is.EqualTo(logCountAfterRemoval));
     }
 
+    /// <summary>
+    /// Verifies that the session service remains usable with a null logger and
+    /// still supports session creation, retrieval, and removal.
+    /// </summary>
     [Test]
     public void SessionService_WithNullLogger_OperatesWithoutExceptions()
     {
@@ -231,15 +311,24 @@ public class GameSessionServiceTests
         });
     }
 
+    /// <summary>
+    /// Gets the number of log calls captured by the mocked logger.
+    /// </summary>
     private int LogInvocationCount =>
         _mockLogger.Invocations.Count(invocation => invocation.Method.Name == nameof(ILogger.Log));
 
+    /// <summary>
+    /// Gets the number of captured logging scopes that include a session ID.
+    /// </summary>
     private int SessionScopeInvocationCount =>
         _mockLogger.Invocations.Count(invocation =>
             invocation.Method.Name == "BeginScope" &&
             invocation.Arguments[0] is IEnumerable<KeyValuePair<string, object?>> values &&
             values.Any(pair => pair.Key == "SessionId"));
 
+    /// <summary>
+    /// Determines whether any captured log message contains the specified text.
+    /// </summary>
     private bool LoggerContains(string text)
     {
         return _mockLogger.Invocations
