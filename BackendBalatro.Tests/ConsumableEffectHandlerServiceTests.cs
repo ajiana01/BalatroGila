@@ -1,3 +1,19 @@
+/*
+ * ConsumableEffectHandlerServiceTests.cs - Unit Tests for Consumable Effects
+ *
+ * This fixture documents the behavior of Tarot, Planet, and Spectral cards.
+ * It uses a real ConsumableEffectHandler with an isolated GameController so
+ * each test exercises an effect while keeping scoring and shop dependencies
+ * outside the scenario.
+ *
+ * Key testing practices demonstrated:
+ * - Arrange-Act-Assert (AAA)
+ * - Parameterized tests for related card effects and invalid inputs
+ * - Inventory-capacity and target-count boundary cases
+ * - Assertions for state changes, messages, and preserved state on failure
+ *
+ */
+
 using BackendBalatro.Enums;
 using BackendBalatro.Models.Entities;
 using BackendBalatro.Services.Consumables;
@@ -9,12 +25,25 @@ using Moq;
 
 namespace BackendBalatro.Tests;
 
+/// <summary>
+/// Test fixture for <see cref="ConsumableEffectHandler"/>.
+///
+/// The fixture creates a fresh handler and controller for each test so card
+/// inventory, hand state, money, and poker-hand levels remain isolated.
+/// </summary>
 [TestFixture]
 public class ConsumableEffectHandlerServiceTests
 {
+    // System under test: applies Tarot, Planet, and Spectral card effects.
     private ConsumableEffectHandler _handler;
+
+    // Isolated game state used as the target of each consumable effect.
     private GameController _controller;
 
+    /// <summary>
+    /// Creates fresh instances before each test to prevent state changes from
+    /// one card effect from leaking into another scenario.
+    /// </summary>
     [SetUp]
     public void SetUp()
     {
@@ -22,6 +51,10 @@ public class ConsumableEffectHandlerServiceTests
         _controller = CreateController();
     }
 
+    /// <summary>
+    /// Creates an isolated controller with mocked scoring and shop services,
+    /// because these tests focus only on consumable behavior.
+    /// </summary>
     private GameController CreateController()
     {
         return new GameController(
@@ -31,6 +64,10 @@ public class ConsumableEffectHandlerServiceTests
             NullLogger<GameController>.Instance);
     }
 
+    /// <summary>
+    /// Verifies that The Fool creates an independent copy of the most recently
+    /// used Tarot card when inventory capacity is available.
+    /// </summary>
     [Test]
     public void UseTarot_TheFoolAfterTarot_CreatesCloneOfLastTarot()
     {
@@ -54,6 +91,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Fool copies the most recently used Planet card when
+    /// no prior Tarot card is available.
+    /// </summary>
     [Test]
     public void UseTarot_TheFoolAfterPlanet_CreatesCloneOfLastPlanet()
     {
@@ -76,6 +117,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Fool fails without a previously used Tarot or Planet
+    /// card and does not change the consumable inventory.
+    /// </summary>
     [Test]
     public void UseTarot_TheFoolWithoutHistory_ReturnsFalse()
     {
@@ -91,6 +136,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Fool cannot create a copy when the consumable
+    /// inventory is already full.
+    /// </summary>
     [Test]
     public void UseTarot_TheFoolWhenInventoryFull_ReturnsFalse()
     {
@@ -109,6 +158,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The High Priestess fills available consumable capacity
+    /// with up to two generated Planet cards.
+    /// </summary>
     [Test]
     public void UseTarot_HighPriestessWithCapacity_CreatesUpToTwoPlanetCards()
     {
@@ -127,6 +180,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The High Priestess fails without changing inventory when
+    /// no consumable slots remain.
+    /// </summary>
     [Test]
     public void UseTarot_HighPriestessWhenInventoryFull_ReturnsFalse()
     {
@@ -144,6 +201,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Emperor fills available consumable capacity with up
+    /// to two generated Tarot cards.
+    /// </summary>
     [Test]
     public void UseTarot_EmperorWithCapacity_CreatesUpToTwoTarotCards()
     {
@@ -162,6 +223,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Emperor fails without changing inventory when no
+    /// consumable slots remain.
+    /// </summary>
     [Test]
     public void UseTarot_EmperorWhenInventoryFull_ReturnsFalse()
     {
@@ -179,6 +244,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Tarot cards allowing one or two targets apply their
+    /// expected enhancement only to the selected cards.
+    /// </summary>
     [TestCase(TarotType.TheMagician, EnhancePokerCard.LuckyCards, "Lucky Card", 1)]
     [TestCase(TarotType.TheMagician, EnhancePokerCard.LuckyCards, "Lucky Card", 2)]
     [TestCase(TarotType.TheEmpress, EnhancePokerCard.MultCards, "Mult (+4 Mult)", 1)]
@@ -209,6 +278,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that one-or-two-target enhancement Tarot cards reject zero or
+    /// three targets without mutating any selected card.
+    /// </summary>
     [TestCase(TarotType.TheMagician, 0, "Select 1 or 2 cards to enhance with Lucky Card.")]
     [TestCase(TarotType.TheMagician, 3, "Select 1 or 2 cards to enhance with Lucky Card.")]
     [TestCase(TarotType.TheEmpress, 0, "Select 1 or 2 cards to enhance with Mult (+4 Mult).")]
@@ -240,6 +313,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that single-target enhancement Tarot cards apply the correct
+    /// enhancement to exactly one selected card.
+    /// </summary>
     [TestCase(TarotType.TheLovers, EnhancePokerCard.WildCards, "Wild Card")]
     [TestCase(TarotType.TheChariot, EnhancePokerCard.SteelCards, "Steel Card")]
     [TestCase(TarotType.Justice, EnhancePokerCard.GlassCards, "Glass Card")]
@@ -264,6 +341,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that single-target enhancement Tarot cards reject both missing
+    /// and excessive target selections without changing card state.
+    /// </summary>
     [TestCase(TarotType.TheLovers)]
     [TestCase(TarotType.TheChariot)]
     [TestCase(TarotType.Justice)]
@@ -291,6 +372,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that suit-conversion Tarot cards change one to three selected
+    /// cards to their designated suit while preserving other card properties.
+    /// </summary>
     [TestCase(TarotType.TheStar, Suit.Diamonds)]
     [TestCase(TarotType.TheMoon, Suit.Clubs)]
     [TestCase(TarotType.TheSun, Suit.Hearts)]
@@ -321,6 +406,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that suit-conversion Tarot cards reject zero or more than three
+    /// targets without changing any suits.
+    /// </summary>
     [TestCase(TarotType.TheStar)]
     [TestCase(TarotType.TheMoon)]
     [TestCase(TarotType.TheSun)]
@@ -352,6 +441,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Strength advances selected card ranks and recalculates
+    /// their default base-chip values.
+    /// </summary>
     [Test]
     public void UseTarot_Strength_IncrementsRanksAndRecalculatesBaseChips()
     {
@@ -374,6 +467,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Strength wraps an Ace to a Two and assigns the correct
+    /// base-chip value.
+    /// </summary>
     [Test]
     public void UseTarot_StrengthOnAce_WrapsToTwo()
     {
@@ -391,6 +488,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Hanged Man permanently removes one or two selected
+    /// cards from the hand while preserving unselected cards.
+    /// </summary>
     [Test]
     public void UseTarot_HangedMan_RemovesSelectedCardsFromHand()
     {
@@ -413,6 +514,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Hanged Man rejects zero or more than two targets and
+    /// leaves the hand unchanged.
+    /// </summary>
     [Test]
     public void UseTarot_HangedManWithInvalidCount_ReturnsFalse()
     {
@@ -440,6 +545,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Death copies the gameplay properties of the right card to
+    /// the left card while retaining the left card's identity.
+    /// </summary>
     [Test]
     public void UseTarot_Death_CopiesRightCardPropertiesToLeftCard()
     {
@@ -473,6 +582,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Hermit doubles money while limiting the gain to
+    /// twenty dollars.
+    /// </summary>
     [TestCase(10, 20)]
     [TestCase(30, 50)]
     public void UseTarot_Hermit_DoublesMoneyWithTwentyDollarGainCap(int initialMoney, int expectedMoney)
@@ -490,6 +603,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Temperance grants the combined sell value of Jokers while
+    /// limiting the gain to fifty dollars and preserving the Joker collection.
+    /// </summary>
     [TestCase(4, 4)]
     [TestCase(20, 50)]
     public void UseTarot_Temperance_AddsJokerSellValueWithFiftyDollarCap(int jokerPrice, int expectedGain)
@@ -514,6 +631,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that The Wheel of Fortune fails when no Joker is available for
+    /// an edition upgrade.
+    /// </summary>
     [Test]
     public void UseTarot_WheelOfFortuneWithoutJokers_ReturnsFalse()
     {
@@ -528,6 +649,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that a successful Wheel of Fortune roll upgrades a base Joker
+    /// to a special edition and reports the resulting edition.
+    /// </summary>
     [Test]
     public void UseTarot_WheelOfFortuneOnHit_UpgradesOneBaseJokerEdition()
     {
@@ -553,6 +678,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that a Wheel of Fortune miss succeeds without changing a Joker
+    /// that already has a special edition.
+    /// </summary>
     [Test]
     public void UseTarot_WheelOfFortuneOnMiss_ReturnsTrueWithoutMutation()
     {
@@ -572,6 +701,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Judgement creates a random Joker when a Joker slot is
+    /// available.
+    /// </summary>
     [Test]
     public void UseTarot_JudgementWithFreeSlot_AddsRandomJoker()
     {
@@ -588,6 +721,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Judgement fails and preserves the Joker collection when
+    /// all Joker slots are occupied.
+    /// </summary>
     [Test]
     public void UseTarot_JudgementWhenJokerSlotsFull_ReturnsFalse()
     {
@@ -609,6 +746,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that a Planet card increases the existing level of its poker
+    /// hand and returns the new level in the message.
+    /// </summary>
     [Test]
     public void UsePlanet_ExistingHandType_IncrementsLevelAndReturnsMessage()
     {
@@ -625,6 +766,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that using a Planet card initializes a missing poker-hand
+    /// level at level two.
+    /// </summary>
     [Test]
     public void UsePlanet_MissingHandType_InitializesLevelTwo()
     {
@@ -640,6 +785,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that a Planet card also increases Constellation's XMult value
+    /// by 0.1 while upgrading the corresponding poker hand.
+    /// </summary>
     [Test]
     public void UsePlanet_WithConstellation_IncrementsXMultByPointOne()
     {
@@ -661,6 +810,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that using a Planet card without Constellation does not mutate
+    /// unrelated Joker properties.
+    /// </summary>
     [Test]
     public void UsePlanet_WithoutConstellation_DoesNotMutateOtherJokers()
     {
@@ -695,6 +848,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Familiar, Grim, and Incantation destroy one hand card and
+    /// replace it with the expected number and rank range of enhanced cards.
+    /// </summary>
     [TestCase(SpectralType.Familiar, 2)]
     [TestCase(SpectralType.Grim, 1)]
     [TestCase(SpectralType.Incantation, 3)]
@@ -731,6 +888,10 @@ public class ConsumableEffectHandlerServiceTests
         }
     }
 
+    /// <summary>
+    /// Verifies that destroy-and-create Spectral cards fail on an empty hand
+    /// without adding any cards.
+    /// </summary>
     [TestCase(SpectralType.Familiar)]
     [TestCase(SpectralType.Grim)]
     [TestCase(SpectralType.Incantation)]
@@ -748,6 +909,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Wraith adds a rare Joker when capacity is available and
+    /// resets the controller's money to zero.
+    /// </summary>
     [Test]
     public void UseSpectral_WraithWithFreeSlot_AddsRareJokerAndResetsMoney()
     {
@@ -767,6 +932,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Wraith fails with full Joker slots while preserving money
+    /// and the existing Joker collection.
+    /// </summary>
     [Test]
     public void UseSpectral_WraithWhenJokerSlotsFull_ReturnsFalse()
     {
@@ -790,6 +959,10 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Sigil converts every card in the hand to one suit while
+    /// preserving each card's rank and enhancement.
+    /// </summary>
     [Test]
     public void UseSpectral_Sigil_ConvertsEntireHandToOneSuit()
     {
@@ -816,6 +989,9 @@ public class ConsumableEffectHandlerServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that Sigil fails when the hand is empty.
+    /// </summary>
     [Test]
     public void UseSpectral_SigilWithEmptyHand_ReturnsFalse()
     {
