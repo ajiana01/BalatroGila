@@ -1,3 +1,19 @@
+/*
+ * ApiControllerTests.cs - Unit Tests for HTTP API Controllers
+ *
+ * This file documents the controller-layer contract: session resolution,
+ * phase validation, mapping game-engine results to HTTP 200/400 responses,
+ * and response envelopes. Gameplay rules are intentionally tested in the
+ * GameController and service test fixtures instead.
+ *
+ * Key testing practices demonstrated:
+ * - Arrange-Act-Assert (AAA)
+ * - Dependency mocking with Moq
+ * - Parameterized tests with [TestCase]
+ * - Test names following [Endpoint]_[Scenario]_[ExpectedResult]
+ *
+ */
+
 using BackendBalatro.Controllers;
 using BackendBalatro.Enums;
 using BackendBalatro.Models.DTOs;
@@ -11,13 +27,29 @@ using ApiGameController = BackendBalatro.Controllers.GameController;
 
 namespace BackendBalatro.Tests;
 
+/// <summary>
+/// Test fixture for <see cref="ActionController"/>, the HTTP GameController,
+/// and <see cref="ShopController"/>.
+///
+/// Each test uses a mocked session service and game engine to isolate
+/// controller behavior from gameplay, databases, HTTP hosting, and other tests.
+/// </summary>
 [TestFixture]
 public class ApiControllerTests
 {
+    // Shared dependency used by all API controllers to resolve a game session.
     private Mock<IGameSessionService> _sessions;
+
+    // Indirect system under test: controllers retrieve this engine through the session service.
     private Mock<IGameController> _engine;
+
+    // Default state returned when a successful endpoint requests the latest game state.
     private GameStateResponseDto _state;
 
+    /// <summary>
+    /// Runs before every test to create fresh mocks and state.
+    /// This isolation prevents one test's setup or invocations from affecting another.
+    /// </summary>
     [SetUp]
     public void SetUp()
     {
@@ -30,6 +62,13 @@ public class ApiControllerTests
         _sessions.Setup(s => s.GetOrCreateSession(It.IsAny<string?>(), It.IsAny<string?>())).Returns(_engine.Object);
     }
 
+    #region Session Resolution
+
+    // The X-Session-Id header takes precedence over query-string and request-body values.
+    /// <summary>
+    /// Verifies that the session ID supplied through the HTTP header overrides
+    /// the session ID supplied through the query string.
+    /// </summary>
     [TestCase("header-id", "query-id")]
     public void ActionController_SessionIdHeaderPresent_UsesHeaderValue(string header, string query)
     {
@@ -43,6 +82,10 @@ public class ApiControllerTests
         _sessions.Verify(s => s.GetOrCreateSession(header, null), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that ActionController falls back to the query-string session ID
+    /// when the X-Session-Id header is not present.
+    /// </summary>
     [Test]
     public void ActionController_HeaderMissing_UsesQuerySessionId()
     {
@@ -55,6 +98,9 @@ public class ApiControllerTests
         _sessions.Verify(s => s.GetOrCreateSession("query-id", null), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that blank session input resolves to the default session.
+    /// </summary>
     [Test]
     public void ActionController_BlankHeaderAndQuery_UsesDefaultSession()
     {
@@ -67,6 +113,10 @@ public class ApiControllerTests
         _sessions.Verify(s => s.GetOrCreateSession("default", null), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies the ShopController session precedence order: header, query
+    /// string, then the default session.
+    /// </summary>
     [TestCase("header-id", "query-id", "header-id")]
     [TestCase("", "query-id", "query-id")]
     [TestCase("", "", "default")]
@@ -83,6 +133,10 @@ public class ApiControllerTests
         _sessions.Verify(s => s.GetOrCreateSession(expected, null), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies the GameController session precedence order: header, request
+    /// body, then the default session.
+    /// </summary>
     [TestCase("header-id", "request-id", "header-id")]
     [TestCase("", "request-id", "request-id")]
     [TestCase("", "", "default")]
@@ -96,6 +150,16 @@ public class ApiControllerTests
         _sessions.Verify(s => s.GetOrCreateSession(expected, It.IsAny<string?>()), Times.Once);
     }
 
+    #endregion
+
+    #region ActionController Endpoints
+
+    // These tests verify that ActionController maps engine results to the correct
+    // HTTP responses without implementing gameplay rules itself.
+    /// <summary>
+    /// Verifies that PlayHand rejects requests outside the Playing phase before
+    /// delegating to the game engine.
+    /// </summary>
     [Test]
     public void PlayHand_WhenPhaseNotPlaying_ReturnsBadRequest()
     {
@@ -107,6 +171,10 @@ public class ApiControllerTests
         _engine.Verify(e => e.PlayHand(It.IsAny<List<string>>()), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that a failed PlayHand result from the engine is returned as a
+    /// bad-request response with the engine message.
+    /// </summary>
     [Test]
     public void PlayHand_EngineFailure_ReturnsBadRequest()
     {
@@ -119,6 +187,10 @@ public class ApiControllerTests
         Assert.That(((ApiResponse<GameStateResponseDto>)((BadRequestObjectResult)result.Result!).Value!).Message, Is.EqualTo("invalid hand"));
     }
 
+    /// <summary>
+    /// Verifies that a successful hand play returns updated game state together
+    /// with the score result produced by the engine.
+    /// </summary>
     [Test]
     public void PlayHand_EngineSuccess_ReturnsOkWithStateAndScore()
     {
@@ -132,6 +204,10 @@ public class ApiControllerTests
         _engine.Verify(e => e.GetGameState("played", score), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that Discard returns the correct HTTP response for an invalid
+    /// phase, an engine failure, and an engine success.
+    /// </summary>
     [TestCase(GameStatePhase.InShop, false)]
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.Playing, true)]
@@ -146,6 +222,10 @@ public class ApiControllerTests
         else Assert.That(result.Result, Is.TypeOf<OkObjectResult>());
     }
 
+    /// <summary>
+    /// Verifies that score preview fails when the engine reports failure or
+    /// returns no score payload.
+    /// </summary>
     [TestCase(false, false)]
     [TestCase(true, true)]
     public void GetScorePreview_FailureOrNullResult_ReturnsBadRequest(bool success, bool nullResult)
@@ -158,6 +238,10 @@ public class ApiControllerTests
         Assert.That(result.Result, Is.TypeOf<BadRequestObjectResult>());
     }
 
+    /// <summary>
+    /// Verifies that a valid score preview is returned in a successful response
+    /// without being replaced by another DTO instance.
+    /// </summary>
     [Test]
     public void GetScorePreview_Success_ReturnsScoreDto()
     {
@@ -170,6 +254,10 @@ public class ApiControllerTests
         Assert.Multiple(() => { Assert.That(result.Result, Is.TypeOf<OkObjectResult>()); Assert.That(response.Data, Is.SameAs(score)); });
     }
 
+    /// <summary>
+    /// Verifies that UseConsumable maps the engine success flag to either a
+    /// successful or bad-request HTTP response.
+    /// </summary>
     [TestCase(false)]
     [TestCase(true)]
     public void UseConsumable_FailureAndSuccess_ReturnExpectedResponses(bool success)
@@ -179,6 +267,10 @@ public class ApiControllerTests
         Assert.That(result.Result, Is.TypeOf(success ? typeof(OkObjectResult) : typeof(BadRequestObjectResult)));
     }
 
+    /// <summary>
+    /// Verifies that SellCard maps engine failure and success to the matching
+    /// HTTP response type.
+    /// </summary>
     [TestCase(false)]
     [TestCase(true)]
     public void SellCard_FailureAndSuccess_ReturnExpectedResponses(bool success)
@@ -188,6 +280,10 @@ public class ApiControllerTests
         Assert.That(result.Result, Is.TypeOf(success ? typeof(OkObjectResult) : typeof(BadRequestObjectResult)));
     }
 
+    /// <summary>
+    /// Verifies that Joker reordering maps engine failure and success to the
+    /// matching HTTP response type.
+    /// </summary>
     [TestCase(false)]
     [TestCase(true)]
     public void ReorderJokers_FailureAndSuccess_ReturnExpectedResponses(bool success)
@@ -197,6 +293,10 @@ public class ApiControllerTests
         Assert.That(result.Result, Is.TypeOf(success ? typeof(OkObjectResult) : typeof(BadRequestObjectResult)));
     }
 
+    /// <summary>
+    /// Verifies that consumable reordering maps engine failure and success to
+    /// the matching HTTP response type.
+    /// </summary>
     [TestCase(false)]
     [TestCase(true)]
     public void ReorderConsumables_FailureAndSuccess_ReturnExpectedResponses(bool success)
@@ -206,6 +306,16 @@ public class ApiControllerTests
         Assert.That(result.Result, Is.TypeOf(success ? typeof(OkObjectResult) : typeof(BadRequestObjectResult)));
     }
 
+    #endregion
+
+    #region GameController HTTP Endpoints
+
+    // This region tests the HTTP controller, not Services.Core.GameController.
+    // The ApiGameController alias keeps the two types unambiguous.
+    /// <summary>
+    /// Verifies that a null start-game request uses the default session and
+    /// player while starting the engine and returning its state.
+    /// </summary>
     [Test]
     public void StartGame_NullRequest_UsesDefaultPlayerAndSession()
     {
@@ -220,6 +330,10 @@ public class ApiControllerTests
         _sessions.Verify(s => s.GetOrCreateSession("default", null), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that the start-game header session ID overrides the request ID
+    /// while the requested player name is preserved.
+    /// </summary>
     [Test]
     public void StartGame_RequestAndHeader_ResolveSessionAndPlayerCorrectly()
     {
@@ -235,6 +349,10 @@ public class ApiControllerTests
         _sessions.Verify(s => s.GetOrCreateSession("header-session", "Aji"), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that GetState retrieves the requested session and returns its
+    /// current game-state DTO in a successful envelope.
+    /// </summary>
     [Test]
     public void GetState_ReturnsCurrentSessionState()
     {
@@ -250,6 +368,10 @@ public class ApiControllerTests
         _engine.Verify(e => e.GetGameState(null, null), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that GetBlinds returns the engine's current ante and available
+    /// blinds in a successful response.
+    /// </summary>
     [Test]
     public void GetBlinds_ReturnsAnteAndAvailableBlinds()
     {
@@ -270,6 +392,10 @@ public class ApiControllerTests
         _engine.Verify(e => e.GetAvailableBlinds(), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that SelectBlind rejects a request outside SelectingBlind and
+    /// does not invoke the engine selection operation.
+    /// </summary>
     [Test]
     public void SelectBlind_WhenWrongPhase_ReturnsBadRequestWithoutSelecting()
     {
@@ -281,6 +407,10 @@ public class ApiControllerTests
         _engine.Verify(e => e.SelectBlind(It.IsAny<int>()), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that an invalid or already-defeated blind is reported as a
+    /// bad request with the controller's explanatory message.
+    /// </summary>
     [Test]
     public void SelectBlind_InvalidOrDefeated_ReturnsBadRequest()
     {
@@ -297,6 +427,10 @@ public class ApiControllerTests
         });
     }
 
+    /// <summary>
+    /// Verifies that selecting a valid blind succeeds and returns state with a
+    /// message that identifies the selected blind.
+    /// </summary>
     [Test]
     public void SelectBlind_Valid_ReturnsOkWithSelectedBlindState()
     {
@@ -315,6 +449,10 @@ public class ApiControllerTests
         });
     }
 
+    /// <summary>
+    /// Verifies that boss-blind rerolls return a bad request on failure and
+    /// refreshed game state on success.
+    /// </summary>
     [TestCase(false)]
     [TestCase(true)]
     public void RerollBossBlind_FailureAndSuccess_ReturnExpectedResponses(bool success)
@@ -334,6 +472,15 @@ public class ApiControllerTests
         }
     }
 
+    #endregion
+
+    #region ShopController HTTP Endpoints
+
+    // Shop endpoints may delegate operations to the engine only during the InShop phase.
+    /// <summary>
+    /// Verifies that the shop endpoint rejects requests when the game is not
+    /// currently in the InShop phase.
+    /// </summary>
     [Test]
     public void GetShop_WhenClosed_ReturnsBadRequest()
     {
@@ -345,6 +492,10 @@ public class ApiControllerTests
         _engine.Verify(e => e.GetGameState(It.IsAny<string?>(), It.IsAny<ScoreCalculationResultDto?>()), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that the shop endpoint returns the Shop DTO from current game
+    /// state when the shop is open.
+    /// </summary>
     [Test]
     public void GetShop_WhenOpen_ReturnsShopDto()
     {
@@ -363,6 +514,10 @@ public class ApiControllerTests
         });
     }
 
+    /// <summary>
+    /// Verifies that card purchases are phase-guarded and map engine failures
+    /// and successes to the appropriate HTTP response.
+    /// </summary>
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.InShop, false)]
     [TestCase(GameStatePhase.InShop, true)]
@@ -379,6 +534,10 @@ public class ApiControllerTests
         if (phase != GameStatePhase.InShop) _engine.Verify(e => e.BuyCardFromShop(It.IsAny<string>()), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that shop rerolls are phase-guarded and map engine failures
+    /// and successes to the appropriate HTTP response.
+    /// </summary>
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.InShop, false)]
     [TestCase(GameStatePhase.InShop, true)]
@@ -395,6 +554,10 @@ public class ApiControllerTests
         if (phase != GameStatePhase.InShop) _engine.Verify(e => e.RerollShop(), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that booster purchases are phase-guarded and map engine
+    /// failures and successes to the appropriate HTTP response.
+    /// </summary>
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.InShop, false)]
     [TestCase(GameStatePhase.InShop, true)]
@@ -412,6 +575,10 @@ public class ApiControllerTests
         if (phase != GameStatePhase.InShop) _engine.Verify(e => e.BuyBoosterPack(It.IsAny<string>()), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that booster-card selection is phase-guarded and maps engine
+    /// failures and successes to the appropriate HTTP response.
+    /// </summary>
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.InShop, false)]
     [TestCase(GameStatePhase.InShop, true)]
@@ -428,6 +595,10 @@ public class ApiControllerTests
         if (phase != GameStatePhase.InShop) _engine.Verify(e => e.SelectBoosterCard(It.IsAny<string>()), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that skipping a booster is rejected outside the shop and
+    /// succeeds when the engine accepts the request in the shop.
+    /// </summary>
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.InShop, true)]
     public void SkipBooster_WrongPhaseAndSuccess_ReturnExpectedResponses(GameStatePhase phase, bool success)
@@ -443,6 +614,10 @@ public class ApiControllerTests
         if (phase != GameStatePhase.InShop) _engine.Verify(e => e.SkipBoosterPack(), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that voucher purchases are phase-guarded and map engine
+    /// failures and successes to the appropriate HTTP response.
+    /// </summary>
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.InShop, false)]
     [TestCase(GameStatePhase.InShop, true)]
@@ -459,6 +634,10 @@ public class ApiControllerTests
         if (phase != GameStatePhase.InShop) _engine.Verify(e => e.BuyVoucher(It.IsAny<string>()), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that leaving the shop is phase-guarded and maps engine
+    /// failures and successes to the appropriate HTTP response.
+    /// </summary>
     [TestCase(GameStatePhase.Playing, false)]
     [TestCase(GameStatePhase.InShop, false)]
     [TestCase(GameStatePhase.InShop, true)]
@@ -475,6 +654,10 @@ public class ApiControllerTests
         if (phase != GameStatePhase.InShop) _engine.Verify(e => e.LeaveShop(), Times.Never);
     }
 
+    /// <summary>
+    /// Verifies that the ShopController boss-reroll endpoint returns a bad
+    /// request on engine failure and refreshed game state on success.
+    /// </summary>
     [TestCase(false)]
     [TestCase(true)]
     public void ShopController_RerollBossBlind_FailureAndSuccess_ReturnExpectedResponses(bool success)
@@ -488,6 +671,12 @@ public class ApiControllerTests
         else _engine.Verify(e => e.GetGameState(It.IsAny<string?>(), It.IsAny<ScoreCalculationResultDto?>()), Times.Never);
     }
 
+    #endregion
+
+    #region Controller Factories
+
+    // These factories give every controller a fresh HttpContext so tests can set
+    // headers and query strings as they would on a real HTTP request.
     private ActionController ActionController()
     {
         var controller = new ActionController(_sessions.Object);
@@ -513,4 +702,6 @@ public class ApiControllerTests
     {
         controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
     }
+
+    #endregion
 }
