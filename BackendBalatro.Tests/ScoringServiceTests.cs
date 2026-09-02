@@ -1,3 +1,19 @@
+/*
+ * ScoringServiceTests.cs - Unit Tests for Score Calculation
+ *
+ * This file documents the scoring-service contract: hand-level base values,
+ * card and joker effects, blind modifiers, and the final score calculation.
+ * The evaluator is mocked so these tests focus on score aggregation rather
+ * than poker-hand detection.
+ *
+ * Key testing practices demonstrated:
+ * - Arrange-Act-Assert (AAA)
+ * - Dependency mocking with Moq
+ * - Parameterized tests with [TestCase]
+ * - Test names following [Method]_[Scenario]_[ExpectedResult]
+ *
+ */
+
 using BackendBalatro.Enums;
 using BackendBalatro.Models.DTOs;
 using BackendBalatro.Models.Entities;
@@ -7,12 +23,24 @@ using Moq;
 
 namespace BackendBalatro.Tests;
 
+/// <summary>
+/// Test fixture for <see cref="ScoringService"/>.
+///
+/// Each test uses a mocked poker-hand evaluator to isolate score calculation
+/// from hand detection and keep the scoring scenarios deterministic.
+/// </summary>
 [TestFixture]
 public class ScoringServiceTests
 {
+    // Mocked dependency that supplies the detected poker hand and its cards.
     private Mock<IPokerHandEvaluator> _evaluator;
+
+    // System under test responsible for combining all score components.
     private ScoringService _service;
 
+    /// <summary>
+    /// Runs before every test to create a fresh evaluator mock and scoring service.
+    /// </summary>
     [SetUp]
     public void SetUp()
     {
@@ -20,6 +48,10 @@ public class ScoringServiceTests
         _service = new ScoringService(_evaluator.Object, NullLogger<ScoringService>.Instance);
     }
 
+    /// <summary>
+    /// Verifies that level-one poker hands return their configured base chips
+    /// and multiplier values.
+    /// </summary>
     [TestCase(PokerHandType.HighCard, 5, 1f)]
     [TestCase(PokerHandType.Pair, 10, 2f)]
     [TestCase(PokerHandType.TwoPair, 20, 2f)]
@@ -35,6 +67,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.BaseChips, Is.EqualTo(chips)); Assert.That(result.BaseMult, Is.EqualTo(mult)); });
     }
 
+    /// <summary>
+    /// Verifies that each poker hand returns its configured chips and multiplier
+    /// bonus when its level increases.
+    /// </summary>
     [TestCase(PokerHandType.HighCard, 10, 1f)]
     [TestCase(PokerHandType.Pair, 15, 1f)]
     [TestCase(PokerHandType.TwoPair, 20, 1f)]
@@ -50,6 +86,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.LevelUpChips, Is.EqualTo(chips)); Assert.That(result.LevelUpMult, Is.EqualTo(mult)); });
     }
 
+    /// <summary>
+    /// Verifies that increasing a hand from level one to level three applies
+    /// the level-up bonus once for each additional level.
+    /// </summary>
     [TestCase(PokerHandType.Pair)]
     [TestCase(PokerHandType.StraightFlush)]
     public void GetBaseChipsAndMult_HigherLevel_AppliesLinearLevelBonus(PokerHandType type)
@@ -60,6 +100,9 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.BaseChips, Is.EqualTo(levelOne.BaseChips + 2 * bonus.LevelUpChips)); Assert.That(result.BaseMult, Is.EqualTo(levelOne.BaseMult + 2 * bonus.LevelUpMult)); });
     }
 
+    /// <summary>
+    /// Verifies that hand levels below one are clamped to the level-one values.
+    /// </summary>
     [TestCase(0)]
     [TestCase(-3)]
     public void GetBaseChipsAndMult_LevelBelowOne_ClampsToLevelOne(int level)
@@ -67,6 +110,10 @@ public class ScoringServiceTests
         Assert.That(_service.GetBaseChipsAndMult(PokerHandType.Flush, level), Is.EqualTo(_service.GetBaseChipsAndMult(PokerHandType.Flush, 1)));
     }
 
+    /// <summary>
+    /// Verifies that a basic hand combines base hand values with card chips
+    /// to produce the expected totals and final score.
+    /// </summary>
     [Test]
     public void CalculateScore_BasicHand_ComposesBaseCardsAndFinalScore()
     {
@@ -80,6 +127,10 @@ public class ScoringServiceTests
         });
     }
 
+    /// <summary>
+    /// Verifies that a hand without an entry in the level map defaults to level
+    /// one and uses the corresponding base values.
+    /// </summary>
     [Test]
     public void CalculateScore_MissingHandLevel_DefaultsToOne()
     {
@@ -88,6 +139,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.HandLevel, Is.EqualTo(1)); Assert.That(result.BaseChips, Is.EqualTo(10)); Assert.That(result.BaseMult, Is.EqualTo(2)); });
     }
 
+    /// <summary>
+    /// Verifies that a stone card excluded by the evaluator is restored to the
+    /// scoring cards and contributes its effective chips.
+    /// </summary>
     [Test]
     public void CalculateScore_StoneCardOutsideEvaluatorScoring_IsAddedToScoring()
     {
@@ -97,6 +152,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.ScoringCards, Does.Contain(stone)); Assert.That(result.UnscoredCards, Does.Not.Contain(stone)); Assert.That(result.CardChips, Is.EqualTo(normal.GetEffectiveChips() + stone.GetEffectiveChips())); });
     }
 
+    /// <summary>
+    /// Verifies that The Flint halves the base chips and multiplier while
+    /// enforcing a minimum value of one for each base component.
+    /// </summary>
     [Test]
     public void CalculateScore_TheFlint_HalvesBaseValuesWithMinimumOne()
     {
@@ -105,6 +164,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.BaseChips, Is.EqualTo(2)); Assert.That(result.BaseMult, Is.EqualTo(1)); Assert.That(result.CardChips, Is.EqualTo(2)); });
     }
 
+    /// <summary>
+    /// Verifies that card enhancements and editions contribute their effective
+    /// chips, multiplier, and multiplicative multiplier values.
+    /// </summary>
     [TestCase(EnhancePokerCard.BonusCards, JokerEdition.Base)]
     [TestCase(EnhancePokerCard.MultCards, JokerEdition.Base)]
     [TestCase(EnhancePokerCard.StoneCards, JokerEdition.Base)]
@@ -119,6 +182,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.CardChips, Is.EqualTo(card.GetEffectiveChips())); Assert.That(result.CardMult, Is.EqualTo(card.GetEffectiveMult())); Assert.That(result.CardXMult, Is.EqualTo(card.GetEffectiveXMult())); Assert.That(result.FinalScore, Is.EqualTo((int)Math.Floor(result.TotalChips * result.TotalMult))); });
     }
 
+    /// <summary>
+    /// Verifies that a debuffed scoring card contributes no chips or multiplier
+    /// while preserving the default multiplicative multiplier.
+    /// </summary>
     [Test]
     public void CalculateScore_DebuffedScoringCardContributesNoChipsOrMult()
     {
@@ -127,6 +194,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.CardChips, Is.EqualTo(0)); Assert.That(result.CardMult, Is.EqualTo(0)); Assert.That(result.CardXMult, Is.EqualTo(1)); Assert.That(result.JokerChips, Is.EqualTo(0)); });
     }
 
+    /// <summary>
+    /// Verifies that non-debuffed steel cards held in hand multiply the card
+    /// multiplier and that debuffed steel cards are ignored.
+    /// </summary>
     [Test]
     public void CalculateScore_SteelCardsHeldInHand_MultiplyCardXMult()
     {
@@ -136,6 +207,10 @@ public class ScoringServiceTests
         Assert.That(result.CardXMult, Is.EqualTo(2.25f).Within(.0001f));
     }
 
+    /// <summary>
+    /// Verifies that foil, holographic, and polychrome joker editions apply
+    /// their respective chips, multiplier, or multiplicative multiplier bonus.
+    /// </summary>
     [TestCase(JokerEdition.Foil, 50, 0f, 1f)]
     [TestCase(JokerEdition.Holographic, 0, 10f, 1f)]
     [TestCase(JokerEdition.Polychrome, 0, 0f, 1.5f)]
@@ -146,6 +221,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.JokerChips, Is.EqualTo(chips)); Assert.That(result.JokerMult, Is.EqualTo(mult)); Assert.That(result.JokerXMult, Is.EqualTo(xmult)); Assert.That(result.JokerTriggers.Single().JokerId, Is.EqualTo(joker.Id)); });
     }
 
+    /// <summary>
+    /// Verifies that base joker chips, multiplier, and multiplicative multiplier
+    /// are aggregated in joker order and recorded in trigger metadata.
+    /// </summary>
     [Test]
     public void CalculateScore_JokerBaseValuesAndOrder_AggregateCorrectly()
     {
@@ -155,6 +234,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.JokerChips, Is.EqualTo(10)); Assert.That(result.JokerMult, Is.EqualTo(4)); Assert.That(result.JokerXMult, Is.EqualTo(2)); Assert.That(result.JokerTriggers.Select(t => t.JokerIndex), Is.EqualTo(new[] { 0, 1, 2 })); });
     }
 
+    /// <summary>
+    /// Verifies that a debuffed lucky card produces neither its multiplier nor
+    /// its money proc or trigger message.
+    /// </summary>
     [Test]
     public void CalculateScore_LuckyCard_HandlesMultAndMoneyProc()
     {
@@ -163,6 +246,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.CardMult, Is.EqualTo(0)); Assert.That(result.LuckyMoneyWon, Is.EqualTo(0)); Assert.That(result.JokerTriggerMessages, Is.Empty); });
     }
 
+    /// <summary>
+    /// Verifies that face-card jokers apply their configured bonuses when a
+    /// matching face card is present and debuffed cards do not qualify.
+    /// </summary>
     [TestCase(JokerId.ScaryFace, 30, 0f, 1f)]
     [TestCase(JokerId.SmileyFace, 0, 5f, 1f)]
     [TestCase(JokerId.Photograph, 0, 0f, 2f)]
@@ -173,6 +260,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.JokerChips, Is.EqualTo(chips)); Assert.That(result.JokerMult, Is.EqualTo(mult)); Assert.That(result.JokerXMult, Is.EqualTo(xmult)); });
     }
 
+    /// <summary>
+    /// Verifies that Half Joker triggers only when three or fewer cards are
+    /// played.
+    /// </summary>
     [TestCase(3, 20f)]
     [TestCase(4, 0f)]
     public void CalculateScore_HalfJoker_TriggersOnlyForAtMostThreePlayedCards(int count, float expected)
@@ -181,6 +272,10 @@ public class ScoringServiceTests
         Assert.That(Calculate(cards, jokers: new() { Joker(JokerId.HalfJoker) }).JokerMult, Is.EqualTo(expected));
     }
 
+    /// <summary>
+    /// Verifies that jokers based on held cards use the remaining hand and
+    /// apply their expected chips, multiplier, or multiplicative multiplier.
+    /// </summary>
     [TestCase(JokerId.RaisedFist, 0f, 6f, 1f)]
     [TestCase(JokerId.Baron, 0f, 0f, 2.25f)]
     [TestCase(JokerId.Blackboard, 0f, 0f, 3f)]
@@ -192,6 +287,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.JokerChips, Is.EqualTo(chips)); Assert.That(result.JokerMult, Is.EqualTo(mult)); Assert.That(result.JokerXMult, Is.EqualTo(xmult)); });
     }
 
+    /// <summary>
+    /// Verifies that resource-dependent jokers calculate their bonuses from
+    /// the supplied money, discards, and deck-size context.
+    /// </summary>
     [TestCase(JokerId.Banner, 60, 0f, 0, 2, 0)]
     [TestCase(JokerId.MysticSummit, 0, 15f, 0, 0, 0)]
     [TestCase(JokerId.AbstractJoker, 0, 3f, 0, 1, 0)]
@@ -204,6 +303,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.JokerChips, Is.EqualTo(chips)); Assert.That(result.JokerMult, Is.EqualTo(mult)); });
     }
 
+    /// <summary>
+    /// Verifies that suit-based jokers count matching cards and wild cards while
+    /// ignoring debuffed cards.
+    /// </summary>
     [TestCase(JokerId.GreedyJoker, Suit.Diamonds)]
     [TestCase(JokerId.LustyJoker, Suit.Hearts)]
     [TestCase(JokerId.WrathfulJoker, Suit.Spades)]
@@ -215,6 +318,10 @@ public class ScoringServiceTests
         Assert.That(Calculate(new() { matching, wild, bad }, jokers: new() { Joker(id) }).JokerMult, Is.EqualTo(6));
     }
 
+    /// <summary>
+    /// Verifies that rank-based jokers apply their expected bonuses for matching
+    /// ranks and ignore debuffed matching cards.
+    /// </summary>
     [TestCase(JokerId.Fibonacci, Rank.Five, 0, 8f)]
     [TestCase(JokerId.EvenSteven, Rank.Eight, 0, 4f)]
     [TestCase(JokerId.OddTodd, Rank.Nine, 31, 0f)]
@@ -227,6 +334,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.JokerChips, Is.EqualTo(chips)); Assert.That(result.JokerMult, Is.EqualTo(mult)); });
     }
 
+    /// <summary>
+    /// Verifies that multiplier jokers trigger when the evaluated hand type is
+    /// compatible with each joker's condition.
+    /// </summary>
     [TestCase(JokerId.JollyJoker, PokerHandType.FullHouse, 8f)]
     [TestCase(JokerId.ZanyJoker, PokerHandType.FullHouse, 12f)]
     [TestCase(JokerId.MadJoker, PokerHandType.TwoPair, 10f)]
@@ -238,6 +349,10 @@ public class ScoringServiceTests
         Assert.That(Calculate(new() { card }, jokers: new() { Joker(id) }).JokerMult, Is.EqualTo(expected));
     }
 
+    /// <summary>
+    /// Verifies that chip jokers trigger when the evaluated hand type is
+    /// compatible with each joker's condition.
+    /// </summary>
     [TestCase(JokerId.SlyJoker, PokerHandType.Pair, 50)]
     [TestCase(JokerId.WilyJoker, PokerHandType.FullHouse, 100)]
     [TestCase(JokerId.CleverJoker, PokerHandType.TwoPair, 80)]
@@ -249,6 +364,10 @@ public class ScoringServiceTests
         Assert.That(Calculate(new() { card }, jokers: new() { Joker(id) }).JokerChips, Is.EqualTo(expected));
     }
 
+    /// <summary>
+    /// Verifies that conditional jokers do not trigger when their required
+    /// condition is not met.
+    /// </summary>
     [TestCase(JokerId.ScaryFace)]
     [TestCase(JokerId.JollyJoker)]
     [TestCase(JokerId.Banner)]
@@ -259,6 +378,10 @@ public class ScoringServiceTests
         Assert.That(result.JokerTriggers, Is.Empty);
     }
 
+    /// <summary>
+    /// Verifies that Misprint contributes a random multiplier within its valid
+    /// range and records a corresponding trigger message.
+    /// </summary>
     [Test]
     public void CalculateScore_Misprint_AddsRandomMultWithinZeroToTwentyThree()
     {
@@ -267,6 +390,10 @@ public class ScoringServiceTests
         Assert.Multiple(() => { Assert.That(result.JokerMult, Is.InRange(0f, 23f)); Assert.That(result.JokerTriggers.Single().Message, Does.Contain("Misprint")); });
     }
 
+    /// <summary>
+    /// Verifies that every triggered joker produces matching trigger metadata
+    /// and a user-facing trigger message in joker order.
+    /// </summary>
     [Test]
     public void CalculateScore_TriggerDtosAndMessages_DescribeEveryTriggeredJoker()
     {
