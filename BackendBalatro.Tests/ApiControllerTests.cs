@@ -14,9 +14,9 @@ namespace BackendBalatro.Tests;
 [TestFixture]
 public class ApiControllerTests
 {
-    private Mock<IGameSessionService> _sessions = null!;
-    private Mock<IGameController> _engine = null!;
-    private GameStateResponseDto _state = null!;
+    private Mock<IGameSessionService> _sessions;
+    private Mock<IGameController> _engine;
+    private GameStateResponseDto _state;
 
     [SetUp]
     public void SetUp()

@@ -8,7 +8,7 @@ namespace BackendBalatro.Tests;
 [TestFixture]
 public class PokerHandEvaluatorServiceTest
 {
-    private PokerHandEvaluator _evaluator = null!;
+    private PokerHandEvaluator _evaluator;
 
     [SetUp]
     public void SetUp() => _evaluator = new PokerHandEvaluator(NullLogger<PokerHandEvaluator>.Instance);

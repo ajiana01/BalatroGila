@@ -14,11 +14,11 @@ namespace BackendBalatro.Tests;
 [TestFixture]
 public class GameSessionServiceTests
 {
-    private Mock<IScoringService> _mockScoringService = null!;
-    private Mock<IShopService> _mockShopService = null!;
-    private Mock<IConsumableEffectHandler> _mockConsumableHandler = null!;
-    private GameSessionService _service = null!;
-    private Mock<ILogger<GameSessionService>> _mockLogger = null!;
+    private Mock<IScoringService> _mockScoringService;
+    private Mock<IShopService> _mockShopService;
+    private Mock<IConsumableEffectHandler> _mockConsumableHandler;
+    private GameSessionService _service;
+    private Mock<ILogger<GameSessionService>> _mockLogger;
 
     [SetUp]
     public void SetUp()
@@ -244,7 +244,7 @@ public class GameSessionServiceTests
     {
         return _mockLogger.Invocations
             .Where(invocation => invocation.Method.Name == nameof(ILogger.Log))
-            .Select(invocation => invocation.Arguments[2]?.ToString() ?? string.Empty)
+            .Select(invocation => invocation.Arguments[2].ToString() ?? string.Empty)
             .Any(message => message.Contains(text, StringComparison.Ordinal));
     }
 }

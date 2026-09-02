@@ -12,8 +12,8 @@ namespace BackendBalatro.Tests;
 [TestFixture]
 public class ConsumableEffectHandlerServiceTests
 {
-    private ConsumableEffectHandler _handler = null!;
-    private GameController _controller = null!;
+    private ConsumableEffectHandler _handler;
+    private GameController _controller;
 
     [SetUp]
     public void SetUp()
